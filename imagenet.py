@@ -9,12 +9,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--gpu', type=int, default=2)
-parser.add_argument('--dfa', type=int, default=0)
-parser.add_argument('--sparse', type=int, default=0)
+parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--dfa', type=int, default=1)
+parser.add_argument('--sparse', type=int, default=1)
 parser.add_argument('--rank', type=int, default=0)
-parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="adam")
+parser.add_argument('--init', type=str, default="NA")
+parser.add_argument('--opt', type=str, default="NA")
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -37,19 +37,21 @@ import os
 import math
 import numpy
 import numpy as np
+np.set_printoptions(threshold=1000)
+
 import time
 from PIL import Image
 
-from Model import Model
+from ModelImagenet import Model
 
 from Layer import Layer 
 from ConvToFullyConnected import ConvToFullyConnected
-from FullyConnected import FullyConnected
-from Convolution import Convolution
+from FullyConnectedImagenet import FullyConnected
+from ConvolutionImagenet import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
-from FeedbackFC import FeedbackFC
-from FeedbackConv import FeedbackConv
+from FeedbackFCImagenet import FeedbackFC
+from FeedbackConvImagenet import FeedbackConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -88,7 +90,7 @@ def parse_function(filename, label):
     # This will convert to float values in [0, 1]
     image = tf.image.convert_image_dtype(image, tf.float32)
 
-    image = tf.image.resize_images(image, [256, 256])
+    image = tf.image.resize_images(image, [227, 227])
     return image, label
 
 def train_preprocess(image, label):
@@ -122,6 +124,10 @@ for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/train/'):
         label_counter = label_counter + 1
         print (str(label_counter) + "/" + str(num_classes))
 
+remainder = len(training_labels) % batch_size
+training_images = training_images[:(-remainder)]
+training_labels = training_labels[:(-remainder)]
+
 filename = tf.placeholder(tf.string, shape=[None])
 label_num = tf.placeholder(tf.int64, shape=[None])
 dataset = tf.data.Dataset.from_tensor_slices((filename, label_num))
@@ -137,92 +143,52 @@ print("Data is ready...")
 iterator = dataset.make_initializable_iterator()
 features, labels = iterator.get_next()
 
-features = tf.reshape(features, (-1, 256, 256, 3))
+features = tf.reshape(features, (-1, 227, 227, 3))
 labels = tf.one_hot(labels, depth=num_classes)
 
 ###############################################################
 
-'''
-conv1 = tf.layers.conv2d(inputs=features, filters=16, kernel_size=[3, 3], padding="same", activation=tf.nn.relu)
-conv1_pool = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2, padding='same')
+l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
+l1 = MaxPool(size=[batch_size, 55, 55, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
+l2 = FeedbackConv(size=[batch_size, 27, 27, 96], num_classes=num_classes, sparse=sparse, rank=rank)
 
-conv2 = tf.layers.conv2d(inputs=conv1_pool, filters=16, kernel_size=[3, 3], padding="same", activation=tf.nn.relu)
-conv2_pool = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2,2], strides=2, padding='same')
+l3 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
+l4 = MaxPool(size=[batch_size, 27, 27, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
+l5 = FeedbackConv(size=[batch_size, 13, 13, 256], num_classes=num_classes, sparse=sparse, rank=rank)
 
-conv3 = tf.layers.conv2d(inputs=conv2_pool, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.relu)
-conv3_pool = tf.layers.max_pooling2d(inputs=conv3, pool_size=[2,2], strides=2, padding='same')
+l6 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
+l7 = FeedbackConv(size=[batch_size, 13, 13, 384], num_classes=num_classes, sparse=sparse, rank=rank)
 
-conv4 = tf.layers.conv2d(inputs=conv3_pool, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.relu)
-conv4_pool = tf.layers.max_pooling2d(inputs=conv4, pool_size=[2,2], strides=2, padding='same')
+l8 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
+l9 = FeedbackConv(size=[batch_size, 13, 13, 384], num_classes=num_classes, sparse=sparse, rank=rank)
 
-conv5 = tf.layers.conv2d(inputs=conv4_pool, filters=32, kernel_size=[3, 3], padding="same", activation=tf.nn.relu)
-conv5_pool = tf.layers.max_pooling2d(inputs=conv5, pool_size=[2,2], strides=2, padding='same')
+l10 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
+l11 = MaxPool(size=[batch_size, 13, 13, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
+l12 = FeedbackConv(size=[batch_size, 6, 6, 256], num_classes=num_classes, sparse=sparse, rank=rank)
 
-flat = tf.contrib.layers.flatten(conv5_pool)
+l13 = ConvToFullyConnected(shape=[6, 6, 256])
+l14 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
+l15 = FeedbackFC(size=[6*6*256, 4096], num_classes=num_classes, sparse=sparse, rank=rank)
 
-fc1 = tf.layers.dense(inputs=flat, units=2048, activation=tf.nn.relu)
-fc2 = tf.layers.dense(inputs=fc1, units=2048, activation=tf.nn.relu)
-fc3 = tf.layers.dense(inputs=fc2, units=num_classes)
+l16 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
+l17 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=sparse, rank=rank)
 
-predict = tf.argmax(fc3, axis=1)
+l18 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True)
 
-loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=fc3, labels=labels))
-correct = tf.equal(predict, tf.argmax(labels, 1))
-total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18])
 
-optimizer = tf.train.AdamOptimizer(learning_rate=0.01, beta1=0.9, beta2=0.999, epsilon=1).minimize(loss)
-'''
-
-###############################################################
-
-l0 = Convolution(input_sizes=[batch_size, 256, 256, 3], filter_sizes=[3, 3, 3, 16], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
-l1 = MaxPool(size=[batch_size, 256, 256, 16], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l2 = FeedbackConv(size=[batch_size, 128, 128, 16], num_classes=num_classes, sparse=sparse, rank=rank)
-
-l3 = Convolution(input_sizes=[batch_size, 128, 128, 16], filter_sizes=[3, 3, 16, 16], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
-l4 = MaxPool(size=[batch_size, 128, 128, 16], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l5 = FeedbackConv(size=[batch_size, 64, 64, 16], num_classes=num_classes, sparse=sparse, rank=rank)
-
-l6 = Convolution(input_sizes=[batch_size, 64, 64, 16], filter_sizes=[3, 3, 16, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
-l7 = MaxPool(size=[batch_size, 64, 64, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l8 = FeedbackConv(size=[batch_size, 32, 32, 32], num_classes=num_classes, sparse=sparse, rank=rank)
-
-l9 = Convolution(input_sizes=[batch_size, 32, 32, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
-l10 = MaxPool(size=[batch_size, 32, 32, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l11 = FeedbackConv(size=[batch_size, 16, 16, 32], num_classes=num_classes, sparse=sparse, rank=rank)
-
-l12 = Convolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
-l13 = MaxPool(size=[batch_size, 16, 16, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l14 = FeedbackConv(size=[batch_size, 8, 8, 32], num_classes=num_classes, sparse=sparse, rank=rank)
-
-l15 = ConvToFullyConnected(shape=[8, 8, 32])
-l16 = FullyConnected(size=[8*8*32, 2048], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), last_layer=False)
-l17 = FeedbackFC(size=[8*8*32, 2048], num_classes=num_classes, sparse=sparse, rank=rank)
-
-l18 = FullyConnected(size=[2048, 2048], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), last_layer=False)
-l19 = FeedbackFC(size=[2048, 2048], num_classes=num_classes, sparse=sparse, rank=rank)
-
-l20 = FullyConnected(size=[2048, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
-
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20])
-
-predict = model.predict(X=features)
+predict = tf.nn.softmax(model.predict(X=features))
 
 if args.dfa:
-    grads_and_vars = model.dfa(X=features, Y=labels)
+    train = model.dfa(X=features, Y=labels)
 else:
-    grads_and_vars = model.train(X=features, Y=labels)
-    
-if args.opt == "adam":
-    optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
-elif args.opt == "rms":
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=1.0, momentum=0.0).apply_gradients(grads_and_vars=grads_and_vars)
-else:
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
+    train = model.train(X=features, Y=labels)
 
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+
+print (model.num_params())
 
 ###############################################################
 
@@ -234,14 +200,25 @@ tf.global_variables_initializer().run()
 sess.run(iterator.initializer, feed_dict={filename: training_images, label_num: training_labels})
 
 for i in range(0, epochs):
+    train_correct = 0.0
+    train_total = 0.0
     for j in range(0, len(training_images), batch_size):
         print (j)
-        if ((j % 1024) == 0):
-            corr = sess.run([total_correct])
-            print (corr)
-            # sess.run([optimizer])
-        else: 
-            sess.run([optimizer])
-    
+        
+        pred, _total_correct, _ = sess.run([predict, total_correct, train])
+        train_correct += _total_correct
+        train_total += batch_size
+
+        print ("train accuracy: " + str(train_correct / train_total))
+        sys.stdout.flush()
     print('epoch {}/{}'.format(i, epochs))
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
