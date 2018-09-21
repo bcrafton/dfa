@@ -8,7 +8,8 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class FullyConnected(Layer):
-    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, last_layer : bool):
+    num = 0
+    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -27,10 +28,12 @@ class FullyConnected(Layer):
         elif init_weights == "epsilon":
             self.weights = tf.Variable(tf.ones(shape=self.size) * 1e-9)
         else:
-            assert(False)
-            
-        # self.bias = np.zeros(self.output_size)
-        self.bias = tf.Variable(tf.zeros(shape=[self.output_size]))        
+            # self.weights = tf.Variable(tf.random_normal(shape=self.size, mean=0.0, stddev=0.01))
+            self.weights = tf.get_variable(name="fc" + str(FullyConnected.num), shape=self.size)
+            FullyConnected.num = FullyConnected.num + 1
+
+        # bias
+        self.bias = tf.Variable(tf.ones(shape=[self.output_size]) * bias)        
 
         # lr
         self.alpha = alpha
@@ -68,6 +71,15 @@ class FullyConnected(Layer):
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
+
+        '''
+        if self.last_layer:
+            DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message="FC Last: ")
+        else:
+            DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message="FC: ")
+        '''
+        # DW = tf.Print(DW, [tf.shape(DW), tf.shape(self.weights)], message="")
+
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DW, self.weights), (DB, self.bias)]
@@ -87,6 +99,15 @@ class FullyConnected(Layer):
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
+
+        '''
+        if self.last_layer:
+            DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message="FC Last: ")
+        else:
+            DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message="FC: ")
+        '''
+        # DW = tf.Print(DW, [tf.shape(DW), tf.shape(self.weights)], message="")
+
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DW, self.weights), (DB, self.bias)]

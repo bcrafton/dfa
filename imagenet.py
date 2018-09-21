@@ -46,12 +46,12 @@ from ModelImagenet import Model
 
 from Layer import Layer 
 from ConvToFullyConnected import ConvToFullyConnected
-from FullyConnectedImagenet import FullyConnected
-from ConvolutionImagenet import Convolution
+from FullyConnected import FullyConnected
+from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
-from FeedbackFCImagenet import FeedbackFC
-from FeedbackConvImagenet import FeedbackConv
+from FeedbackFC import FeedbackFC
+from FeedbackConv import FeedbackConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -211,6 +211,7 @@ for i in range(0, epochs):
 
         print ("train accuracy: " + str(train_correct / train_total))
         sys.stdout.flush()
+        
     print('epoch {}/{}'.format(i, epochs))
     
     

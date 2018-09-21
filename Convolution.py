@@ -8,7 +8,8 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class Convolution(Layer):
-    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, last_layer):
+    num = 0
+    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
         self.num_classes = num_classes
@@ -25,9 +26,12 @@ class Convolution(Layer):
         elif init_filters == "epsilon":
             self.filters = tf.Variable(tf.ones(shape=self.filter_sizes) * 1e-9)
         else:
-            assert(False)
+            # self.filters = tf.Variable(tf.random_normal(shape=self.filter_sizes, mean=0.0, stddev=0.01))
+            self.filters = tf.get_variable(name="conv" + str(Convolution.num), shape=self.filter_sizes)
+            Convolution.num = Convolution.num + 1
 
-        self.bias = tf.Variable(tf.zeros(shape=self.fout))
+        # bias
+        self.bias = tf.Variable(tf.ones(shape=self.fout) * bias)
 
         self.strides = strides
         self.padding = padding
@@ -64,6 +68,10 @@ class Convolution(Layer):
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])
+
+        # DF = tf.Print(DF, [tf.reduce_mean(DF), tf.keras.backend.std(DF), tf.reduce_mean(self.filters), tf.keras.backend.std(self.filters)], message="Conv: ")
+        # DF = tf.Print(DF, [tf.shape(DF), tf.shape(self.filters)], message="", summarize=25)
+
         self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DF, self.filters), (DB, self.bias)]
@@ -83,6 +91,10 @@ class Convolution(Layer):
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])
+
+        # DF = tf.Print(DF, [tf.reduce_mean(DF), tf.keras.backend.std(DF), tf.reduce_mean(self.filters), tf.keras.backend.std(self.filters)], message="Conv: ")
+        # DF = tf.Print(DF, [tf.shape(DF), tf.shape(self.filters)], message="", summarize=25)
+
         self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DF, self.filters), (DB, self.bias)]

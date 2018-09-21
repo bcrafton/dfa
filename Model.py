@@ -1,6 +1,7 @@
 
 import tensorflow as tf
 import numpy as np
+np.set_printoptions(threshold=1000)
 
 class Model:
     def __init__(self, layers : tuple):
@@ -27,9 +28,17 @@ class Model:
                 A[ii] = l.forward(X, dropout=True)
             else:
                 A[ii] = l.forward(A[ii-1], dropout=True)
-            
-        E = A[self.num_layers-1] - Y
-            
+
+        #L = tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=A[self.num_layers-1])
+        #L = tf.Print(L, [L], message="")
+        #L = tf.reshape(L, (128, 1)) * tf.ones(shape=(1, 1000))
+
+        E = tf.nn.softmax(A[self.num_layers-1]) - Y
+        E = E / 128.
+        # E = L * E
+
+        # E = tf.Print(E, [tf.reduce_max(E), tf.reduce_min(E), E], message="E: ", summarize=1000)
+
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
             
@@ -60,8 +69,16 @@ class Model:
             else:
                 A[ii] = l.forward(A[ii-1], dropout=True)
             
-        E = A[self.num_layers-1] - Y
-            
+        #L = tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=A[self.num_layers-1])
+        #L = tf.Print(L, [L], message="")
+        #L = tf.reshape(L, (128, 1)) * tf.ones(shape=(1, 1000))
+
+        E = tf.nn.softmax(A[self.num_layers-1]) - Y
+        E = E / 128.
+        # E = L * E
+
+        # E = tf.Print(E, [tf.reduce_max(E), tf.reduce_min(E), E], message="E: ", summarize=1000)
+
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
                 
