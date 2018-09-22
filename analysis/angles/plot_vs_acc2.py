@@ -137,7 +137,7 @@ plt.plot(sparse_dfa1_acc, sparse_dfa1, '.')
 '''
 
 plt.plot(dfa, dfa_acc, '.', label="Full Rank")
-#plt.plot(dfa1, dfa1_acc, '.', label="Rank-1")
+plt.plot(dfa1, dfa1_acc, '.', label="Rank-1")
 plt.plot(sparse_dfa, sparse_dfa_acc, '.', label="Sparse Full Rank")
 #plt.plot(sparse_dfa1, sparse_dfa1_acc, '.', label="Sparse Rank-1")
 
