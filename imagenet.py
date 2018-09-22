@@ -42,7 +42,7 @@ np.set_printoptions(threshold=1000)
 import time
 from PIL import Image
 
-from ModelImagenet import Model
+from Model import Model
 
 from Layer import Layer 
 from ConvToFullyConnected import ConvToFullyConnected
@@ -63,9 +63,9 @@ from Activation import Linear
 
 ##############################################
 
-batch_size = 128
+batch_size = args.batch_size
 num_classes = 1000
-epochs = 50
+epochs = args.epochs
 data_augmentation = False
 
 label_counter = 0
