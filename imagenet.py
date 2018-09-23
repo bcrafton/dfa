@@ -15,6 +15,7 @@ parser.add_argument('--sparse', type=int, default=1)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="NA")
 parser.add_argument('--opt', type=str, default="NA")
+parser.add_argument('--save', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -214,12 +215,14 @@ for i in range(0, epochs):
         print ("train accuracy: " + str(train_correct / train_total))
         sys.stdout.flush()
         
-    [w] = sess.run([weights], feed_dict={})
-    n = model.get_names()
-    print (len(w), len(n))
-    assert(len(w) == len(n))
-    for ii in range(len(w)):
-        np.save(n[ii], w[ii])
+
+    if args.save:
+        [w] = sess.run([weights], feed_dict={})
+        n = model.get_names()
+        print (len(w), len(n))
+        assert(len(w) == len(n))
+        for ii in range(len(w)):
+            np.save(n[ii], w[ii])
         
     print('epoch {}/{}'.format(i, epochs))
     
