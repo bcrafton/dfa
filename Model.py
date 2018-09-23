@@ -177,6 +177,24 @@ class Model:
                 
         return A[self.num_layers-1]
         
+    ####################################################################
+    
+    def get_names(self):
+        names = []
+        for ii in range(self.num_layers):
+            l = self.layers[ii]
+            name = l.get_names()
+            names.extend(name)
+        return names
+    
+    def get_weights(self):
+        weights = []
+        for ii in range(self.num_layers):
+            l = self.layers[ii]
+            weight = l.get_weights()
+            weights.extend(weight)
+        return weights
+        
     def up_to(self, X, N):
         A = [None] * N
         

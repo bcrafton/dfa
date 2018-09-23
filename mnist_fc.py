@@ -15,10 +15,8 @@ parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
-parser.add_argument('--name', type=str, default=None)
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--num', type=int, default=0)
-parser.add_argument('--load', type=str, default=None)
 parser.add_argument('--shuffle', type=int, default=0)
 args = parser.parse_args()
 
@@ -102,10 +100,10 @@ XTEST = tf.placeholder(tf.float32, [None, 784])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 #XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
-l0 = FullyConnected(size=[784, 100], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
-l1 = FeedbackFC(size=[784, 100], num_classes=10, sparse=sparse, rank=args.rank, load=args.load)
+l0 = FullyConnected(size=[784, 100], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False, name="fc1")
+l1 = FeedbackFC(size=[784, 100], num_classes=10, sparse=sparse, rank=args.rank, name="fbfc1")
 
-l2 = FullyConnected(size=[100, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+l2 = FullyConnected(size=[100, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True, name="fc2")
 
 model = Model(layers=[l0, l1, l2])
 
@@ -113,9 +111,7 @@ model = Model(layers=[l0, l1, l2])
 
 predict = model.predict(X=XTEST)
 
-W1 = l0.get_weights()
-B = l1.get_feedback()
-W2 = l2.get_weights()
+weights = model.get_weights()
 
 if args.dfa:
     train = model.dfa(X=XTRAIN, Y=YTRAIN)
@@ -177,24 +173,14 @@ for ii in range(EPOCHS):
 
 ##############################################
 
-if args.name is not None:
-    np.save(args.name, np.array(accs))
-    
 if args.save:
-    w1, b, w2 = sess.run([W1, B, W2])
+    [w] = sess.run([weights], feed_dict={})
+    n = model.get_names()
     
-    w1_name = "W1_" + str(args.num) + "_" + str(args.gpu)
-    np.save(w1_name, w1)
-    
-    w2_name = "W2_" + str(args.num) + "_" + str(args.gpu)
-    np.save(w2_name, w2)
-    
-    acc_name = "acc_" + str(args.num) + "_" + str(args.gpu)
-    np.save(acc_name, np.array(accs))   
-    
-    B_name = "B_" + str(args.num) + "_" + str(args.gpu)
-    np.save(B_name, b)
-
+    print (len(w), len(n))
+    assert(len(w) == len(n))
+    for ii in range(len(w)):
+        np.save(n[ii], w[ii])
 
 
 

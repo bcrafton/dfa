@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class FullyConnected(Layer):
     num = 0
-    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool):
+    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -41,8 +41,14 @@ class FullyConnected(Layer):
         # activation function
         self.activation = activation
         
+        self.name = name
+        
+    def get_names(self):
+        return [self.name, self.name + "_bias"]
+        
     def get_weights(self):
-        return tf.concat((self.weights, tf.reshape(self.bias, (1, -1))), axis=0)
+        # return tf.concat((self.weights, tf.reshape(self.bias, (1, -1))), axis=0)
+        return [self.weights, self.bias]
 
     def num_params(self):
         weights_size = self.input_size * self.output_size

@@ -9,12 +9,13 @@ from Activation import Sigmoid
 
 class FeedbackConv(Layer):
     num = 0
-    def __init__(self, size : tuple, num_classes : int, sparse : bool, rank : int):
+    def __init__(self, size : tuple, num_classes : int, sparse : bool, rank : int, name=None):
         self.size = size
         self.num_classes = num_classes
         self.sparse = sparse
         self.rank = rank
         self.batch_size, self.h, self.w, self.f = self.size
+        self.name = name
 
         if self.rank and self.sparse:
             assert(self.rank >= self.sparse)
@@ -63,6 +64,12 @@ class FeedbackConv(Layer):
         # self.B = tf.Variable(tf.random_normal(mean=0.0, stddev=0.01, shape=(self.num_classes, self.f * self.h * self.w)))
         FeedbackConv.num = FeedbackConv.num + 1
 
+    def get_names(self):
+        return [self.name]
+    
+    def get_weights(self):
+        return [self.B]
+    
     def get_feedback(self):
         return self.B
 

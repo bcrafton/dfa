@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class Convolution(Layer):
     num = 0
-    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer):
+    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
         self.num_classes = num_classes
@@ -41,11 +41,19 @@ class Convolution(Layer):
         self.activation = activation
         self.last_layer = last_layer
         
+        self.name = name
+
+    def get_names(self):
+        return [self.name, self.name + "_bias"]
+
+    def get_weights(self):
+        return [self.filters, self.bias]
+
     def num_params(self):
         filter_weights_size = self.fh * self.fw * self.fin * self.fout
         bias_weights_size = self.fout
         return filter_weights_size + bias_weights_size
-        
+                
     def forward(self, X, dropout=False):
         Z = tf.add(tf.nn.conv2d(X, self.filters, self.strides, self.padding), tf.reshape(self.bias, [1, 1, self.fout]))
         A = self.activation.forward(Z)
