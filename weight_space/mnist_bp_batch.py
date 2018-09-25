@@ -12,6 +12,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=25)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--shuffle', type=int, default=1)
+parser.add_argument('--num', type=int, default=0)
 args = parser.parse_args()
 
 #######################################
@@ -60,7 +62,17 @@ def softmax(x):
 #######################################
     
 load_data()
-np.random.seed(0)
+
+if args.shuffle:
+    print ("Shuffling!")
+    perm = np.random.permutation(TRAIN_EXAMPLES)
+
+    tmp1 = np.copy(x_train[0])
+    training_set[perm] = x_train
+    training_labels[perm] = y_train
+    tmp2 = x_train[perm[0]]
+    
+    assert(np.all(tmp1 == tmp2))
 
 #######################################
 
@@ -140,8 +152,8 @@ for epoch in range(args.epochs):
         
     print "accuracy: " + str(1.0 * correct / TEST_EXAMPLES)
     
-    
-    
+np.save("W2_" + str(args.num), weights2)
+np.save("W1_" + str(args.num), weights1)
     
     
     
