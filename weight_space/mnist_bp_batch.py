@@ -14,6 +14,7 @@ parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--shuffle', type=int, default=1)
 parser.add_argument('--num', type=int, default=0)
+parser.add_argument('--load', type=int, default=0)
 args = parser.parse_args()
 
 #######################################
@@ -65,17 +66,24 @@ LAYER1 = 784
 LAYER2 = 100
 LAYER3 = 10
 
-sqrt_fan_in = np.sqrt(LAYER1)
-high = 1.0 / sqrt_fan_in
-low = -high
-weights1 = np.random.uniform(low=low, high=high, size=(LAYER1, LAYER2))
-bias1 = np.zeros(shape=(LAYER2))
+if args.load:
+    weights1 = np.load("W1_init.npy")
+    bias1 = np.zeros(shape=(LAYER2))
+    
+    weights2 = np.load("W2_init.npy")
+    bias2 = np.zeros(shape=(LAYER3))
+else:
+    sqrt_fan_in = np.sqrt(LAYER1)
+    high = 1.0 / sqrt_fan_in
+    low = -high
+    weights1 = np.random.uniform(low=low, high=high, size=(LAYER1, LAYER2))
+    bias1 = np.zeros(shape=(LAYER2))
 
-sqrt_fan_in = np.sqrt(LAYER2)
-high = 1.0 / sqrt_fan_in
-low = -high
-weights2 = np.random.uniform(low=low, high=high, size=(LAYER2, LAYER3))
-bias2 = np.zeros(shape=(LAYER3))
+    sqrt_fan_in = np.sqrt(LAYER2)
+    high = 1.0 / sqrt_fan_in
+    low = -high
+    weights2 = np.random.uniform(low=low, high=high, size=(LAYER2, LAYER3))
+    bias2 = np.zeros(shape=(LAYER3))
 
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
@@ -91,7 +99,7 @@ if args.shuffle:
 
     tmp1 = np.copy(training_set[0])
     training_set[perm] = training_set
-    training_labels[perm] = y_train
+    training_labels[perm] = training_labels
     tmp2 = training_set[perm[0]]
     
     assert(np.all(tmp1 == tmp2))
