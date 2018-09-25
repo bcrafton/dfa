@@ -112,7 +112,7 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13
 if args.imgs:
     convolved_image0 = model.layers[0].forward(X=XTEST)
     convolved_image1 = model.up_to(X=XTEST, N=4)
-    convolved_image1 = model.up_to(X=XTEST, N=7)
+    convolved_image2 = model.up_to(X=XTEST, N=7)
 
 predict = model.predict(X=XTEST)
 
