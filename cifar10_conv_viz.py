@@ -220,15 +220,15 @@ if args.imgs:
 
     ###################################################################
 
-    convolved_image1 = np.reshape(convolved_image1, (32, 32, 96))
+    convolved_image1 = np.reshape(convolved_image1, (15, 15, 128))
     convolved_image1 = np.transpose(convolved_image1)
     
     for ii in range(8):
-        for jj in range(12):
+        for jj in range(16):
             if jj == 0:
-                row = convolved_image1[ii * 12 + jj]
+                row = convolved_image1[ii * 16 + jj]
             else:
-                row = np.concatenate((row, convolved_image1[ii * 12 + jj]), axis=1)
+                row = np.concatenate((row, convolved_image1[ii * 16 + jj]), axis=1)
                 
         if ii == 0:
             img = row
@@ -242,12 +242,12 @@ if args.imgs:
     convolved_image2 = np.reshape(convolved_image2, (32, 32, 96))
     convolved_image2 = np.transpose(convolved_image2)
     
-    for ii in range(8):
-        for jj in range(12):
+    for ii in range(16):
+        for jj in range(16):
             if jj == 0:
-                row = convolved_image2[ii * 12 + jj]
+                row = convolved_image2[ii * 16 + jj]
             else:
-                row = np.concatenate((row, convolved_image2[ii * 12 + jj]), axis=1)
+                row = np.concatenate((row, convolved_image2[ii * 16 + jj]), axis=1)
                 
         if ii == 0:
             img = row
