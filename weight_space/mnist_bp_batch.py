@@ -60,21 +60,6 @@ def softmax(x):
     return exp / np.sum(exp, axis=1, keepdims=True)
 
 #######################################
-    
-load_data()
-
-if args.shuffle:
-    print ("Shuffling!")
-    perm = np.random.permutation(TRAIN_EXAMPLES)
-
-    tmp1 = np.copy(x_train[0])
-    training_set[perm] = x_train
-    training_labels[perm] = y_train
-    tmp2 = x_train[perm[0]]
-    
-    assert(np.all(tmp1 == tmp2))
-
-#######################################
 
 LAYER1 = 784
 LAYER2 = 100
@@ -95,6 +80,21 @@ bias2 = np.zeros(shape=(LAYER3))
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 NUM_CLASSES = 10
+
+#######################################
+
+load_data()
+
+if args.shuffle:
+    print ("Shuffling!")
+    perm = np.random.permutation(TRAIN_EXAMPLES)
+
+    tmp1 = np.copy(x_train[0])
+    training_set[perm] = x_train
+    training_labels[perm] = y_train
+    tmp2 = x_train[perm[0]]
+    
+    assert(np.all(tmp1 == tmp2))
 
 #######################################
 
