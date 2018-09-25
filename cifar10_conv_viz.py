@@ -239,7 +239,7 @@ if args.imgs:
 
     ###################################################################
 
-    convolved_image2 = np.reshape(convolved_image2, (32, 32, 96))
+    convolved_image2 = np.reshape(convolved_image2, (7, 7, 256))
     convolved_image2 = np.transpose(convolved_image2)
     
     for ii in range(16):
