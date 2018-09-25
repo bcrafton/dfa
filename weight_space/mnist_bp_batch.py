@@ -89,10 +89,10 @@ if args.shuffle:
     print ("Shuffling!")
     perm = np.random.permutation(TRAIN_EXAMPLES)
 
-    tmp1 = np.copy(x_train[0])
-    training_set[perm] = x_train
+    tmp1 = np.copy(training_set[0])
+    training_set[perm] = training_set
     training_labels[perm] = y_train
-    tmp2 = x_train[perm[0]]
+    tmp2 = training_set[perm[0]]
     
     assert(np.all(tmp1 == tmp2))
 
