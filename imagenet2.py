@@ -10,8 +10,8 @@ parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=1)
-parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="NA")
 parser.add_argument('--opt', type=str, default="NA")
@@ -116,6 +116,7 @@ for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/train/'):
         label_counter = label_counter + 1
         print (str(label_counter) + "/" + str(num_classes))
 
+assert(len(training_images) == len(training_labels))
 remainder = len(training_labels) % batch_size
 training_images = training_images[:(-remainder)]
 training_labels = training_labels[:(-remainder)]
@@ -132,14 +133,14 @@ train_dataset = train_dataset.prefetch(8)
 
 print("Train data is ready...")
 
-train_iterator = train_dataset.make_initializable_iterator()
-train_features, train_labels = train_iterator.get_next()
+iterator = dataset.make_initializable_iterator()
+features, labels = train_iterator.get_next()
 
-train_features = tf.reshape(train_features, (-1, 227, 227, 3))
-train_labels = tf.one_hot(train_labels, depth=num_classes)
+features = tf.reshape(train_features, (-1, 227, 227, 3))
+labels = tf.one_hot(train_labels, depth=num_classes)
 
 ##############################################
-
+'''
 label_counter = 0
 validation_images = []
 validation_labels = []
@@ -147,17 +148,15 @@ validation_labels = []
 print ("building validation dataset")
 
 for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/val/'):
-    for folder in dirs:
-        for folder_subdir, folder_dirs, folder_files in os.walk(os.path.join(subdir, folder)):
-            for file in folder_files:
-                validation_images.append(os.path.join(folder_subdir, file))
-        print (str(label_counter) + "/" + str(num_classes))
+    for file in files:
+        validation_images.append(os.path.join('/home/bcrafton3/ILSVRC2012/val/', file))
 
 validation_labels_file = open('/home/bcrafton3/ILSVRC2012/ILSVRC2012_validation_ground_truth.txt')
 lines = validation_labels_file.readlines()
 for ii in range(len(lines)):
     validation_labels.append(int(lines[ii]))
 
+print (len(validation_images), len(validation_labels))
 assert(len(validation_images) == len(validation_labels))
 remainder = len(validation_labels) % batch_size
 validation_images = validation_images[:(-remainder)]
@@ -180,7 +179,7 @@ validation_features, validation_labels = validation_iterator.get_next()
 
 validation_features = tf.reshape(validation_features, (-1, 227, 227, 3))
 validation_labels = tf.one_hot(validation_labels, depth=num_classes)
-
+'''
 ###############################################################
 
 l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
@@ -220,12 +219,12 @@ else:
     train = model.train(X=train_features, Y=train_labels)
     
 ###############################################################
-
+'''
 predict = tf.nn.softmax(model.predict(X=validation_features))
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(validation_labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
-
+'''
 ###############################################################
 
 print (model.num_params())
@@ -237,13 +236,15 @@ config.gpu_options.allow_growth=True
 sess = tf.InteractiveSession(config=config)
 tf.global_variables_initializer().run()
 
+# sess.run(train_iterator.initializer, feed_dict={filename: training_images, label_num: training_labels})
+
 for i in range(0, epochs):
-    sess.run(iterator.initializer, feed_dict={filename: training_images, label_num: training_labels})
+    sess.run(train_iterator.initializer, feed_dict={filename: training_images, label_num: training_labels})
     for j in range(0, len(training_images), batch_size):
         print (j)
-        _ = sess.run([predict, total_correct, train])
-        
-    sess.run(iterator.initializer, feed_dict={filename: validation_images, label_num: validation_labels})    
+        _ = sess.run([train])
+    '''    
+    sess.run(validation_iterator.initializer, feed_dict={filename: validation_images, label_num: validation_labels})    
     train_correct = 0.0
     train_total = 0.0
     for j in range(0, len(validation_images), batch_size):
@@ -255,7 +256,7 @@ for i in range(0, epochs):
 
         print ("validation accuracy: " + str(validation_correct / validation_total))
         sys.stdout.flush()
-        
+    ''' 
     print('epoch {}/{}'.format(i, epochs))
     
     
