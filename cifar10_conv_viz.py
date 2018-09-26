@@ -216,7 +216,7 @@ if args.imgs:
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave("img.png", img, cmap="gray")
+    plt.imsave(filename + "0img.png", img, cmap="gray")
 
     ###################################################################
 
@@ -235,7 +235,7 @@ if args.imgs:
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave("img.png", img, cmap="gray")
+    plt.imsave(filename + "img1.png", img, cmap="gray")
 
     ###################################################################
 
@@ -254,7 +254,7 @@ if args.imgs:
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave("img.png", img, cmap="gray")
+    plt.imsave(filename + "img2.png", img, cmap="gray")
 
     ###################################################################
 
