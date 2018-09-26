@@ -110,7 +110,9 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13
 ##############################################
 
 if args.imgs:
-    convolved_image = model.layers[0].forward(X=XTEST)
+    convolved_image0 = model.layers[0].forward(X=XTEST)
+    convolved_image1 = model.up_to(X=XTEST, N=4)
+    convolved_image2 = model.up_to(X=XTEST, N=7)
 
 predict = model.predict(X=XTEST)
 
@@ -193,32 +195,68 @@ if args.imgs:
     
     # xs = np.ones(shape=np.shape(xs)) * 0.1
     
-    convolved_image = sess.run([convolved_image], feed_dict={batch_size: 1, XTEST: xs, YTEST: ys})
+    convolved_image0 = sess.run([convolved_image0], feed_dict={batch_size: 1, XTEST: xs, YTEST: ys})
+    convolved_image1 = sess.run([convolved_image1], feed_dict={batch_size: 1, XTEST: xs, YTEST: ys})
+    convolved_image2 = sess.run([convolved_image2], feed_dict={batch_size: 1, XTEST: xs, YTEST: ys})
     
     ###################################################################
     
-    convolved_image = np.reshape(convolved_image, (32, 32, 96))
-    convolved_image = np.transpose(convolved_image)
+    convolved_image0 = np.reshape(convolved_image0, (32, 32, 96))
+    convolved_image0 = np.transpose(convolved_image0)
     
     for ii in range(8):
         for jj in range(12):
             if jj == 0:
-                row = convolved_image[ii * 12 + jj]
+                row = convolved_image0[ii * 12 + jj]
             else:
-                row = np.concatenate((row, convolved_image[ii * 12 + jj]), axis=1)
+                row = np.concatenate((row, convolved_image0[ii * 12 + jj]), axis=1)
                 
         if ii == 0:
             img = row
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave("img.png", img, cmap="gray")
+    plt.imsave(filename + "0img.png", img, cmap="gray")
 
     ###################################################################
 
+    convolved_image1 = np.reshape(convolved_image1, (15, 15, 128))
+    convolved_image1 = np.transpose(convolved_image1)
+    
+    for ii in range(8):
+        for jj in range(16):
+            if jj == 0:
+                row = convolved_image1[ii * 16 + jj]
+            else:
+                row = np.concatenate((row, convolved_image1[ii * 16 + jj]), axis=1)
+                
+        if ii == 0:
+            img = row
+        else:
+            img = np.concatenate((img, row), axis=0)
+      
+    plt.imsave(filename + "img1.png", img, cmap="gray")
 
+    ###################################################################
 
+    convolved_image2 = np.reshape(convolved_image2, (7, 7, 256))
+    convolved_image2 = np.transpose(convolved_image2)
+    
+    for ii in range(16):
+        for jj in range(16):
+            if jj == 0:
+                row = convolved_image2[ii * 16 + jj]
+            else:
+                row = np.concatenate((row, convolved_image2[ii * 16 + jj]), axis=1)
+                
+        if ii == 0:
+            img = row
+        else:
+            img = np.concatenate((img, row), axis=0)
+      
+    plt.imsave(filename + "img2.png", img, cmap="gray")
 
+    ###################################################################
 
 
 

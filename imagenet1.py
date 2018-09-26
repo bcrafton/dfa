@@ -20,7 +20,7 @@ args = parser.parse_args()
 if args.gpu >= 0:
     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
     # os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
-    os.environ["CUDA_VISIBLE_DEVICES"]="2, 3"
+    os.environ["CUDA_VISIBLE_DEVICES"]="2"
 
 ##############################################
 
@@ -125,6 +125,7 @@ for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/train/'):
         label_counter = label_counter + 1
         print (str(label_counter) + "/" + str(num_classes))
 
+assert(len(training_images) == len(training_labels))
 remainder = len(training_labels) % batch_size
 training_images = training_images[:(-remainder)]
 training_labels = training_labels[:(-remainder)]
@@ -200,23 +201,25 @@ tf.global_variables_initializer().run()
 
 sess.run(iterator.initializer, feed_dict={filename: training_images, label_num: training_labels})
 
-for i in range(0, epochs):
+start = time.time()
+
+for i in range(0, 1):
     train_correct = 0.0
     train_total = 0.0
-    for j in range(0, len(training_images), batch_size):
+    for j in range(0, batch_size * 25, batch_size):
         print (j)
-        for i in xrange(2):
-            with tf.device('/gpu:%d' % i):
+        for k in range(2, 3, 1):
+            with tf.device('/gpu:%d' % k):
+                print (k)
                 _total_correct, _gvs = sess.run([total_correct, gvs])
                 train_correct += _total_correct
                 train_total += batch_size
 
         print ("train accuracy: " + str(train_correct / train_total))
         sys.stdout.flush()
-        
     print('epoch {}/{}'.format(i, epochs))
     
-    
+print (time.time() - start)
     
     
     

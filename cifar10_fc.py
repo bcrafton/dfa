@@ -81,16 +81,16 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 #XTEST = tf.reshape(XTEST, [batch_size, 3072])
 XTEST = tf.placeholder(tf.float32, [None, 3072])
 
-l0 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l0 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l1 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=sparse, rank=rank)
 
-l2 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l2 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l3 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 
-l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l5 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 
-l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
+l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6])
 
@@ -99,17 +99,10 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6])
 predict = model.predict(X=XTEST)
 
 if args.dfa:
-    grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
+    train = model.dfa(X=XTRAIN, Y=YTRAIN)
 else:
-    grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
+    train = model.train(X=XTRAIN, Y=YTRAIN)
     
-if args.opt == "adam":
-    optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
-elif args.opt == "rms":
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=1.0, momentum=0.0).apply_gradients(grads_and_vars=grads_and_vars)
-else:
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
-
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -153,7 +146,7 @@ for ii in range(EPOCHS):
     for jj in range(0, int(TRAIN_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
         start = jj % TRAIN_EXAMPLES
         end = jj % TRAIN_EXAMPLES + BATCH_SIZE
-        sess.run([grads_and_vars, optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
+        sess.run([train], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
     
     count = 0
     total_correct = 0
