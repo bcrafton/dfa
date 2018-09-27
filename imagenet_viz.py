@@ -10,8 +10,8 @@ parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=1)
-parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="NA")
 parser.add_argument('--opt', type=str, default="NA")
@@ -190,11 +190,11 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13
 ###############################################################
 
 if args.imgs:
-    convolved_image0 = model.layers[0].forward(X=XTEST)
-    convolved_image1 = model.up_to(X=XTEST, N=4)
-    convolved_image2 = model.up_to(X=XTEST, N=7)
-    convolved_image3 = model.up_to(X=XTEST, N=9)
-    convolved_image4 = model.up_to(X=XTEST, N=11)
+    convolved_image0 = model.layers[0].forward(X=features)
+    convolved_image1 = model.up_to(X=features, N=4)
+    convolved_image2 = model.up_to(X=features, N=7)
+    convolved_image3 = model.up_to(X=features, N=9)
+    convolved_image4 = model.up_to(X=features, N=11)
 
 predict = tf.nn.softmax(model.predict(X=features))
 
@@ -245,14 +245,8 @@ for i in range(0, epochs):
     print('epoch {}/{}'.format(i, epochs))
     
 if args.imgs:
-    img_num = 7
-    xs = x_test[img_num]
-    xs = np.reshape(xs, (1, 32, 32, 3))
-    ys = y_test[img_num]
-    ys = np.reshape(ys, (1, 10))
-    
-    # xs = np.ones(shape=np.shape(xs)) * 0.1
-    
+    pre = "dfa_" + str(args.dfa) + "_sparse_" + str(args.sparse) + "_" 
+
     img0, img1, img2, img3, img4 = sess.run([convolved_image0, convolved_image1, convolved_image2, convolved_image3, convolved_image4])
     
     ###################################################################
@@ -273,7 +267,7 @@ if args.imgs:
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave(filename + "img0.png", img, cmap="gray")
+    plt.imsave(pre + "img0.png", img, cmap="gray")
 
     ###################################################################
 
@@ -293,27 +287,27 @@ if args.imgs:
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave(filename + "img1.png", img, cmap="gray")
+    plt.imsave(pre + "img1.png", img, cmap="gray")
 
     ###################################################################
 
     img2 = img2[0]
-    img2 = np.reshape(img2, (13, 13, 256))
+    img2 = np.reshape(img2, (13, 13, 384))
     img2 = np.transpose(img2)
     
     for ii in range(16):
-        for jj in range(16):
+        for jj in range(24):
             if jj == 0:
-                row = img2[ii * 16 + jj]
+                row = img2[ii * 24 + jj]
             else:
-                row = np.concatenate((row, img2[ii * 16 + jj]), axis=1)
+                row = np.concatenate((row, img2[ii * 24 + jj]), axis=1)
                 
         if ii == 0:
             img = row
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave(filename + "img2.png", img, cmap="gray")
+    plt.imsave(pre + "img2.png", img, cmap="gray")
 
     ###################################################################
     
@@ -333,13 +327,13 @@ if args.imgs:
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave(filename + "img3.png", img, cmap="gray")
+    plt.imsave(pre + "img3.png", img, cmap="gray")
 
     ###################################################################
     
     img4 = img4[0]
     img4 = np.reshape(img4, (13, 13, 256))
-    img4 = np.transpose(imimg4g2)
+    img4 = np.transpose(img4)
     
     for ii in range(16):
         for jj in range(16):
@@ -353,6 +347,6 @@ if args.imgs:
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave(filename + "img4.png", img, cmap="gray")
+    plt.imsave(pre + "img4.png", img, cmap="gray")
 
     ###################################################################

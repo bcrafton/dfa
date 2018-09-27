@@ -77,14 +77,16 @@ class FeedbackConv(Layer):
         b = np.zeros(shape=(num_classes, self.f, self.h, self.w))
         for ii in range(num_classes):
             for jj in range(self.f):
-                scale_x = np.random.uniform(low=0.1, high=1.0)
-                scale_y = np.random.uniform(low=0.1, high=1.0)
-                x = np.random.randint(low=0, high=self.h)
-                y = np.random.randint(low=0, high=self.w)
-                for kk in range(self.h):
-                    for ll in range(self.w):
-                        dist = distance(scale_x, (kk, ll), scale_y, (x, y))
-                        b[ii][jj][kk][ll] = 1.0 / np.power(dist + 1., 0.25)
+                num_blobs = np.random.randint(low=1, high=4)
+                for blob in range(num_blobs):
+                    scale_x = np.random.uniform(low=0.1, high=1.0)
+                    scale_y = np.random.uniform(low=0.1, high=1.0)
+                    x = np.random.randint(low=0, high=self.h)
+                    y = np.random.randint(low=0, high=self.w)
+                    for kk in range(self.h):
+                        for ll in range(self.w):
+                            dist = distance(scale_x, (kk, ll), scale_y, (x, y))
+                            b[ii][jj][kk][ll] = 1.0 / np.power(dist + 1., 0.25)
                         
                 b[ii][jj] = b[ii][jj] - np.average(b[ii][jj])
                 scale = hi / (np.average(np.absolute(b[ii][jj])))

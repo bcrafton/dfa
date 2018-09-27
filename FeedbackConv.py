@@ -53,6 +53,8 @@ class FeedbackConv(Layer):
             
             self.B = tf.cast(tf.Variable(b), tf.float32)
         else:
+            assert(False)
+            # verify this is correct
             hi = np.sqrt(6.0 / (self.num_classes + self.f * self.h + self.w))
             lo = -hi
         
