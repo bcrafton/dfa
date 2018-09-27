@@ -38,7 +38,7 @@ from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
 from FeedbackFC import FeedbackFC
-from FeedbackConv import FeedbackConv
+from FeedbackConv1 import FeedbackConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -76,27 +76,27 @@ XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
-l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 l2 = FeedbackConv(size=[batch_size, 15, 15, 96], num_classes=10, sparse=sparse, rank=rank)
 
-l3 = Convolution(input_sizes=[batch_size, 15, 15, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l3 = Convolution(input_sizes=[batch_size, 15, 15, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l4 = MaxPool(size=[batch_size, 15, 15, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 l5 = FeedbackConv(size=[batch_size, 7, 7, 128], num_classes=10, sparse=sparse, rank=rank)
 
-l6 = Convolution(input_sizes=[batch_size, 7, 7, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l6 = Convolution(input_sizes=[batch_size, 7, 7, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l7 = MaxPool(size=[batch_size, 7, 7, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 l8 = FeedbackConv(size=[batch_size, 3, 3, 256], num_classes=10, sparse=sparse, rank=rank)
 
 l9 = ConvToFullyConnected(shape=[3, 3, 256])
-l10 = FullyConnected(size=[3*3*256, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l10 = FullyConnected(size=[3*3*256, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l11 = FeedbackFC(size=[3*3*256, 2048], num_classes=10, sparse=sparse, rank=rank)
 
-l12 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l12 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l13 = FeedbackFC(size=[2048, 2048], num_classes=10, sparse=sparse, rank=rank)
 
 # need to adjust lr a lot if using sigmoid
-l14 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
+l14 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14])
 
@@ -152,6 +152,7 @@ for ii in range(EPOCHS):
     for jj in range(0, int(TRAIN_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
         start = jj % TRAIN_EXAMPLES
         end = jj % TRAIN_EXAMPLES + BATCH_SIZE
+        # print (start)
         sess.run([train], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
     
     count = 0
