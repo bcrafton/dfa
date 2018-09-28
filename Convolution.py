@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class Convolution(Layer):
     num = 0
-    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None):
+    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None, load=None, train=True):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
         self.num_classes = num_classes
@@ -18,17 +18,21 @@ class Convolution(Layer):
         self.batch_size, self.h, self.w, self.fin = self.input_sizes
         self.fh, self.fw, self.fin, self.fout = self.filter_sizes
         
-        if init_filters == "zero":
-            self.filters = tf.Variable(tf.zeros(shape=self.filter_sizes))
-        elif init_filters == "sqrt_fan_in":
-            sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
-            self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-        elif init_filters == "epsilon":
-            self.filters = tf.Variable(tf.ones(shape=self.filter_sizes) * 1e-9)
+        if load:
+            weight_dict = np.load(load).item()
+            self.filters = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
+            self.bias = tf.cast(tf.Variable(weight_dict[self.name + '_bias']), tf.float32)
         else:
-            # self.filters = tf.Variable(tf.random_normal(shape=self.filter_sizes, mean=0.0, stddev=0.01))
-            self.filters = tf.get_variable(name="conv" + str(Convolution.num), shape=self.filter_sizes)
-            Convolution.num = Convolution.num + 1
+            if init_filters == "zero":
+                self.filters = tf.Variable(tf.zeros(shape=self.filter_sizes))
+            elif init_filters == "sqrt_fan_in":
+                sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
+                self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+            elif init_filters == "epsilon":
+                self.filters = tf.Variable(tf.ones(shape=self.filter_sizes) * 1e-9)
+            else:
+                self.filters = tf.get_variable(name="conv" + str(Convolution.num), shape=self.filter_sizes)
+                Convolution.num = Convolution.num + 1
 
         # bias
         self.bias = tf.Variable(tf.ones(shape=self.fout) * bias)
@@ -42,12 +46,11 @@ class Convolution(Layer):
         self.last_layer = last_layer
         
         self.name = name
-
-    def get_names(self):
-        return [self.name, self.name + "_bias"]
+        
+    ###################################################################
 
     def get_weights(self):
-        return [self.filters, self.bias]
+        return [(self.name, self.filters), (self.name + "_bias", self.bias)]
 
     def num_params(self):
         filter_weights_size = self.fh * self.fw * self.fin * self.fout

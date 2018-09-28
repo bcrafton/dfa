@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class FullyConnected(Layer):
     num = 0
-    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None):
+    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None, load=None, train=True):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -20,17 +20,21 @@ class FullyConnected(Layer):
         self.input_size, self.output_size = size
         self.num_classes = num_classes
         
-        if init_weights == "zero":
-            self.weights = tf.Variable(tf.zeros(shape=self.size))
-        elif init_weights == "sqrt_fan_in":
-            sqrt_fan_in = math.sqrt(self.input_size)
-            self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-        elif init_weights == "epsilon":
-            self.weights = tf.Variable(tf.ones(shape=self.size) * 1e-9)
+        if load:
+            weight_dict = np.load(load).item()
+            self.weights = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
+            self.bias = tf.cast(tf.Variable(weight_dict[self.name + '_bias']), tf.float32)
         else:
-            # self.weights = tf.Variable(tf.random_normal(shape=self.size, mean=0.0, stddev=0.01))
-            self.weights = tf.get_variable(name="fc" + str(FullyConnected.num), shape=self.size)
-            FullyConnected.num = FullyConnected.num + 1
+            if init_weights == "zero":
+                self.weights = tf.Variable(tf.zeros(shape=self.size))
+            elif init_weights == "sqrt_fan_in":
+                sqrt_fan_in = math.sqrt(self.input_size)
+                self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+            elif init_weights == "epsilon":
+                self.weights = tf.Variable(tf.ones(shape=self.size) * 1e-9)
+            else:
+                self.weights = tf.get_variable(name="fc" + str(FullyConnected.num), shape=self.size)
+                FullyConnected.num = FullyConnected.num + 1
 
         # bias
         self.bias = tf.Variable(tf.ones(shape=[self.output_size]) * bias)        
@@ -43,12 +47,10 @@ class FullyConnected(Layer):
         
         self.name = name
         
-    def get_names(self):
-        return [self.name, self.name + "_bias"]
+    ###################################################################
         
     def get_weights(self):
-        # return tf.concat((self.weights, tf.reshape(self.bias, (1, -1))), axis=0)
-        return [self.weights, self.bias]
+        return [(self.name, self.weights), (self.name + "_bias", self.bias)]
 
     def num_params(self):
         weights_size = self.input_size * self.output_size

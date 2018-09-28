@@ -16,8 +16,7 @@ class MaxPool(Layer):
         self.strides = strides
         self.padding = padding
 
-    def get_names(self):
-        return []
+    ###################################################################
 
     def get_weights(self):
         return []
