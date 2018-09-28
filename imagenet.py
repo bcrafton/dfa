@@ -148,7 +148,7 @@ labels = tf.one_hot(labels, depth=num_classes)
 
 ###############################################################
 
-alexnet_weights_path='../alexnet_weights/alexnet_weights.npy'
+alexnet_weights_path='./weights/weights.npy'
 
 # args_ext = "_dfa_" + str(args.dfa) + "_sparse_" + str(args.sparse)
 
