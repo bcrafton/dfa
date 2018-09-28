@@ -19,6 +19,17 @@ class FullyConnected(Layer):
         self.last_layer = last_layer
         self.input_size, self.output_size = size
         self.num_classes = num_classes
+
+        # bias
+        self.bias = tf.Variable(tf.ones(shape=[self.output_size]) * bias)
+
+        # lr
+        self.alpha = alpha
+
+        # activation function
+        self.activation = activation
+
+        self.name = name
         
         if load:
             weight_dict = np.load(load).item()
@@ -36,17 +47,6 @@ class FullyConnected(Layer):
                 self.weights = tf.get_variable(name="fc" + str(FullyConnected.num), shape=self.size)
                 FullyConnected.num = FullyConnected.num + 1
 
-        # bias
-        self.bias = tf.Variable(tf.ones(shape=[self.output_size]) * bias)        
-
-        # lr
-        self.alpha = alpha
-        
-        # activation function
-        self.activation = activation
-        
-        self.name = name
-        
     ###################################################################
         
     def get_weights(self):

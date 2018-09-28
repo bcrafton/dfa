@@ -17,6 +17,18 @@ class Convolution(Layer):
         # self.h and self.w only equal this for input sizes when padding = "SAME"...
         self.batch_size, self.h, self.w, self.fin = self.input_sizes
         self.fh, self.fw, self.fin, self.fout = self.filter_sizes
+
+        self.bias = tf.Variable(tf.ones(shape=self.fout) * bias)
+
+        self.strides = strides
+        self.padding = padding
+
+        self.alpha = alpha
+
+        self.activation = activation
+        self.last_layer = last_layer
+
+        self.name = name
         
         if load:
             weight_dict = np.load(load).item()
@@ -34,19 +46,6 @@ class Convolution(Layer):
                 self.filters = tf.get_variable(name="conv" + str(Convolution.num), shape=self.filter_sizes)
                 Convolution.num = Convolution.num + 1
 
-        # bias
-        self.bias = tf.Variable(tf.ones(shape=self.fout) * bias)
-
-        self.strides = strides
-        self.padding = padding
-        
-        self.alpha = alpha
-        
-        self.activation = activation
-        self.last_layer = last_layer
-        
-        self.name = name
-        
     ###################################################################
 
     def get_weights(self):
