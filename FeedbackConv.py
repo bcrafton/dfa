@@ -53,11 +53,12 @@ class FeedbackConv(Layer):
             
             self.B = tf.cast(tf.Variable(b), tf.float32)
         else:
-            assert(False)
-            # verify this is correct
-            hi = np.sqrt(6.0 / (self.num_classes + self.f * self.h + self.w))
+            hi = np.sqrt(6.0 / (self.num_classes + self.f * self.h * self.w))
             lo = -hi
         
+            hi = 1.0 / sqrt_fan_out
+            lo = -hi
+
             b = np.random.uniform(lo, hi, size=(self.num_classes, self.f * self.h * self.w))
             b = b * self.mask
             self.B = tf.cast(tf.Variable(b), tf.float32)

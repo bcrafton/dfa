@@ -10,13 +10,12 @@ parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=1)
-parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="NA")
 parser.add_argument('--opt', type=str, default="NA")
 parser.add_argument('--save', type=int, default=0)
-parser.add_argument('--random_filters', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -53,11 +52,7 @@ from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
 from FeedbackFC import FeedbackFC
-
-if args.random_filters:
-    from FeedbackConv import FeedbackConv
-else:
-    from FeedbackConv1 import FeedbackConv
+from FeedbackConv import FeedbackConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -188,9 +183,13 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13
 predict = tf.nn.softmax(model.predict(X=features))
 
 if args.dfa:
-    train = model.dfa(X=features, Y=labels)
+    train =     model.dfa(X=features, Y=labels)
+    gvs =       model.dfa_gvs(X=features, Y=labels)
+    backwards = model.dfa_backwards(X=features, Y=labels)
 else:
-    train = model.train(X=features, Y=labels)
+    train =     model.train(X=features, Y=labels)
+    gvs =       model.gvs(X=features, Y=labels)
+    backwards = model.backwards(X=features, Y=labels)
 
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
@@ -209,6 +208,8 @@ tf.global_variables_initializer().run()
 
 sess.run(iterator.initializer, feed_dict={filename: training_images, label_num: training_labels})
 
+pre = "dfa_" + str(args.dfa) + "_sparse_" + str(args.sparse) + "_"
+
 for i in range(0, epochs):
     train_correct = 0.0
     train_total = 0.0
@@ -220,17 +221,18 @@ for i in range(0, epochs):
         train_total += batch_size
 
         print ("train accuracy: " + str(train_correct / train_total))
-        sys.stdout.flush()
-        
+        sys.stdout.flush()        
 
     if args.save:
-        [w] = sess.run([weights], feed_dict={})
-        n = model.get_names()
-        print (len(w), len(n))
-        assert(len(w) == len(n))
-        for ii in range(len(w)):
-            np.save(n[ii], w[ii])
-        
+        [back] = sess.run([backwards], feed_dict={})
+        for ii in range(len(back)):
+            np.save(pre + "backwards_" + str(ii), back[ii])        
+
+    if args.save:
+        [grad] = sess.run([gvs], feed_dict={})
+        for ii in range(len(grad)):
+            np.save(pre + "grad_" + str(ii), grad[ii][0])
+
     print('epoch {}/{}'.format(i, epochs))
     
     
