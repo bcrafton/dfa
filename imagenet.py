@@ -148,7 +148,7 @@ labels = tf.one_hot(labels, depth=num_classes)
 
 ###############################################################
 
-alexnet_weights_path='./weights/weights.npy'
+alexnet_weights_path='./weights/imagenet/weights.npy'
 
 # args_ext = "_dfa_" + str(args.dfa) + "_sparse_" + str(args.sparse)
 
@@ -192,7 +192,7 @@ correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
-weights = model.get_weights()
+# weights = model.get_weights()
 
 print (model.num_params())
 
@@ -217,11 +217,11 @@ for i in range(0, epochs):
 
         print ("train accuracy: " + str(train_correct / train_total))
         sys.stdout.flush()
-        
+    '''    
     if args.save:
         [w] = sess.run([weights], feed_dict={})
         np.save("imagenet_weights", w)
-        
+    ''' 
     print('epoch {}/{}'.format(i, epochs))
     
     

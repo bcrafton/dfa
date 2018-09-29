@@ -30,11 +30,12 @@ class FullyConnected(Layer):
         self.activation = activation
 
         self.name = name
+        self._train = train
         
         if load:
             weight_dict = np.load(load).item()
-            self.weights = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
-            self.bias = tf.cast(tf.Variable(weight_dict[self.name + '_bias']), tf.float32)
+            self.weights = tf.Variable(weight_dict[self.name])
+            self.bias = tf.Variable(weight_dict[self.name + '_bias'])
         else:
             if init_weights == "zero":
                 self.weights = tf.Variable(tf.zeros(shape=self.size))
@@ -76,6 +77,9 @@ class FullyConnected(Layer):
         return [(DW, self.weights), (DB, self.bias)]
 
     def train(self, AI, AO, DO):
+        if not self._train:
+            return []
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
@@ -104,6 +108,9 @@ class FullyConnected(Layer):
         return [(DW, self.weights), (DB, self.bias)]
         
     def dfa(self, AI, AO, E, DO):
+        if not self._train:
+            return []
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
