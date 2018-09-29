@@ -154,9 +154,6 @@ def get_train_dataset():
                     training_images.append(os.path.join(folder_subdir, file))
                     training_labels.append(labels[folder])
 
-            label_counter = label_counter + 1
-            print (str(label_counter) + "/" + str(num_classes))
-
     remainder = len(training_labels) % batch_size
     training_images = training_images[:(-remainder)]
     training_labels = training_labels[:(-remainder)]
@@ -167,7 +164,8 @@ def get_train_dataset():
     
 ###############################################################
 
-imgs, labs = get_validation_dataset()
+#imgs, labs = get_validation_dataset()
+imgs, labs = get_train_dataset()
 
 filename = tf.placeholder(tf.string, shape=[None])
 label_num = tf.placeholder(tf.int64, shape=[None])
