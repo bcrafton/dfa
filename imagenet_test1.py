@@ -127,9 +127,23 @@ def get_validation_dataset():
     return validation_images, validation_labels
     
 def get_train_dataset():
+
     label_counter = 0
     training_images = []
     training_labels = []
+
+    print ("making labels dict")
+
+    f = open("/home/bcrafton3/ILSVRC2012/train_labels.txt", 'r')
+    lines = f.readlines()
+
+    labels = {}
+    for line in lines:
+        line = line.split(' ')
+        labels[line[0]] = label_counter
+        label_counter += 1
+
+    f.close()
 
     print ("building dataset")
 
@@ -138,13 +152,7 @@ def get_train_dataset():
             for folder_subdir, folder_dirs, folder_files in os.walk(os.path.join(subdir, folder)):
                 for file in folder_files:
                     training_images.append(os.path.join(folder_subdir, file))
-                    # training_labels.append( keras.utils.to_categorical(label_counter, num_classes) )
-                    
-                    # label = np.zeros(num_classes)
-                    # label[label_counter] = 1
-                    # training_labels.append(label)
-
-                    training_labels.append(label_counter)
+                    training_labels.append(labels[folder])
 
             label_counter = label_counter + 1
             print (str(label_counter) + "/" + str(num_classes))
