@@ -122,22 +122,10 @@ def get_validation_dataset():
     validation_images = validation_images[:(-remainder)]
     validation_labels = validation_labels[:(-remainder)]
 
-    filename = tf.placeholder(tf.string, shape=[None])
-    label_num = tf.placeholder(tf.int64, shape=[None])
-    dataset = tf.data.Dataset.from_tensor_slices((filename, label_num))
-    dataset = dataset.shuffle(len(validation_images))
-    dataset = dataset.map(parse_function, num_parallel_calls=4)
-    dataset = dataset.map(train_preprocess, num_parallel_calls=4)
-    dataset = dataset.batch(batch_size)
-    dataset = dataset.repeat()
-    dataset = dataset.prefetch(8)
-
     print("validation data is ready...")
+
+    return validation_images, validation_labels
     
-    return dataset
-
-###############################################################
-
 def get_train_dataset():
     label_counter = 0
     training_images = []
@@ -165,25 +153,23 @@ def get_train_dataset():
     training_images = training_images[:(-remainder)]
     training_labels = training_labels[:(-remainder)]
 
-    filename = tf.placeholder(tf.string, shape=[None])
-    label_num = tf.placeholder(tf.int64, shape=[None])
-    dataset = tf.data.Dataset.from_tensor_slices((filename, label_num))
-    dataset = dataset.shuffle(len(training_images))
-    dataset = dataset.map(parse_function, num_parallel_calls=4)
-    dataset = dataset.map(train_preprocess, num_parallel_calls=4)
-    dataset = dataset.batch(batch_size)
-    dataset = dataset.repeat()
-    dataset = dataset.prefetch(8)
-
     print("Data is ready...")
+
+    return training_images, training_labels    
     
-    return dataset
-
 ###############################################################
 
-dataset = get_validation_dataset()
+imgs, labs = get_validation_dataset()
 
-###############################################################
+filename = tf.placeholder(tf.string, shape=[None])
+label_num = tf.placeholder(tf.int64, shape=[None])
+dataset = tf.data.Dataset.from_tensor_slices((filename, label_num))
+dataset = dataset.shuffle(len(imgs))
+dataset = dataset.map(parse_function, num_parallel_calls=4)
+dataset = dataset.map(train_preprocess, num_parallel_calls=4)
+dataset = dataset.batch(batch_size)
+dataset = dataset.repeat()
+dataset = dataset.prefetch(8)
 
 iterator = dataset.make_initializable_iterator()
 features, labels = iterator.get_next()
