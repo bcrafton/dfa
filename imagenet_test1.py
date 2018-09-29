@@ -234,12 +234,12 @@ config.gpu_options.allow_growth=True
 sess = tf.InteractiveSession(config=config)
 tf.global_variables_initializer().run()
 
-sess.run(iterator.initializer, feed_dict={filename: validation_images, label_num: validation_labels})
+sess.run(iterator.initializer, feed_dict={filename: imgs, label_num: labs})
 
 for i in range(0, epochs):
     train_correct = 0.0
     train_total = 0.0
-    for j in range(0, len(validation_images), batch_size):
+    for j in range(0, len(imgs), batch_size):
         print (j)
         
         pred, _total_correct, _ = sess.run([predict, total_correct, train])
