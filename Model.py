@@ -235,8 +235,9 @@ class Model:
         weights = {}
         for ii in range(self.num_layers):
             l = self.layers[ii]
-            key, value = l.get_weights()
-            weights[key] = value
+            tup = l.get_weights()
+            for (key, value) in tup:
+                weights[key] = value
             
         return weights
         

@@ -192,7 +192,7 @@ correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
-# weights = model.get_weights()
+weights = model.get_weights()
 
 print (model.num_params())
 
@@ -217,11 +217,11 @@ for i in range(0, epochs):
 
         print ("train accuracy: " + str(train_correct / train_total))
         sys.stdout.flush()
-    '''    
+
     if args.save:
         [w] = sess.run([weights], feed_dict={})
         np.save("imagenet_weights", w)
-    ''' 
+
     print('epoch {}/{}'.format(i, epochs))
     
     

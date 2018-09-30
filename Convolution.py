@@ -41,8 +41,9 @@ class Convolution(Layer):
             elif init_filters == "sqrt_fan_in":
                 sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
                 self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-            elif init_filters == "epsilon":
-                self.filters = tf.Variable(tf.ones(shape=self.filter_sizes) * 1e-9)
+            elif init_filters == "small":
+                sqrt_fan_in = math.sqrt(self.h*self.w*self.fin) / 10.
+                self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
             else:
                 self.filters = tf.get_variable(name="conv" + str(Convolution.num), shape=self.filter_sizes)
                 Convolution.num = Convolution.num + 1
