@@ -16,6 +16,7 @@ parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
+parser.add_argument('--name', type=str, default="weights")
 parser.add_argument('--num', type=int, default=0)
 parser.add_argument('--shuffle', type=int, default=0)
 args = parser.parse_args()
@@ -101,7 +102,7 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 #XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
 l0 = FullyConnected(size=[784, 100], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False, name="fc1")
-l1 = FeedbackFC(size=[784, 100], num_classes=10, sparse=sparse, rank=args.rank, name="fbfc1")
+l1 = FeedbackFC(size=[784, 100], num_classes=10, sparse=sparse, rank=args.rank, name="fc1_fb")
 
 l2 = FullyConnected(size=[100, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True, name="fc2")
 
@@ -132,11 +133,14 @@ filename = "mnist_" +                   \
            str(args.epochs) + "_" +     \
            str(args.batch_size) + "_" + \
            str(args.alpha) + "_" +      \
+           str(args.gpu) + "_" +        \
            str(args.dfa) + "_" +        \
            str(args.sparse) + "_" +     \
-           str(args.gpu) + "_" +        \
+           str(args.rank) + "_" +       \
            args.init + "_" +            \
-           args.opt +                   \
+           args.opt + "_" +             \
+           args.name + "_" +            \
+           str(args.num) +              \
            ".results"
 
 f = open(filename, "w")
@@ -165,7 +169,7 @@ for ii in range(EPOCHS):
         total_examples += BATCH_SIZE
             
     print ("acc: " + str(total_correct_examples / total_examples))
-    accs.append(total_correct_examples / total_examples)    
+    accs.append(total_correct_examples / total_examples)
     
     f = open(filename, "a")
     f.write(str(total_correct_examples * 1.0 / total_examples) + "\n")
@@ -175,7 +179,8 @@ for ii in range(EPOCHS):
 
 if args.save:
     [w] = sess.run([weights], feed_dict={})
-    np.save("mnist_fc_weights", w)
-
+    w['acc'] = accs
+    np.save(args.name, w)
+    
 ##############################################
 

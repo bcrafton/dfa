@@ -49,12 +49,25 @@ def one_hot(y, classes):
 #######################################
     
 def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+  return 1. / (1. + np.exp(-x))
   
-def sigmoid_gradient(x):
-    gz = sigmoid(x)
-    ret = gz * (1 - gz)
-    return ret
+def dsigmoid(x):
+  # USE A NOT Z
+  return x * (1. - x)
+
+def tanh(x):
+  return np.tanh(x)
+  
+def dtanh(x):
+  # USE A NOT Z
+  return (1. - (x ** 2))
+  
+def relu(x):
+  return np.maximum(x, 0, x)
+  
+def drelu(x):
+  # USE A NOT Z
+  return x > 0
   
 def softmax(x):
     exp = np.exp(x - np.max(x, axis=1, keepdims=True))
@@ -107,7 +120,7 @@ if args.shuffle:
 #######################################
 
 for epoch in range(args.epochs):
-    print "epoch: " + str(epoch + 1) + "/" + str(args.epochs)
+    print ("epoch: " + str(epoch + 1) + "/" + str(args.epochs))
 
     for ex in range(0, TRAIN_EXAMPLES, args.batch_size):    
         if (TRAIN_EXAMPLES < ex + args.batch_size):
@@ -120,14 +133,14 @@ for epoch in range(args.epochs):
             
         A1 = training_set[start:end]
         Z2 = np.dot(A1, weights1) + bias1
-        A2 = sigmoid(Z2)
+        A2 = tanh(Z2)
         Z3 = np.dot(A2, weights2) + bias2
         A3 = softmax(Z3)
         
         ANS = one_hot(training_labels[start:end], 10)
                 
         D3 = (A3 - ANS)
-        D2 = np.dot(D3, np.transpose(weights2)) * sigmoid_gradient(Z2)
+        D2 = np.dot(D3, np.transpose(weights2)) * dtanh(A2)
                 
         DW3 = np.dot(np.transpose(A2), D3)
         DB3 = np.sum(D3, axis=0)
@@ -152,13 +165,13 @@ for epoch in range(args.epochs):
     
         A1 = testing_set[start:end]
         Z2 = np.dot(A1, weights1) + bias1
-        A2 = sigmoid(Z2)
+        A2 = tanh(Z2)
         Z3 = np.dot(A2, weights2) + bias2
         A3 = Z3
         
         correct += np.sum(np.argmax(A3, axis=1) == testing_labels[start:end])
         
-    print "accuracy: " + str(1.0 * correct / TEST_EXAMPLES)
+    print ("accuracy: " + str(1.0 * correct / TEST_EXAMPLES))
     
 np.save("W2_" + str(args.num), weights2)
 np.save("W1_" + str(args.num), weights1)
