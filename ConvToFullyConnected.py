@@ -10,8 +10,7 @@ class ConvToFullyConnected(Layer):
     def __init__(self, shape):
         self.shape = shape
         
-    def get_names(self):
-        return []
+    ###################################################################
 
     def get_weights(self):
         return []

@@ -6,9 +6,8 @@ class Layer:
 
     def __init__(self):
         super().__init__()
-        
-    def get_names(self):
-        pass
+
+    ###################################################################
 
     def get_weights(self):
         pass

@@ -175,12 +175,7 @@ for ii in range(EPOCHS):
 
 if args.save:
     [w] = sess.run([weights], feed_dict={})
-    n = model.get_names()
-    
-    print (len(w), len(n))
-    assert(len(w) == len(n))
-    for ii in range(len(w)):
-        np.save(n[ii], w[ii])
+    np.save("mnist_fc_weights", w)
 
-
+##############################################
 
