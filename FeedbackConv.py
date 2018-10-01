@@ -42,15 +42,16 @@ class FeedbackConv(Layer):
             sqrt_fan_out = np.sqrt(self.f * self.h * self.w)
             
             if self.rank > 0:
-                lo = -1.0/np.sqrt(sqrt_fan_out)
-                hi = 1.0/np.sqrt(sqrt_fan_out)
+                hi = 1.0 / sqrt_fan_out
+                lo = -hi
                 
                 b = np.zeros(shape=(self.f * self.h * self.w, self.num_classes))
                 for ii in range(self.rank):
                     tmp1 = np.random.uniform(lo, hi, size=(self.f * self.h * self.w, 1))
                     tmp2 = np.random.uniform(lo, hi, size=(1, self.num_classes))
                     b = b + (1.0 / self.rank) * np.dot(tmp1, tmp2)
-                    
+
+                b = b * (hi / np.average(np.absolute(b)))
                 b = np.transpose(b)
                 b = b * self.mask
                 assert(np.linalg.matrix_rank(b) == self.rank)

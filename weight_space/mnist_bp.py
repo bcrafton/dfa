@@ -6,6 +6,8 @@ import time
 import pickle
 import argparse
 
+np.seterr(all='warn')
+
 #######################################
 
 parser = argparse.ArgumentParser()
@@ -45,17 +47,30 @@ def one_hot(value, max_value):
 #######################################
     
 def sigmoid(x):
-  return 1 / (1 + np.exp(-x))
+  return 1. / (1. + np.exp(-x))
   
-def sigmoid_gradient(x):
-  gz = sigmoid(x)
-  ret = gz * (1 - gz)
-  return ret
+def dsigmoid(x):
+  # USE A NOT Z
+  return x * (1. - x)
+
+def tanh(x):
+  return np.tanh(x)
   
+def dtanh(x):
+  # USE A NOT Z
+  return (1. - (x ** 2))
+  
+def relu(x):
+  return np.maximum(x, 0, x)
+  
+def drelu(x):
+  # USE A NOT Z
+  return x > 0
+  
+# DO NOT USE THIS FOR BATCHES
 def softmax(x):
     e_x = np.exp(x - np.max(x))
     return e_x / e_x.sum()
-
  
 #######################################
     
@@ -87,19 +102,19 @@ NUM_CLASSES = 10
 #######################################
 
 for epoch in range(args.epochs):
-    print "epoch: " + str(epoch + 1) + "/" + str(args.epochs)
+    print ("epoch: " + str(epoch + 1) + "/" + str(args.epochs))
     
     for ex in range(TRAIN_EXAMPLES):
         A1 = training_set[ex]
         Z2 = np.dot(A1, weights1) + bias1
-        A2 = sigmoid(Z2)
+        A2 = relu(Z2)
         Z3 = np.dot(A2, weights2) + bias2
-        A3 = sigmoid(Z3)
+        A3 = softmax(Z3)
         
         ANS = one_hot(training_labels[ex], 9)
         
         D3 = A3 - ANS
-        D2 = np.dot(D3, np.transpose(weights2)) * sigmoid_gradient(Z2)
+        D2 = np.dot(D3, np.transpose(weights2)) * drelu(A2)
         
         DW3 = np.dot(A2.reshape(LAYER2, 1), D3.reshape(1, LAYER3))
         DB3 = D3
@@ -115,14 +130,14 @@ for epoch in range(args.epochs):
     for ex in range(TEST_EXAMPLES):
         A1 = testing_set[ex]
         Z2 = np.dot(A1, weights1) + bias1
-        A2 = sigmoid(Z2)
+        A2 = relu(Z2)
         Z3 = np.dot(A2, weights2) + bias2
         A3 = softmax(Z3)
         
         if (np.argmax(A3) == testing_labels[ex]):
             correct += 1
         
-    print "accuracy: " + str(1.0 * correct / TEST_EXAMPLES)
+    print ("accuracy: " + str(1.0 * correct / TEST_EXAMPLES))
     
     
     

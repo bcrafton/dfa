@@ -5,6 +5,8 @@ import gzip
 import time
 import pickle
 import argparse
+import keras
+from keras.datasets import mnist
 
 #######################################
 
@@ -19,55 +21,56 @@ args = parser.parse_args()
 
 #######################################
 
-def load_data():
-  global training_set, training_labels, testing_set, testing_labels
-  f = gzip.open('mnist.pkl.gz', 'rb')
-  train, valid, test = pickle.load(f) 
-  f.close()
-
-  [training_set, training_labels] = train
-  [validation_set, validation_labels] = valid
-  [testing_set, testing_labels] = test
-
-  for i in range( len(training_set) ):
-    training_set[i] = training_set[i].reshape(28*28)
-
-  for i in range( len(testing_set) ):
-    testing_set[i] = testing_set[i].reshape(28*28)
-    
-def one_hot(y, classes):
-    assert(len(np.shape(y)) == 1)
-    num = np.shape(y)[0]
-    shape = (num, classes)
-    
-    ret = np.zeros(shape=shape)
-    for ii in range(num):
-        ret[ii][y[ii]] = 1.
-    
-    return np.array(ret)
-    
-#######################################
-
-def tanh(x):
-    return np.tanh(x)
-
-def dtanh(x):
-    # return 1 - np.power(x, 2)
-    return 1. - x * x
-   
-def sigmoid(x):
-    return 1. / (1. + np.exp(-x))
-  
-def dsigmoid(x):
-    gz = sigmoid(x)
-    ret = gz * (1 - gz)
-    return ret
-
-#######################################
+TRAIN_EXAMPLES = 60000
+TEST_EXAMPLES = 10000
+NUM_CLASSES = 10
 
 LAYER1 = 784
 LAYER2 = 100
 LAYER3 = 10
+
+#######################################
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+x_train = x_train.reshape(TRAIN_EXAMPLES, 784)
+x_test = x_test.reshape(TEST_EXAMPLES, 784)
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+x_train /= 255
+x_test /= 255
+
+y_train = keras.utils.to_categorical(y_train, NUM_CLASSES)
+y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
+    
+#######################################
+
+def sigmoid(x):
+  return 1. / (1. + np.exp(-x))
+  
+def dsigmoid(x):
+  # USE A NOT Z
+  return x * (1. - x)
+
+def tanh(x):
+  return np.tanh(x)
+  
+def dtanh(x):
+  # USE A NOT Z
+  return (1. - (x ** 2))
+  
+def relu(x):
+  return np.maximum(x, 0, x)
+  
+def drelu(x):
+  # USE A NOT Z
+  return x > 0
+  
+def softmax(x):
+    exp = np.exp(x - np.max(x, axis=1, keepdims=True))
+    return exp / np.sum(exp, axis=1, keepdims=True)
+
+#######################################
 
 if args.load:
     weights1 = np.zeros(shape=(LAYER1, LAYER2))
@@ -84,26 +87,10 @@ else:
     weights2 = np.zeros(shape=(LAYER2, LAYER3))
     bias2 = np.zeros(shape=(LAYER3))
 
+    sqrt_fan_in = np.sqrt(LAYER2)
+    high = 1.0 / sqrt_fan_in
+    low = -high
     B = np.random.uniform(low=low, high=high, size=(LAYER2, LAYER3))
-
-TRAIN_EXAMPLES = 50000
-TEST_EXAMPLES = 10000
-NUM_CLASSES = 10
-
-#######################################
-
-load_data()
-
-if args.shuffle:
-    print ("Shuffling!")
-    perm = np.random.permutation(TRAIN_EXAMPLES)
-
-    tmp1 = np.copy(training_set[0])
-    training_set[perm] = training_set
-    training_labels[perm] = training_labels
-    tmp2 = training_set[perm[0]]
-    
-    assert(np.all(tmp1 == tmp2))
 
 #######################################
 
@@ -111,8 +98,6 @@ for epoch in range(args.epochs):
     print "epoch: " + str(epoch + 1) + "/" + str(args.epochs)
 
     for ex in range(0, TRAIN_EXAMPLES, args.batch_size): 
-  
-        print (ex)
 
         if (TRAIN_EXAMPLES < ex + args.batch_size):
             num = ex + args.batch_size - TRAIN_EXAMPLES
@@ -122,16 +107,16 @@ for epoch in range(args.epochs):
         start = ex
         end = ex + num
             
-        A1 = training_set[start:end]
+        A1 = x_train[start:end]
         Z2 = np.dot(A1, weights1) + bias1
         A2 = tanh(Z2)
         Z3 = np.dot(A2, weights2) + bias2
-        A3 = sigmoid(Z3)
+        A3 = softmax(Z3)
         
-        ANS = one_hot(training_labels[start:end], 10)
+        ANS = y_train[start:end]
                 
-        D3 = (A3 - ANS)
-        D2 = np.dot(D3, np.transpose(B)) * dtanh(Z2)
+        D3 = A3 - ANS
+        D2 = np.dot(D3, np.transpose(B)) * dtanh(A2)
                 
         DW3 = np.dot(np.transpose(A2), D3)
         DB3 = np.sum(D3, axis=0)
@@ -154,13 +139,13 @@ for epoch in range(args.epochs):
         start = ex
         end = ex + num
     
-        A1 = testing_set[start:end]
+        A1 = x_test[start:end]
         Z2 = np.dot(A1, weights1) + bias1
-        A2 = sigmoid(Z2)
+        A2 = tanh(Z2)
         Z3 = np.dot(A2, weights2) + bias2
-        A3 = Z3
+        A3 = softmax(Z3)
         
-        correct += np.sum(np.argmax(A3, axis=1) == testing_labels[start:end])
+        correct += np.sum( np.argmax(A3, axis=1) == np.argmax(y_test[start:end], axis=1) )
         
     print "accuracy: " + str(1.0 * correct / TEST_EXAMPLES)
     
