@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 sparse_dfa_dist = []
 sparse_dfa_acc = []
 
-for ii in range(10):
+for ii in range(99):
     print (ii)
     
-    w = np.load("../../sparse_vs_rank/sparse1rank10itr" + str(ii+1) + ".npy").item()
+    w = np.load("../../sparse/sparse1rank10itr" + str(ii+1) + ".npy").item()
     B = np.transpose(w['fc1_fb'])
     acc = np.max(w['acc'])
     
@@ -30,9 +30,9 @@ for ii in range(10):
 
 #######################################
 
-fit = np.poly1d(np.polyfit(sparse_dfa_acc, sparse_dfa_dist, 1))
-pred = fit(sparse_dfa_acc)
-plt.plot(sparse_dfa_acc, pred)
+fit = np.poly1d(np.polyfit(sparse_dfa_dist, sparse_dfa_acc, 1))
+pred = fit(sparse_dfa_dist)
+plt.plot(sparse_dfa_dist, pred)
 
-plt.plot(sparse_dfa_acc, sparse_dfa_dist, '.')
+plt.plot(sparse_dfa_dist, sparse_dfa_acc, '.')
 plt.show()
