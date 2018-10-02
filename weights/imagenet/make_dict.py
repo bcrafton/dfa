@@ -11,5 +11,10 @@ new_weights = {}
 for key in keys:
     weights = np.load(key + '.npy')
     new_weights[key] = weights
-    
-np.save("weights", new_weights)
+np.save("bp_weights", new_weights)
+
+new_weights = {}           
+for key in keys:
+    weights = np.load(key + '_dfa.npy')
+    new_weights[key] = weights
+np.save("dfa_weights", new_weights)

@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class FeedbackFC(Layer):
     num = 0
-    def __init__(self, size : tuple, num_classes : int, sparse : bool, rank : int, name=None, load=None):
+    def __init__(self, size : tuple, num_classes : int, sparse : int, rank : int, name=None, load=None):
         self.size = size
         self.num_classes = num_classes
         self.sparse = sparse
@@ -51,21 +51,19 @@ class FeedbackFC(Layer):
                     tmp2 = np.random.uniform(lo, hi, size=(1, self.num_classes))
                     b = b + (1.0 / self.rank) * np.dot(tmp1, tmp2)
                     
-                b = b * (hi / np.average(np.absolute(b)))
                 b = np.transpose(b)
                 b = b * self.mask
+                b = b * (hi / np.average(np.absolute(b)))
                 assert(np.linalg.matrix_rank(b) == self.rank)
                 
                 self.B = tf.cast(tf.Variable(b), tf.float32)
             else:
-                hi = np.sqrt(6.0 / (self.num_classes + self.output_size))
-                lo = -hi
-
                 hi = 1.0 / sqrt_fan_out
                 lo = -hi
 
                 b = np.random.uniform(lo, hi, size=(self.num_classes, self.output_size))
                 b = b * self.mask
+                b = b * (hi / np.average(np.absolute(b)))
                 self.B = tf.cast(tf.Variable(b), tf.float32)            
 
             # self.B = tf.get_variable(name="feedback_fc_" + str(FeedbackFC.num), shape=(self.num_classes, self.output_size))

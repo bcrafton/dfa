@@ -65,17 +65,6 @@ sparse = args.sparse
 ##############################################
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-if args.shuffle:
-    print ("Shuffling!")
-    perm = np.random.permutation(TRAIN_EXAMPLES)
-
-    tmp1 = np.copy(x_train[0])
-    x_train[perm] = x_train
-    y_train[perm] = y_train
-    tmp2 = x_train[perm[0]]
-    
-    assert(np.all(tmp1 == tmp2))
     
 x_train = x_train.reshape(TRAIN_EXAMPLES, 784)
 x_test = x_test.reshape(TEST_EXAMPLES, 784)

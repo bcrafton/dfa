@@ -2,14 +2,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# for sparse in range(1, 10+1):
 for sparse in range(1, 10+1):
     ranks = []
     accs = []
     
     for rank in range(sparse, 10+1):
         for itr in range(1, 10+1):
-            fname = "./sparse_rank_results1/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
+            fname = "./sparse_vs_rank/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
             results = np.load(fname).item()
             acc = np.max(results['acc'])
 
@@ -20,7 +19,11 @@ for sparse in range(1, 10+1):
        
     scatter = plt.scatter(ranks, accs, s=10, label="Sparse " + str(sparse))
      
-plt.xlabel("Rank")
-plt.ylabel("Accuracy")
-plt.legend()
+plt.xlabel("Rank", fontsize=18)
+plt.xticks(fontsize=14)
+
+plt.ylabel("Accuracy", fontsize=18)
+plt.yticks(fontsize=14)
+
+plt.legend(fontsize=18, markerscale=4.0)
 plt.show()
