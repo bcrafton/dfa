@@ -72,9 +72,6 @@ num_classes = 1000
 epochs = args.epochs
 data_augmentation = False
 
-training_images = []
-training_labels = []
-
 EPOCHS = args.epochs
 BATCH_SIZE = args.batch_size
 ALPHA = args.alpha
@@ -112,7 +109,7 @@ def _mean_image_subtraction(image, means):
 
   channels = tf.split(axis=2, num_or_size_splits=num_channels, value=image)
   for i in range(num_channels):
-    channels[i] -= means[i]
+    channels[i] = tf.subtract(channels[i], means[i])
   return tf.concat(axis=2, values=channels)
 
 
@@ -126,8 +123,9 @@ def parse_function(filename, label):
     image = tf.image.decode_jpeg(image_string, channels=3)
 
     # This will convert to float values in [0, 1]
-    # image = tf.image.convert_image_dtype(image, tf.float32)
+    image = tf.image.convert_image_dtype(image, tf.float32) * 256.
 
+    image = tf.random_crop(value=image, size=[224, 224, 3])
     image = tf.image.resize_images(image, [224, 224])
     # image = tf.crop_and_resize()
 
@@ -154,100 +152,149 @@ def train_preprocess(image, label):
 
 ##############################################
 
-print ("making labels dict")
+def get_validation_dataset():
+    label_counter = 0
+    validation_images = []
+    validation_labels = []
 
-'''
-f = open("/home/bcrafton3/ILSVRC2012/train_labels.txt", 'r')
-lines = f.readlines()
+    print ("building validation dataset")
 
-label_counter = 0
-labels = {}
-for line in lines:
-    line = line.split(' ')
-    labels[line[0]] = label_counter
-    label_counter += 1
+    for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/val/'):
+        for file in files:
+            validation_images.append(os.path.join('/home/bcrafton3/ILSVRC2012/val/', file))
 
-f.close()
-'''
+    validation_labels_file = open('/home/bcrafton3/dfa/imagenet_labels/validation_labels.txt')
+    lines = validation_labels_file.readlines()
+    for ii in range(len(lines)):
+        validation_labels.append(int(lines[ii]))
 
-f = open("/home/bcrafton3/ILSVRC2012/train_labels1.txt", 'r')
-lines = f.readlines()
+    print (len(validation_images), len(validation_labels))
+    remainder = len(validation_labels) % batch_size
+    validation_images = validation_images[:(-remainder)]
+    validation_labels = validation_labels[:(-remainder)]
 
-labels = {}
-for line in lines:
-    line = line.split()
-    print (line)
-    labels[line[1]] = line[0]
+    print("validation data is ready...")
 
-f.close()
+    return validation_images, validation_labels
+    
+def get_train_dataset():
 
-print ("building dataset")
+    label_counter = 0
+    training_images = []
+    training_labels = []
 
-for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/train/'):
-    for folder in dirs:
-        for folder_subdir, folder_dirs, folder_files in os.walk(os.path.join(subdir, folder)):
-            for file in folder_files:
-                training_images.append(os.path.join(folder_subdir, file))
-                training_labels.append(labels[folder])
-                print(labels[folder])
+    print ("making labels dict")
 
-remainder = len(training_labels) % batch_size
-training_images = training_images[:(-remainder)]
-training_labels = training_labels[:(-remainder)]
+    f = open('/home/bcrafton3/dfa/imagenet_labels/train_labels.txt', 'r')
+    lines = f.readlines()
 
-filename = tf.placeholder(tf.string, shape=[None])
-label_num = tf.placeholder(tf.int64, shape=[None])
-dataset = tf.data.Dataset.from_tensor_slices((filename, label_num))
-dataset = dataset.shuffle(len(training_images))
-dataset = dataset.map(parse_function, num_parallel_calls=4)
-dataset = dataset.map(train_preprocess, num_parallel_calls=4)
-dataset = dataset.batch(batch_size)
-dataset = dataset.repeat()
-dataset = dataset.prefetch(1)
+    labels = {}
+    for line in lines:
+        line = line.split(' ')
+        labels[line[0]] = label_counter
+        label_counter += 1
 
-print("Data is ready...")
+    f.close()
 
-iterator = dataset.make_initializable_iterator()
-features, labels = iterator.get_next()
+    print ("building dataset")
 
-features = tf.reshape(features, (-1, 224, 224, 3))
-labels = tf.one_hot(labels, depth=num_classes)
+    for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/train/'):
+        for folder in dirs:
+            for folder_subdir, folder_dirs, folder_files in os.walk(os.path.join(subdir, folder)):
+                for file in folder_files:
+                    training_images.append(os.path.join(folder_subdir, file))
+                    training_labels.append(labels[folder])
+
+    remainder = len(training_labels) % batch_size
+    training_images = training_images[:(-remainder)]
+    training_labels = training_labels[:(-remainder)]
+
+    print("Data is ready...")
+
+    return training_images, training_labels
 
 ###############################################################
 
-vgg_weights_path='../vgg_weights/vgg_weights.npy'
+filename = tf.placeholder(tf.string, shape=[None])
+label = tf.placeholder(tf.int64, shape=[None])
 
-l0 = Convolution(input_sizes=[batch_size, 224, 224, 3], filter_sizes=[3, 3, 3, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv1", load=vgg_weights_path, train=False)
-l1 = Convolution(input_sizes=[batch_size, 224, 224, 64], filter_sizes=[3, 3, 64, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv2", load=vgg_weights_path, train=False)
+###############################################################
+
+val_imgs, val_labs = get_validation_dataset()
+
+val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
+val_dataset = val_dataset.shuffle(len(val_imgs))
+val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
+val_dataset = val_dataset.map(train_preprocess, num_parallel_calls=4)
+val_dataset = val_dataset.batch(batch_size)
+val_dataset = val_dataset.repeat()
+val_dataset = val_dataset.prefetch(8)
+
+###############################################################
+
+train_imgs, train_labs = get_train_dataset()
+
+train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
+train_dataset = train_dataset.shuffle(len(train_imgs))
+train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
+train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
+train_dataset = train_dataset.batch(batch_size)
+train_dataset = train_dataset.repeat()
+train_dataset = train_dataset.prefetch(8)
+
+###############################################################
+
+handle = tf.placeholder(tf.string, shape=[])
+iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types, train_dataset.output_shapes)
+features, labels = iterator.get_next()
+features = tf.reshape(features, (-1, 227, 227, 3))
+labels = tf.one_hot(labels, depth=num_classes)
+
+train_iterator = train_dataset.make_initializable_iterator()
+val_iterator = val_dataset.make_initializable_iterator()
+
+###############################################################
+
+train_conv=False
+train_fc=False
+weights_conv='../vgg_weights/vgg_weights.npy'
+weights_fc='../vgg_weights/vgg_weights.npy'
+
+###############################################################
+
+l0 = Convolution(input_sizes=[batch_size, 224, 224, 3], filter_sizes=[3, 3, 3, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv1", load=weights_conv, train=train_conv)
+l1 = Convolution(input_sizes=[batch_size, 224, 224, 64], filter_sizes=[3, 3, 64, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv2", load=weights_conv, train=train_conv)
 l2 = MaxPool(size=[batch_size, 224, 224, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l3 = Convolution(input_sizes=[batch_size, 112, 112, 64], filter_sizes=[3, 3, 64, 128], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv3", load=vgg_weights_path, train=False)
-l4 = Convolution(input_sizes=[batch_size, 112, 112, 128], filter_sizes=[3, 3, 128, 128], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv4", load=vgg_weights_path, train=False)
+l3 = Convolution(input_sizes=[batch_size, 112, 112, 64], filter_sizes=[3, 3, 64, 128], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv3", load=weights_conv, train=train_conv)
+l4 = Convolution(input_sizes=[batch_size, 112, 112, 128], filter_sizes=[3, 3, 128, 128], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv4", load=weights_conv, train=train_conv)
 l5 = MaxPool(size=[batch_size, 112, 112, 128], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l6 = Convolution(input_sizes=[batch_size, 56, 56, 128], filter_sizes=[3, 3, 128, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv5", load=vgg_weights_path, train=False)
-l7 = Convolution(input_sizes=[batch_size, 56, 56, 256], filter_sizes=[3, 3, 256, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv6", load=vgg_weights_path, train=False)
-l8 = Convolution(input_sizes=[batch_size, 56, 56, 256], filter_sizes=[3, 3, 256, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv7", load=vgg_weights_path, train=False)
+l6 = Convolution(input_sizes=[batch_size, 56, 56, 128], filter_sizes=[3, 3, 128, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv5", load=weights_conv, train=train_conv)
+l7 = Convolution(input_sizes=[batch_size, 56, 56, 256], filter_sizes=[3, 3, 256, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv6", load=weights_conv, train=train_conv)
+l8 = Convolution(input_sizes=[batch_size, 56, 56, 256], filter_sizes=[3, 3, 256, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv7", load=weights_conv, train=train_conv)
 l9 = MaxPool(size=[batch_size, 56, 56, 256], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l10 = Convolution(input_sizes=[batch_size, 28, 28, 256], filter_sizes=[3, 3, 256, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv8", load=vgg_weights_path, train=False)
-l11 = Convolution(input_sizes=[batch_size, 28, 28, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv9", load=vgg_weights_path, train=False)
-l12 = Convolution(input_sizes=[batch_size, 28, 28, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv10", load=vgg_weights_path, train=False)
+l10 = Convolution(input_sizes=[batch_size, 28, 28, 256], filter_sizes=[3, 3, 256, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv8", load=weights_conv, train=train_conv)
+l11 = Convolution(input_sizes=[batch_size, 28, 28, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv9", load=weights_conv, train=train_conv)
+l12 = Convolution(input_sizes=[batch_size, 28, 28, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv10", load=weights_conv, train=train_conv)
 l13 = MaxPool(size=[batch_size, 28, 28, 512], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l14 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv11", load=vgg_weights_path, train=False)
-l15 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv12", load=vgg_weights_path, train=False)
-l16 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv13", load=vgg_weights_path, train=False)
+l14 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv11", load=weights_conv, train=train_conv)
+l15 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv12", load=weights_conv, train=train_conv)
+l16 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv13", load=weights_conv, train=train_conv)
 l17 = MaxPool(size=[batch_size, 14, 14, 512], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
 
 l18 = ConvToFullyConnected(shape=[7, 7, 512])
-l19 = FullyConnected(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="fc1", load=vgg_weights_path, train=False)
+l19 = FullyConnected(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="fc1", load=weights_fc, train=train_fc)
 #l20 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc1_fb")
 
-l21 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="fc2", load=vgg_weights_path, train=False)
+l21 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
 #l22 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc2_fb")
 
-l23 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True, name="fc3", load=vgg_weights_path, train=False)
+l23 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
+
+###############################################################
 
 #model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23])
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l21, l23])
@@ -272,29 +319,38 @@ config.gpu_options.allow_growth=True
 sess = tf.InteractiveSession(config=config)
 tf.global_variables_initializer().run()
 
-sess.run(iterator.initializer, feed_dict={filename: training_images, label_num: training_labels})
+train_handle = sess.run(train_iterator.string_handle())
+val_handle = sess.run(val_iterator.string_handle())
 
 for i in range(0, epochs):
+
+    sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
     train_correct = 0.0
     train_total = 0.0
-    for j in range(0, len(training_images), batch_size):
+    for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        [_total_correct] = sess.run([total_correct])
+        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle})
         train_correct += _total_correct
         train_total += batch_size
 
-        print ("train accuracy: " + str(train_correct / train_total))
-        sys.stdout.flush()      
- 
+        print ("train accuracy: " + str(train_correct / train_total))        
+    
+    sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
+    val_correct = 0.0
+    val_total = 0.0
+    for j in range(0, len(val_imgs), batch_size):
+        print (j)
+        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle})
+        val_correct += _total_correct
+        val_total += batch_size
+
+        print ("val accuracy: " + str(val_correct / val_total))
+
+    if args.save:
+        [w] = sess.run([weights], feed_dict={})
+        np.save("imagenet_weights", w)
+
     print('epoch {}/{}'.format(i, epochs))
-    
-    
-    
-    
-    
-    
-    
-    
     
 
