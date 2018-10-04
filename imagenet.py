@@ -164,9 +164,14 @@ def get_train_dataset():
 
 ###############################################################
 
+filename = tf.placeholder(tf.string, shape=[None])
+label = tf.placeholder(tf.int64, shape=[None])
+
+###############################################################
+
 val_imgs, val_labs = get_validation_dataset()
 
-val_dataset = tf.data.Dataset.from_tensor_slices((filename, label_num))
+val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
 val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
 val_dataset = val_dataset.map(train_preprocess, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
@@ -177,7 +182,7 @@ val_dataset = val_dataset.prefetch(8)
 
 train_imgs, train_labs = get_train_dataset()
 
-train_dataset = tf.data.Dataset.from_tensor_slices((filename, label_num))
+train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
 train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
 train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
 train_dataset = train_dataset.batch(batch_size)
@@ -259,7 +264,7 @@ validation_handle = sess.run(validation_iterator.string_handle())
 
 for i in range(0, epochs):
 
-    sess.run(training_iterator.initializer)
+    sess.run(training_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
     train_correct = 0.0
     train_total = 0.0
     for j in range(0, len(train_imgs), batch_size):
@@ -271,7 +276,7 @@ for i in range(0, epochs):
 
         print ("train accuracy: " + str(train_correct / train_total))        
     
-    sess.run(validation_iterator.initializer)
+    sess.run(validation_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
     val_correct = 0.0
     val_total = 0.0
     for j in range(0, len(val_imgs), batch_size):
