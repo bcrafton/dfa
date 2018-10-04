@@ -112,7 +112,7 @@ def get_validation_dataset():
         for file in files:
             validation_images.append(os.path.join('/home/bcrafton3/ILSVRC2012/val/', file))
 
-    validation_labels_file = open('/home/bcrafton3/ILSVRC2012/ILSVRC2012_validation_ground_truth.txt')
+    validation_labels_file = open('/home/bcrafton3/dfa/imagenet_labels/validation_labels.txt')
     lines = validation_labels_file.readlines()
     for ii in range(len(lines)):
         validation_labels.append(int(lines[ii]))
@@ -134,7 +134,7 @@ def get_train_dataset():
 
     print ("making labels dict")
 
-    f = open("/home/bcrafton3/ILSVRC2012/train_labels.txt", 'r')
+    f = open('/home/bcrafton3/dfa/imagenet_labels/train_labels.txt', 'r')
     lines = f.readlines()
 
     labels = {}
@@ -172,6 +172,7 @@ label = tf.placeholder(tf.int64, shape=[None])
 val_imgs, val_labs = get_validation_dataset()
 
 val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
+val_dataset = val_dataset.shuffle(len(val_imgs))
 val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
 val_dataset = val_dataset.map(train_preprocess, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
@@ -183,6 +184,7 @@ val_dataset = val_dataset.prefetch(8)
 train_imgs, train_labs = get_train_dataset()
 
 train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
+train_dataset = train_dataset.shuffle(len(train_imgs))
 train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
 train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
 train_dataset = train_dataset.batch(batch_size)
@@ -197,8 +199,8 @@ features, labels = iterator.get_next()
 features = tf.reshape(features, (-1, 227, 227, 3))
 labels = tf.one_hot(labels, depth=num_classes)
 
-training_iterator = training_dataset.make_initializable_iterator()
-validation_iterator = validation_dataset.make_initializable_iterator()
+train_iterator = train_dataset.make_initializable_iterator()
+val_iterator = val_dataset.make_initializable_iterator()
 
 ###############################################################
 
@@ -259,31 +261,33 @@ config.gpu_options.allow_growth=True
 sess = tf.InteractiveSession(config=config)
 tf.global_variables_initializer().run()
 
-training_handle = sess.run(training_iterator.string_handle())
-validation_handle = sess.run(validation_iterator.string_handle())
+train_handle = sess.run(train_iterator.string_handle())
+val_handle = sess.run(val_iterator.string_handle())
 
 for i in range(0, epochs):
 
-    sess.run(training_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
+    sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
     train_correct = 0.0
     train_total = 0.0
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _ = sess.run([total_correct, train])
+        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle})
         train_correct += _total_correct
         train_total += batch_size
 
         print ("train accuracy: " + str(train_correct / train_total))        
     
-    sess.run(validation_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
+    sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
     val_correct = 0.0
     val_total = 0.0
     for j in range(0, len(val_imgs), batch_size):
         print (j)
-        _total_correct = sess.run([total_correct])
+        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle})
         val_correct += _total_correct
         val_total += batch_size
+
+        print ("val accuracy: " + str(val_correct / val_total))
 
     if args.save:
         [w] = sess.run([weights], feed_dict={})
