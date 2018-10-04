@@ -156,6 +156,7 @@ def train_preprocess(image, label):
 
 print ("making labels dict")
 
+'''
 f = open("/home/bcrafton3/ILSVRC2012/train_labels.txt", 'r')
 lines = f.readlines()
 
@@ -167,6 +168,18 @@ for line in lines:
     label_counter += 1
 
 f.close()
+'''
+
+f = open("/home/bcrafton3/ILSVRC2012/train_labels1.txt", 'r')
+lines = f.readlines()
+
+labels = {}
+for line in lines:
+    line = line.split()
+    print (line)
+    labels[line[1]] = line[0]
+
+f.close()
 
 print ("building dataset")
 
@@ -176,6 +189,7 @@ for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/train/'):
             for file in folder_files:
                 training_images.append(os.path.join(folder_subdir, file))
                 training_labels.append(labels[folder])
+                print(labels[folder])
 
 remainder = len(training_labels) % batch_size
 training_images = training_images[:(-remainder)]

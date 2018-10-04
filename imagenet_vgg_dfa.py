@@ -201,7 +201,8 @@ labels = tf.one_hot(labels, depth=num_classes)
 
 ###############################################################
 
-vgg_weights_path='../vgg_weights/vgg_weights.npy'
+#vgg_weights_path='../vgg_weights/vgg_weights.npy'
+vgg_weights_path='vgg_imagenet_weights.npy'
 
 l0 = Convolution(input_sizes=[batch_size, 224, 224, 3], filter_sizes=[3, 3, 3, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv1", load=vgg_weights_path, train=False)
 l1 = Convolution(input_sizes=[batch_size, 224, 224, 64], filter_sizes=[3, 3, 64, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv2", load=vgg_weights_path, train=False)
@@ -281,7 +282,7 @@ for i in range(0, epochs):
  
     if args.save:
         [w] = sess.run([weights], feed_dict={})
-        np.save("vgg_imagenet_weights", w)
+        np.save("vgg_imagenet_weights_1", w)
 
     print('epoch {}/{}'.format(i, epochs))   
     

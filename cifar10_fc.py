@@ -81,15 +81,19 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 #XTEST = tf.reshape(XTEST, [batch_size, 3072])
 XTEST = tf.placeholder(tf.float32, [None, 3072])
 
+#l0 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.1, last_layer=False)
 l0 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l1 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=sparse, rank=rank)
 
+#l2 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.1, last_layer=False)
 l2 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l3 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 
+#l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.1, last_layer=False)
 l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l5 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 
+#l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.1, last_layer=True)
 l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6])
@@ -115,12 +119,18 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar10
 
+mean = np.mean(x_train, axis=(0, 1, 2), keepdims=True)
+std = np.std(x_train, axis=(0, 1, 2), keepdims=True)
+
+x_train = x_train / 255.
+# x_train = (x_train - mean) / 255.
 x_train = x_train.reshape(TRAIN_EXAMPLES, 3072)
 y_train = keras.utils.to_categorical(y_train, 10)
 
+x_test = x_test / 255.
+# x_test = (x_test - mean) / 255.
 x_test = x_test.reshape(TEST_EXAMPLES, 3072)
 y_test = keras.utils.to_categorical(y_test, 10)
-
 ##############################################
 
 filename = "cifar10fc_" +               \
