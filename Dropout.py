@@ -10,6 +10,11 @@ class Dropout(Layer):
     def __init__(self, rate):
         self.rate = rate
 
+    ###################################################################
+
+    def get_weights(self):
+        return []
+
     def num_params(self):
         return 0
 
@@ -19,16 +24,25 @@ class Dropout(Layer):
             return X * self.dropout_mask
         else:
             return X
+            
+    ###################################################################
 
     def backward(self, AI, AO, DO):
         return DO * self.dropout_mask
         
-    def gv(self, AIN, AOUT, DO):
+    def gv(self, AI, AO, DO):
         return []
+        
+    def train(self, AI, AO, DO): 
+        return []
+        
+    ###################################################################
 
     def dfa(self, AI, AO, E, DO):
-        return tf.ones(shape=(tf.shape(AI)))
+        return DO * self.dropout_mask
 
     def dfa_gv(self, AI, AO, E, DO):
         return []
 
+    def dfa(self, AI, AO, E, DO):
+        return []
