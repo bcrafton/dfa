@@ -15,6 +15,7 @@ parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--save', type=int, default=0)
+parser.add_argument('--name', type=str, default="imagenet_vgg")
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -123,9 +124,9 @@ def parse_function(filename, label):
     image = tf.image.decode_jpeg(image_string, channels=3)
 
     # This will convert to float values in [0, 1]
-    image = tf.image.convert_image_dtype(image, tf.float32) * 256.
+    #image = tf.image.convert_image_dtype(image, tf.float32) * 256.
 
-    image = tf.random_crop(value=image, size=[224, 224, 3])
+    #image = tf.random_crop(value=image, size=[224, 224, 3])
     image = tf.image.resize_images(image, [224, 224])
     # image = tf.crop_and_resize()
 
@@ -162,6 +163,7 @@ def get_validation_dataset():
     for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/val/'):
         for file in files:
             validation_images.append(os.path.join('/home/bcrafton3/ILSVRC2012/val/', file))
+    validation_images = sorted(validation_images)
 
     validation_labels_file = open('/home/bcrafton3/dfa/imagenet_labels/validation_labels.txt')
     lines = validation_labels_file.readlines()
@@ -247,7 +249,7 @@ train_dataset = train_dataset.prefetch(8)
 handle = tf.placeholder(tf.string, shape=[])
 iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types, train_dataset.output_shapes)
 features, labels = iterator.get_next()
-features = tf.reshape(features, (-1, 227, 227, 3))
+features = tf.reshape(features, (-1, 224, 224, 3))
 labels = tf.one_hot(labels, depth=num_classes)
 
 train_iterator = train_dataset.make_initializable_iterator()
@@ -256,9 +258,14 @@ val_iterator = val_dataset.make_initializable_iterator()
 ###############################################################
 
 train_conv=False
-train_fc=False
+train_fc=True
 weights_conv='../vgg_weights/vgg_weights.npy'
-weights_fc='../vgg_weights/vgg_weights.npy'
+weights_fc=None # '../vgg_weights/vgg_weights.npy'
+
+if args.dfa:
+    bias = 0.0
+else:
+    bias = 0.0
 
 ###############################################################
 
@@ -286,18 +293,18 @@ l16 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512
 l17 = MaxPool(size=[batch_size, 14, 14, 512], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
 
 l18 = ConvToFullyConnected(shape=[7, 7, 512])
-l19 = FullyConnected(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="fc1", load=weights_fc, train=train_fc)
-#l20 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc1_fb")
+l19 = FullyConnected(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc)
+l20 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc1_fb")
 
-l21 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
-#l22 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc2_fb")
+l21 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
+l22 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc2_fb")
 
-l23 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
+l23 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
 
 ###############################################################
 
-#model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23])
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l21, l23])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23])
+#model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l21, l23])
 
 predict = tf.nn.softmax(model.predict(X=features))
 
@@ -309,6 +316,8 @@ else:
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+
+weights = model.get_weights()
 
 print (model.num_params())
 
@@ -341,6 +350,7 @@ for i in range(0, epochs):
     val_total = 0.0
     for j in range(0, len(val_imgs), batch_size):
         print (j)
+
         [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle})
         val_correct += _total_correct
         val_total += batch_size
@@ -348,8 +358,8 @@ for i in range(0, epochs):
         print ("val accuracy: " + str(val_correct / val_total))
 
     if args.save:
-        [w] = sess.run([weights], feed_dict={})
-        np.save("imagenet_weights", w)
+        [w] = sess.run([weights], feed_dict={handle: val_handle})
+        np.save(args.name, w)
 
     print('epoch {}/{}'.format(i, epochs))
     
