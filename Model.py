@@ -25,19 +25,14 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X, dropout=True)
+                A[ii] = l.forward(X)
             else:
-                A[ii] = l.forward(A[ii-1], dropout=True)
-
-        #L = tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=A[self.num_layers-1])
-        #L = tf.Print(L, [L], message="")
-        #L = tf.reshape(L, (128, 1)) * tf.ones(shape=(1, 1000))
+                A[ii] = l.forward(A[ii-1])
 
         E = tf.nn.softmax(A[self.num_layers-1]) - Y
-        E = E / 128.
-        # E = L * E
-
-        # E = tf.Print(E, [tf.reduce_max(E), tf.reduce_min(E), E], message="E: ", summarize=1000)
+        N = tf.shape(A[self.num_layers-1])[0]
+        N = tf.cast(N, dtype=tf.float32)
+        E = E / N
 
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
@@ -65,19 +60,14 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X, dropout=True)
+                A[ii] = l.forward(X)
             else:
-                A[ii] = l.forward(A[ii-1], dropout=True)
-            
-        #L = tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=A[self.num_layers-1])
-        #L = tf.Print(L, [L], message="")
-        #L = tf.reshape(L, (128, 1)) * tf.ones(shape=(1, 1000))
+                A[ii] = l.forward(A[ii-1])
 
         E = tf.nn.softmax(A[self.num_layers-1]) - Y
-        E = E / 128.
-        # E = L * E
-
-        # E = tf.Print(E, [tf.reduce_max(E), tf.reduce_min(E), E], message="E: ", summarize=1000)
+        N = tf.shape(A[self.num_layers-1])[0]
+        N = tf.cast(N, dtype=tf.float32)
+        E = E / N
 
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
@@ -107,11 +97,14 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X, dropout=True)
+                A[ii] = l.forward(X)
             else:
-                A[ii] = l.forward(A[ii-1], dropout=True)
+                A[ii] = l.forward(A[ii-1])
             
         E = A[self.num_layers-1] - Y
+        N = tf.shape(A[self.num_layers-1])[0]
+        N = tf.cast(N, dtype=tf.float32)
+        E = E / N
             
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
@@ -139,11 +132,14 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X, dropout=True)
+                A[ii] = l.forward(X)
             else:
-                A[ii] = l.forward(A[ii-1], dropout=True)
+                A[ii] = l.forward(A[ii-1])
             
         E = A[self.num_layers-1] - Y
+        N = tf.shape(A[self.num_layers-1])[0]
+        N = tf.cast(N, dtype=tf.float32)
+        E = E / N
             
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
@@ -172,11 +168,14 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X, dropout=True)
+                A[ii] = l.forward(X)
             else:
-                A[ii] = l.forward(A[ii-1], dropout=True)
+                A[ii] = l.forward(A[ii-1])
             
         E = A[self.num_layers-1] - Y
+        N = tf.shape(A[self.num_layers-1])[0]
+        N = tf.cast(N, dtype=tf.float32)
+        E = E / N
             
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
@@ -197,11 +196,14 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X, dropout=True)
+                A[ii] = l.forward(X)
             else:
-                A[ii] = l.forward(A[ii-1], dropout=True)
+                A[ii] = l.forward(A[ii-1])
             
         E = A[self.num_layers-1] - Y
+        N = tf.shape(A[self.num_layers-1])[0]
+        N = tf.cast(N, dtype=tf.float32)
+        E = E / N
             
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
@@ -223,9 +225,9 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X, dropout=False)
+                A[ii] = l.forward(X)
             else:
-                A[ii] = l.forward(A[ii-1], dropout=False)
+                A[ii] = l.forward(A[ii-1])
                 
         return A[self.num_layers-1]
         
@@ -247,9 +249,9 @@ class Model:
         for ii in range(N):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X, dropout=False)
+                A[ii] = l.forward(X)
             else:
-                A[ii] = l.forward(A[ii-1], dropout=False)
+                A[ii] = l.forward(A[ii-1])
                 
         return A[N-1]
         

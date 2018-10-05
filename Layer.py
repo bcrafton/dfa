@@ -15,7 +15,7 @@ class Layer:
     def num_params(self):
         pass
 
-    def forward(self, X, dropout=False):
+    def forward(self, X):
         pass
 
     ###################################################################           

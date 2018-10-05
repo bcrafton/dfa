@@ -24,7 +24,7 @@ class MaxPool(Layer):
     def num_params(self):
         return 0
 
-    def forward(self, X, dropout=False):
+    def forward(self, X):
         Z = tf.nn.max_pool(X, ksize=self.ksize, strides=self.strides, padding=self.padding)
         # Z = tf.Print(Z, [Z], message="", summarize=1000)
         return Z

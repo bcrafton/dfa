@@ -58,7 +58,7 @@ class Convolution(Layer):
         bias_weights_size = self.fout
         return filter_weights_size + bias_weights_size
                 
-    def forward(self, X, dropout=False):
+    def forward(self, X):
         Z = tf.add(tf.nn.conv2d(X, self.filters, self.strides, self.padding), tf.reshape(self.bias, [1, 1, self.fout]))
         # Z = tf.Print(Z, [tf.shape(Z)], message=self.name, summarize=25)
         A = self.activation.forward(Z)

@@ -111,7 +111,7 @@ class FeedbackConv(Layer):
     def num_params(self):
         return 0
         
-    def forward(self, X, dropout=False):
+    def forward(self, X):
         return X
                 
     ###################################################################           
