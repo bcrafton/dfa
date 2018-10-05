@@ -103,10 +103,19 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13
 
 predict = model.predict(X=XTEST)
 
-if args.dfa:
-    train = model.dfa(X=XTRAIN, Y=YTRAIN)
+if args.opt == "adam":
+    if args.dfa:
+        grads_and_vars = model.dfa_gvs(X=XTRAIN, Y=YTRAIN)
+    else:
+        grads_and_vars = model.gvs(X=XTRAIN, Y=YTRAIN)
+        
+    train = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+
 else:
-    train = model.train(X=XTRAIN, Y=YTRAIN)
+    if args.dfa:
+        train = model.dfa(X=XTRAIN, Y=YTRAIN)
+    else:
+        train = model.train(X=XTRAIN, Y=YTRAIN)
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
