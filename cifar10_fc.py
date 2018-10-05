@@ -92,7 +92,7 @@ l4 = Dropout(rate=0.25)
 l5 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 
 l6 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.1, last_layer=False)
-l7 = Dropout(rate=0.25)
+l7 = Dropout(rate=0.5)
 #l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
 l8 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 

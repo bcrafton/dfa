@@ -16,7 +16,6 @@ parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
-parser.add_argument('--random_filters', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -40,10 +39,7 @@ from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
 from FeedbackFC import FeedbackFC
-if args.random_filters:
-    from FeedbackConv import FeedbackConv
-else:
-    from FeedbackConv1 import FeedbackConv
+from FeedbackConv import FeedbackConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -69,7 +65,7 @@ rank = args.rank
 
 ##############################################
 
-ext = "_dfa_" + str(args.dfa) + "_sparse_" + str(args.sparse) + "_random_filters_" + str(args.random_filters)
+ext = "_dfa_" + str(args.dfa) + "_sparse_" + str(args.sparse)
 
 tf.set_random_seed(0)
 tf.reset_default_graph()

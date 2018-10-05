@@ -4,7 +4,7 @@ import os
 import threading
 
 def run_command(sparse, rank, name, num):
-    cmd = "python mnist_fc.py --epochs 100 --batch_size 32 --alpha 0.01 --gpu -1 --dfa 1 --sparse %d --rank %d --init zero --opt adam --save 1 --name %s --num %d --shuffle 1" % (sparse, rank, name, num)
+    cmd = "python mnist_fc.py --epochs 100 --batch_size 32 --alpha 0.01 --gpu -1 --dfa 1 --sparse %d --rank %d --init zero --opt adam --save 1 --name %s --num %d" % (sparse, rank, name, num)
     os.system(cmd)
     return
 
