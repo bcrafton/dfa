@@ -74,6 +74,7 @@ tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
 dropout_rate = tf.placeholder(tf.float32, shape=())
+learning_rate = tf.placeholder(tf.float32, shape=())
 #XTRAIN = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTRAIN = tf.placeholder(tf.float32, [None, 10])
 #XTRAIN = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), XTRAIN)
@@ -114,7 +115,8 @@ if args.opt == "adam":
     else:
         grads_and_vars = model.gvs(X=XTRAIN, Y=YTRAIN)
         
-    train = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=0.975, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
+    # train = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=0.975, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
 
 else:
     if args.dfa:
@@ -167,11 +169,13 @@ f.close()
 ##############################################
 
 for ii in range(EPOCHS):
-    print (ii)
+    decay = np.power(0.995, ii)
+    lr = ALPHA * decay
+    print (ii, lr)
     for jj in range(0, int(TRAIN_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
         start = jj % TRAIN_EXAMPLES
         end = jj % TRAIN_EXAMPLES + BATCH_SIZE
-        sess.run([train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
+        sess.run([train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
     
     count = 0
     total_correct = 0
@@ -179,7 +183,7 @@ for ii in range(EPOCHS):
     for jj in range(0, int(TEST_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
         start = jj % TEST_EXAMPLES
         end = jj % TEST_EXAMPLES + BATCH_SIZE
-        correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, XTEST: x_test[start:end], YTEST: y_test[start:end]})
+        correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, XTEST: x_test[start:end], YTEST: y_test[start:end]})
 
         count += BATCH_SIZE
         total_correct += correct
