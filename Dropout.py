@@ -35,7 +35,7 @@ class Dropout(Layer):
         
     ###################################################################
 
-    def dfa(self, AI, AO, E, DO):
+    def dfa_backward(self, AI, AO, E, DO):
         return DO * self.dropout_mask
 
     def dfa_gv(self, AI, AO, E, DO):
