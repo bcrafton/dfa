@@ -16,6 +16,7 @@ parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
+parser.add_argument('--name', type=str, default="cifar100_conv_weights")
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -64,12 +65,23 @@ ALPHA = args.alpha
 sparse = args.sparse
 rank = args.rank
 
+train_conv=True
+train_fc=True
+weights_conv=None # './cifar100/cifar100_conv_0.005.npy'
+weights_fc=None
+
+if args.dfa:
+    bias = 0.0
+else:
+    bias = 0.0
+
 ##############################################
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
+learning_rate = tf.placeholder(tf.float32, shape=())
 XTRAIN = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTRAIN = tf.placeholder(tf.float32, [None, 100])
 XTRAIN = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), XTRAIN)
@@ -78,27 +90,26 @@ XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 100])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
-l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name='conv1')
+l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
 l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l2 = FeedbackConv(size=[batch_size, 16, 16, 96], num_classes=100, sparse=sparse, rank=rank, name='conv1_fb')
 
-l3 = Convolution(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name='conv2')
+l3 = Convolution(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
 l4 = MaxPool(size=[batch_size, 16, 16, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l5 = FeedbackConv(size=[batch_size, 8, 8, 128], num_classes=100, sparse=sparse, rank=rank, name='conv2_fb')
 
-l6 = Convolution(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name='conv3')
+l6 = Convolution(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False, name='conv3', load=weights_conv, train=train_conv)
 l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l8 = FeedbackConv(size=[batch_size, 4, 4, 256], num_classes=100, sparse=sparse, rank=rank, name='conv3_fb')
 
 l9 = ConvToFullyConnected(shape=[4, 4, 256])
-l10 = FullyConnected(size=[4*4*256, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name='fc1')
+l10 = FullyConnected(size=[4*4*256, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
 l11 = FeedbackFC(size=[4*4*256, 2048], num_classes=100, sparse=sparse, rank=rank, name='fc1_fb')
 
-l12 = FullyConnected(size=[2048, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name='fc2')
+l12 = FullyConnected(size=[2048, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
 l13 = FeedbackFC(size=[2048, 2048], num_classes=100, sparse=sparse, rank=rank, name='fc2_fb')
 
-# have to adjust lr if using sigmoid
-l14 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True, name='fc3')
+l14 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True, name='fc3', load=weights_fc, train=train_fc)
 
 ##############################################
 
@@ -108,13 +119,20 @@ predict = model.predict(X=XTEST)
 
 weights = model.get_weights()
 
-if args.opt == "adam":
+if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
     if args.dfa:
         grads_and_vars = model.dfa_gvs(X=XTRAIN, Y=YTRAIN)
     else:
         grads_and_vars = model.gvs(X=XTRAIN, Y=YTRAIN)
         
-    train = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    if args.opt == "adam":
+        train = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "rms":
+        train = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "decay":
+        train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
+    else:
+        assert(False)
 
 else:
     if args.dfa:
@@ -150,7 +168,9 @@ filename = "cifar100_conv_" +           \
            str(args.sparse) + "_" +     \
            str(args.gpu) + "_" +        \
            args.init + "_" +            \
-           args.opt +                   \
+           args.opt + "_" +             \
+           str(args.save) + "_" +       \
+           args.name +                  \
            ".results"
 
 f = open(filename, "w")
@@ -161,11 +181,13 @@ f.close()
 ##############################################
 
 for ii in range(EPOCHS):
+    decay = np.power(0.99, ii)
+    lr = ALPHA * decay
     print (ii)
     for jj in range(0, int(TRAIN_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
         start = jj % TRAIN_EXAMPLES
         end = jj % TRAIN_EXAMPLES + BATCH_SIZE
-        sess.run([train], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
+        sess.run([train], feed_dict={batch_size: BATCH_SIZE, learning_rate: lr, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
     
     count = 0
     total_correct = 0
@@ -173,7 +195,7 @@ for ii in range(EPOCHS):
     for jj in range(0, int(TEST_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
         start = jj % TEST_EXAMPLES
         end = jj % TEST_EXAMPLES + BATCH_SIZE
-        correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, XTEST: x_test[start:end], YTEST: y_test[start:end]})
+        correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, learning_rate: 0.0, XTEST: x_test[start:end], YTEST: y_test[start:end]})
 
         count += BATCH_SIZE
         total_correct += correct
@@ -187,7 +209,7 @@ for ii in range(EPOCHS):
     
     if args.save:
         [w] = sess.run([weights], feed_dict={})
-        np.save("cifar100_conv_weights", w)
+        np.save(args.name, w)
 
 ##############################################
 

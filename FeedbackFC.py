@@ -39,8 +39,11 @@ class FeedbackFC(Layer):
                 self.mask = np.ones(shape=(self.num_classes, self.output_size))
             
             #### IF MATRIX HAS USER-SPECIFIED RANK ####
-            sqrt_fan_out = np.sqrt(self.output_size)
-            
+            if sparse:
+                sqrt_fan_out = np.sqrt(1.0 * self.output_size / self.num_classes * self.sparse)
+            else:
+                sqrt_fan_out = np.sqrt(self.output_size)
+
             if self.rank > 0:
                 hi = 1.0 / sqrt_fan_out
                 lo = -hi
@@ -53,7 +56,6 @@ class FeedbackFC(Layer):
                     
                 b = np.transpose(b)
                 b = b * self.mask
-                b = b * (hi / np.average(np.absolute(b)))
                 assert(np.linalg.matrix_rank(b) == self.rank)
                 
                 self.B = tf.cast(tf.Variable(b), tf.float32)
@@ -63,7 +65,10 @@ class FeedbackFC(Layer):
 
                 b = np.random.uniform(lo, hi, size=(self.num_classes, self.output_size))
                 b = b * self.mask
-                b = b * (hi / np.average(np.absolute(b)))
+
+                # if sparse:
+                #     b = b / 10.
+
                 self.B = tf.cast(tf.Variable(b), tf.float32)            
 
             # self.B = tf.get_variable(name="feedback_fc_" + str(FeedbackFC.num), shape=(self.num_classes, self.output_size))

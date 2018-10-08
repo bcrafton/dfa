@@ -85,13 +85,7 @@ class FullyConnected(Layer):
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
 
-        '''
-        if self.last_layer:
-            DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message="FC Last: ")
-        else:
-            DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message="FC: ")
-        '''
-        # DW = tf.Print(DW, [tf.shape(DW), tf.shape(self.weights)], message="")
+        # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
 
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
@@ -116,13 +110,7 @@ class FullyConnected(Layer):
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
 
-        '''
-        if self.last_layer:
-            DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message="FC Last: ")
-        else:
-            DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message="FC: ")
-        '''
-        # DW = tf.Print(DW, [tf.shape(DW), tf.shape(self.weights)], message="")
+        # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
 
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
