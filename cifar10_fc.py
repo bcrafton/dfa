@@ -156,6 +156,7 @@ filename = "cifar10_fc_" +              \
            str(args.alpha) + "_" +      \
            str(args.dfa) + "_" +        \
            str(args.sparse) + "_" +     \
+           str(args.rank) + "_" +       \
            str(args.gpu) + "_" +        \
            args.init + "_" +            \
            args.opt +                   \
@@ -167,6 +168,8 @@ f.write("total params: " + str(model.num_params()) + "\n")
 f.close()
 
 ##############################################
+
+accs = []
 
 for ii in range(EPOCHS):
     decay = np.power(0.995, ii)
@@ -188,7 +191,10 @@ for ii in range(EPOCHS):
         count += BATCH_SIZE
         total_correct += correct
 
-    print (total_correct * 1.0 / count)
+    acc = total_correct * 1.0 / count
+    accs.append(acc) 
+
+    print (acc)
     sys.stdout.flush()
     
     f = open(filename, "a")
@@ -197,6 +203,7 @@ for ii in range(EPOCHS):
 
     if args.save:
         [w] = sess.run([weights], feed_dict={})
+        w['acc'] = accs
         np.save(args.name, w)
 
 ##############################################
