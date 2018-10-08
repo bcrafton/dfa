@@ -115,8 +115,8 @@ if args.opt == "adam":
     else:
         grads_and_vars = model.gvs(X=XTRAIN, Y=YTRAIN)
         
-    train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
-    # train = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=0.975, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    # train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
+    train = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=0.975, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
 
 else:
     if args.dfa:
