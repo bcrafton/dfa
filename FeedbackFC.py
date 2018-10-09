@@ -52,10 +52,13 @@ class FeedbackFC(Layer):
                 for ii in range(self.rank):
                     tmp1 = np.random.uniform(lo, hi, size=(self.output_size, 1))
                     tmp2 = np.random.uniform(lo, hi, size=(1, self.num_classes))
-                    b = b + (1.0 / self.rank) * np.dot(tmp1, tmp2)
-                    
+                    b = b + np.dot(tmp1, tmp2)
+
                 b = np.transpose(b)
                 b = b * self.mask
+                # this does take into account the sqrt(sparse)
+                b = b * (hi / np.std(b))
+                # print (np.std(b))
                 assert(np.linalg.matrix_rank(b) == self.rank)
                 
                 self.B = tf.cast(tf.Variable(b), tf.float32)
@@ -65,9 +68,6 @@ class FeedbackFC(Layer):
 
                 b = np.random.uniform(lo, hi, size=(self.num_classes, self.output_size))
                 b = b * self.mask
-
-                # if sparse:
-                #     b = b / 10.
 
                 self.B = tf.cast(tf.Variable(b), tf.float32)            
 
