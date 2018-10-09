@@ -73,6 +73,9 @@ class FullyConnected(Layer):
         return DI
         
     def gv(self, AI, AO, DO):
+        if not self._train:
+            return []
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
@@ -98,6 +101,9 @@ class FullyConnected(Layer):
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
+        if not self._train:
+            return []
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
