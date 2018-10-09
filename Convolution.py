@@ -32,6 +32,7 @@ class Convolution(Layer):
         self._train = train
         
         if load:
+            print ("Loading Weights: " + self.name)
             weight_dict = np.load(load, encoding='latin1').item()
             self.filters = tf.Variable(weight_dict[self.name])
             self.bias = tf.Variable(weight_dict[self.name + '_bias'])

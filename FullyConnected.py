@@ -33,6 +33,7 @@ class FullyConnected(Layer):
         self._train = train
         
         if load:
+            print ("Loading Weights: " + self.name)
             weight_dict = np.load(load).item()
             self.weights = tf.Variable(weight_dict[self.name])
             self.bias = tf.Variable(weight_dict[self.name + '_bias'])

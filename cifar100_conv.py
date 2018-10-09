@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--decay', type=float, default=0.99)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -65,9 +66,10 @@ ALPHA = args.alpha
 sparse = args.sparse
 rank = args.rank
 
-train_conv=True
+train_conv=False
 train_fc=True
-weights_conv=None # './cifar100/cifar100_conv_0.005.npy'
+
+weights_conv='./cifar100/cifar100_conv_0.005.npy'
 weights_fc=None
 
 if args.dfa:
@@ -181,7 +183,7 @@ f.close()
 ##############################################
 
 for ii in range(EPOCHS):
-    decay = np.power(0.99, ii)
+    decay = np.power(args.decay, ii)
     lr = ALPHA * decay
     print (ii)
     for jj in range(0, int(TRAIN_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
