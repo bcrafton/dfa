@@ -46,8 +46,13 @@ for sparse in range(1, 10+1):
             fname = args.benchmark + "/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
             results = np.load(fname).item()
             
-            fb = results['fc1_fb']
-            w2 = results['fc2']
+            if args.benchmark == 'mnist':
+                fb = results['fc1_fb']
+                w2 = results['fc2']
+            else:
+                fb = results['fc3_fb']
+                w2 = results['fc4']
+            
             acc = np.max(results['acc'])
 
             # dont forget transpose
@@ -92,25 +97,52 @@ if args.group_key:
         else:
             data_grouped[key] = [[d[args.x], d[args.y]]]
 
-    data = []
-    for key in data_grouped:
-        data.append( data_grouped[key] )
+else:
+    data_grouped = {}
+    ii = 0
+    for ii in range(len(data)):
+        d = data[ii]
+        key = ''
+        
+        if key in data_grouped.keys():
+            data_grouped[key].append([d[args.x], d[args.y]])
+        else:
+            data_grouped[key] = [[d[args.x], d[args.y]]]
+
+data = []
+for key in data_grouped:
+    data.append( data_grouped[key] )
 
 #######################################
 
-dim = len(np.shape(data))
+if args.group_key:
+    dim = 3
+else:
+    dim = 2
 
 if dim == 3:
-    for d in data:
+    for ii in range(len(data)):
+        d = data[ii]
         d = np.transpose(d)
         plt.scatter(d[0], d[1], s=10, label=args.group_key)
 
-    name = "%s_%d_%s_%s_%s" % (args.fix_key, args.fix_val, args.x, args.y, args.group_key)
+    if args.fix_key:
+        name = "%s_%d_%s_%s_%s" % (args.fix_key, args.fix_val, args.x, args.y, args.group_key)
+    else:
+        name = "%s_%s_%s" % (args.x, args.y, args.group_key)
+        
     plt.savefig(name + '.png')
+
+else:
+    data = np.transpose(data)
+    plt.scatter(data[0], data[1], s=10)
     
-    
-    
-    
+    if args.fix_key:
+        name = "%s_%d_%s_%s" % (args.fix_key, args.fix_val, args.x, args.y)
+    else:
+        name = "%s_%s_%s" % (args.x, args.y)
+        
+    plt.savefig(name + '.png')
     
     
     
