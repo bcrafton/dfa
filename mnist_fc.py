@@ -68,8 +68,8 @@ x_train = x_train.reshape(TRAIN_EXAMPLES, 784)
 x_test = x_test.reshape(TEST_EXAMPLES, 784)
 x_train = x_train.astype('float32')
 x_test = x_test.astype('float32')
-x_train /= 255
-x_test /= 255
+x_train /= 255.
+x_test /= 255.
 
 y_train = keras.utils.to_categorical(y_train, NUM_CLASSES)
 y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
@@ -85,11 +85,11 @@ learning_rate = tf.placeholder(tf.float32, shape=())
 X = tf.placeholder(tf.float32, [None, 784])
 Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = FullyConnected(size=[784, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=0.0, last_layer=False, name="fc1")
+l0 = FullyConnected(size=[784, 400], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=0.0, last_layer=False, name="fc1")
 l1 = Dropout(rate=dropout_rate)
-l2 = FeedbackFC(size=[784, 1000], num_classes=10, sparse=sparse, rank=args.rank, name="fc1_fb")
+l2 = FeedbackFC(size=[784, 400], num_classes=10, sparse=sparse, rank=args.rank, name="fc1_fb")
 
-l3 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=0.0, last_layer=True, name="fc2")
+l3 = FullyConnected(size=[400, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=0.0, last_layer=True, name="fc2")
 
 model = Model(layers=[l0, l1, l2, l3])
 
@@ -106,9 +106,9 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         grads_and_vars = model.gvs(X=X, Y=Y)
         
     if args.opt == "adam":
-        train = tf.train.AdamOptimizer(learning_rate=args.alpha, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "rms":
-        train = tf.train.RMSPropOptimizer(learning_rate=args.alpha, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "decay":
         train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
     else:
@@ -153,8 +153,12 @@ f.close()
 accs = []
 
 for ii in range(EPOCHS):
-    decay = np.power(args.decay, ii)
-    lr = args.alpha * decay
+    if args.opt == 'decay' or args.opt == 'gd':
+        decay = np.power(args.decay, ii)
+        lr = args.alpha * decay
+    else:
+        lr = args.alpha
+        
     print (ii)
     
     #############################
@@ -165,7 +169,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.1, learning_rate: lr, X: xs, Y: ys})
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
         _count += BATCH_SIZE
