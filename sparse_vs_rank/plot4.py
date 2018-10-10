@@ -142,6 +142,12 @@ if dim == 3:
     
     plt.legend(fontsize=18, markerscale=4.0)
 
+    if args.fix_key:
+        title = "%s %s %d" % (args.benchmark, args.fix_key, args.fix_val)
+    else:
+        title = args.benchmark
+    plt.title(title, fontsize=18)
+
     plt.savefig(name + '.png')
 
 else:
@@ -158,6 +164,12 @@ else:
 
     plt.ylabel(args.y, fontsize=18)
     plt.yticks(fontsize=14)
+
+    if args.fix_key:
+        title = "%s %s %d" % (args.benchmark, args.fix_key, args.fix_val)
+    else:
+        title = args.benchmark
+    plt.title(title, fontsize=18)
 
     plt.savefig(name + '.png')
     
