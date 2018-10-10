@@ -21,6 +21,10 @@ args = parser.parse_args()
 
 #######################################
 
+fig = plt.figure(figsize=(10, 10))
+
+#######################################
+
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
 
@@ -101,7 +105,7 @@ if dim == 3:
         d = np.transpose(d)
         plt.scatter(d[0], d[1], s=10, label=args.group_key)
 
-plt.show()
+plt.figsave()
     
     
     
