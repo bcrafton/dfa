@@ -1,16 +1,21 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--benchmark', type=str, default='mnist')
+parser.add_argument('--itrs', type=int, default=10)
+parser.add_argument('--rank', type=int, default=10)
+args = parser.parse_args()
+
+benchmark = args.benchmark
+itrs = range(1, args.itrs+1)
+rank = args.rank
 sparses = []
 accs = []
-rank = 10
 
-benchmark = 'mnist'
-itrs = range(1, 10+1)
-
-benchmark = 'cifar10'
-itrs = range(1, 1+1)
+fig = plt.figure(figsize=(10, 10))
 
 for sparse in range(1, rank + 1): 
     for itr in itrs:
@@ -25,11 +30,11 @@ for sparse in range(1, rank + 1):
        
     scatter = plt.scatter(sparses, accs, s=10, label="Sparse " + str(sparse))
      
-plt.xlabel("Rank", fontsize=18)
+plt.xlabel("Sparse", fontsize=18)
 plt.xticks(fontsize=14)
 
 plt.ylabel("Accuracy", fontsize=18)
 plt.yticks(fontsize=14)
 
 plt.legend(fontsize=18, markerscale=4.0)
-plt.show()
+plt.savefig(benchmark + '_plot_rank' + str(rank) + '.png')
