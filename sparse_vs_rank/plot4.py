@@ -127,9 +127,9 @@ if dim == 3:
         plt.scatter(d[0], d[1], s=10, label=args.group_key)
 
     if args.fix_key:
-        name = "%s_%d_%s_%s_%s" % (args.fix_key, args.fix_val, args.x, args.y, args.group_key)
+        name = "%s_%s_%d_%s_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y, args.group_key)
     else:
-        name = "%s_%s_%s" % (args.x, args.y, args.group_key)
+        name = "%s_%s_%s_%s" % (args.benchmark, args.x, args.y, args.group_key)
         
     plt.savefig(name + '.png')
 
@@ -138,9 +138,9 @@ else:
     plt.scatter(data[0], data[1], s=10)
     
     if args.fix_key:
-        name = "%s_%d_%s_%s" % (args.fix_key, args.fix_val, args.x, args.y)
+        name = "%s_%s_%d_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y)
     else:
-        name = "%s_%s_%s" % (args.x, args.y)
+        name = "%s_%s_%s_%s" % (args.benchmark, args.x, args.y)
         
     plt.savefig(name + '.png')
     
