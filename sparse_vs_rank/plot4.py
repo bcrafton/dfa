@@ -105,7 +105,8 @@ if dim == 3:
         d = np.transpose(d)
         plt.scatter(d[0], d[1], s=10, label=args.group_key)
 
-plt.figsave()
+    name = "%s_%d_%s_%s_%s" % (args.fix_key, args.fix_val, args.x, args.y, args.group_key)
+    plt.savefig(name + '.png')
     
     
     
