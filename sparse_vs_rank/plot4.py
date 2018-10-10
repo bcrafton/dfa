@@ -109,9 +109,11 @@ else:
         else:
             data_grouped[key] = [[d[args.x], d[args.y]]]
 
-data = []
+points = []
+labels = [] 
 for key in data_grouped:
-    data.append( data_grouped[key] )
+    points.append( data_grouped[key] )
+    labels.append( key )
 
 #######################################
 
@@ -121,27 +123,42 @@ else:
     dim = 2
 
 if dim == 3:
-    for ii in range(len(data)):
-        d = data[ii]
-        d = np.transpose(d)
-        plt.scatter(d[0], d[1], s=10, label=args.group_key)
+    for ii in range(len(points)):
+        p = points[ii]
+        p = np.transpose(p)
+        label = "%s %d" % (args.group_key, labels[ii])
+        plt.scatter(p[0], p[1], s=10, label=label)
 
     if args.fix_key:
         name = "%s_%s_%d_%s_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y, args.group_key)
     else:
         name = "%s_%s_%s_%s" % (args.benchmark, args.x, args.y, args.group_key)
-        
+
+    plt.xlabel(args.x, fontsize=18)
+    plt.xticks(fontsize=14)
+
+    plt.ylabel(args.y, fontsize=18)
+    plt.yticks(fontsize=14)
+    
+    plt.legend(fontsize=18, markerscale=4.0)
+
     plt.savefig(name + '.png')
 
 else:
-    data = np.transpose(data)
-    plt.scatter(data[0], data[1], s=10)
+    points = np.transpose(points)
+    plt.scatter(points[0], points[1], s=10)
     
     if args.fix_key:
         name = "%s_%s_%d_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y)
     else:
         name = "%s_%s_%s_%s" % (args.benchmark, args.x, args.y)
-        
+
+    plt.xlabel(args.x, fontsize=18)
+    plt.xticks(fontsize=14)
+
+    plt.ylabel(args.y, fontsize=18)
+    plt.yticks(fontsize=14)
+
     plt.savefig(name + '.png')
     
     
