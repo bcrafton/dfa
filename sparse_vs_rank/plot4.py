@@ -127,7 +127,7 @@ if dim == 3:
         p = points[ii]
         p = np.transpose(p)
         label = "%s %d" % (args.group_key, labels[ii])
-        plt.scatter(p[0], p[1], s=10, label=label)
+        plt.scatter(p[0], p[1], s=30, label=label)
 
     if args.fix_key:
         name = "%s_%s_%d_%s_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y, args.group_key)
@@ -140,7 +140,7 @@ if dim == 3:
     plt.ylabel(args.y, fontsize=18)
     plt.yticks(fontsize=14)
     
-    plt.legend(fontsize=18, markerscale=4.0)
+    plt.legend(fontsize=18, markerscale=2.0)
 
     if args.fix_key:
         title = "%s %s %d" % (args.benchmark, args.fix_key, args.fix_val)
@@ -152,7 +152,7 @@ if dim == 3:
 
 else:
     points = np.transpose(points)
-    plt.scatter(points[0], points[1], s=10)
+    plt.scatter(points[0], points[1], s=30)
     
     if args.fix_key:
         name = "%s_%s_%d_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y)
