@@ -3,6 +3,7 @@ import numpy as np
 import math
 from scipy import stats
 import matplotlib.pyplot as plt
+import matplotlib.cm as cmap
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -13,6 +14,8 @@ parser.add_argument('--fix_key', type=str, default=None)
 parser.add_argument('--fix_val', type=int, default=0)
 
 parser.add_argument('--group_key', type=str, default=None)
+
+parser.add_argument('--color_key', type=str, default=None)
 
 parser.add_argument('--x', type=str, default=None)
 parser.add_argument('--y', type=str, default=None)
@@ -105,9 +108,15 @@ else:
         key = ''
         
         if key in data_grouped.keys():
-            data_grouped[key].append([d[args.x], d[args.y]])
+            if args.color_key:
+                data_grouped[key].append([d[args.x], d[args.y], d[args.color_key]])
+            else:
+                data_grouped[key].append([d[args.x], d[args.y]])
         else:
-            data_grouped[key] = [[d[args.x], d[args.y]]]
+            if args.color_key:
+                data_grouped[key] = [[d[args.x], d[args.y], d[args.color_key]]]
+            else:
+                data_grouped[key] = [[d[args.x], d[args.y]]]
 
 points = []
 labels = [] 
@@ -152,12 +161,19 @@ if dim == 3:
 
 else:
     points = np.transpose(points)
-    plt.scatter(points[0], points[1], s=30)
+    if args.color_key:
+        colors = points[2]
+        # colors = colors - np.min(colors)
+        # colors = colors / np.max(colors)
+        plt.scatter(points[0], points[1], s=30, c=colors, cmap=cmap.get_cmap('hot'))
+        # print(plt.cm.cmap_d.keys())
+    else:
+        plt.scatter(points[0], points[1], s=30)
     
     if args.fix_key:
         name = "%s_%s_%d_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y)
     else:
-        name = "%s_%s_%s_%s" % (args.benchmark, args.x, args.y)
+        name = "%s_%s_%s" % (args.benchmark, args.x, args.y)
 
     plt.xlabel(args.x, fontsize=18)
     plt.xticks(fontsize=14)
