@@ -314,9 +314,9 @@ predict = tf.nn.softmax(model.predict(X=features))
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
     if args.dfa:
-        grads_and_vars = model.dfa_gvs(X=XTRAIN, Y=YTRAIN)
+        grads_and_vars = model.dfa_gvs(X=features, Y=labels)
     else:
-        grads_and_vars = model.gvs(X=XTRAIN, Y=YTRAIN)
+        grads_and_vars = model.gvs(X=features, Y=labels)
         
     if args.opt == "adam":
         train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
@@ -329,9 +329,9 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
 
 else:
     if args.dfa:
-        train = model.dfa(X=XTRAIN, Y=YTRAIN)
+        train = model.dfa(X=features, Y=labels)
     else:
-        train = model.train(X=XTRAIN, Y=YTRAIN)
+        train = model.train(X=features, Y=labels)
 
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
@@ -351,7 +351,7 @@ tf.global_variables_initializer().run()
 train_handle = sess.run(train_iterator.string_handle())
 val_handle = sess.run(val_iterator.string_handle())
 
-for i in range(0, epochs):
+for ii in range(0, epochs):
 
     if args.opt == 'decay' or args.opt == 'gd':
         decay = np.power(args.decay, ii)
@@ -364,6 +364,7 @@ for i in range(0, epochs):
     sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
     train_correct = 0.0
     train_total = 0.0
+    # for j in range(0, 32 * 10, batch_size):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
@@ -376,19 +377,21 @@ for i in range(0, epochs):
     sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
     val_correct = 0.0
     val_total = 0.0
+    lr = 0.0
+    # for j in range(0, 32 * 10, batch_size):
     for j in range(0, len(val_imgs), batch_size):
         print (j)
 
-        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle, learning_rate: 0.0})
+        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle, learning_rate: lr})
         val_correct += _total_correct
         val_total += batch_size
 
         print ("val accuracy: " + str(val_correct / val_total))
 
     if args.save:
-        [w] = sess.run([weights], feed_dict={handle: val_handle})
+        [w] = sess.run([weights], feed_dict={handle: val_handle, learning_rate: lr})
         np.save(args.name, w)
 
-    print('epoch {}/{}'.format(i, epochs))
+    print('epoch {}/{}'.format(ii, epochs))
     
 
