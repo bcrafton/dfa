@@ -67,7 +67,7 @@ for sparse in range(1, 10+1):
             
             data.append({"sparse":sparse, "rank":rank, "acc":acc, "angle":angle})
             
-            print ("sparse %d rank %d itr %d acc %f angle %f" % (sparse, rank, itr, acc, angle))
+            # print ("sparse %d rank %d itr %d acc %f angle %f" % (sparse, rank, itr, acc, angle))
     
 #######################################
 
@@ -133,17 +133,20 @@ if args.group_key:
 else:
     dim = 2
 
+name = 'bm_%s_x_%s_y_%s' % (args.benchmark, args.x, args.y)
+if args.fix_key:
+    name = name + ('_fix_%s_%d' % (args.fix_key, args.fix_val))
+if args.group_key:
+    name = name + ('_group_%s' % (args.group_key))
+if args.color_key:
+    name = name + ('_color_%s' % (args.color_key))
+
 if dim == 3:
     for ii in range(len(points)):
         p = points[ii]
         p = np.transpose(p)
         label = "%s %d" % (args.group_key, labels[ii])
         plt.scatter(p[0], p[1], s=30, label=label)
-
-    if args.fix_key:
-        name = "%s_%s_%d_%s_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y, args.group_key)
-    else:
-        name = "%s_%s_%s_%s" % (args.benchmark, args.x, args.y, args.group_key)
 
     plt.xlabel(args.x, fontsize=18)
     plt.xticks(fontsize=14)
@@ -172,11 +175,6 @@ else:
     else:
         plt.scatter(points[0], points[1], s=30)
     
-    if args.fix_key:
-        name = "%s_%s_%d_%s_%s" % (args.benchmark, args.fix_key, args.fix_val, args.x, args.y)
-    else:
-        name = "%s_%s_%s" % (args.benchmark, args.x, args.y)
-
     plt.xlabel(args.x, fontsize=18)
     plt.xticks(fontsize=14)
 
