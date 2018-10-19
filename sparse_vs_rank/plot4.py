@@ -24,8 +24,10 @@ args = parser.parse_args()
 
 #######################################
 
-fig = plt.figure(figsize=(10, 10))
-
+if args.color_key:
+    fig = plt.figure(figsize=(12, 10))
+else:
+    fig = plt.figure(figsize=(10, 10))
 #######################################
 
 def unit_vector(vector):
