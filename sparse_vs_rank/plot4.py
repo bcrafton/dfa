@@ -186,7 +186,10 @@ else:
     else:
         title = args.benchmark
     plt.title(title, fontsize=18)
-
+    
+    if args.color_key:
+        plt.colorbar()
+        
     plt.savefig(name + '.png')
     
     
