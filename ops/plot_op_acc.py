@@ -18,9 +18,13 @@ def get_ops(alg, sparse, layer_shapes):
         for ii in range(len(layer_shapes)-1):
             total_ops += layer_shapes[ii] * layer_shapes[ii+1]
             
+    if alg == 'dfa' and sparse > 0:
+        for ii in range(len(layer_shapes)-1):
+            total_ops += sparse * layer_shapes[-1]
+            
     if alg == 'dfa':
         for ii in range(len(layer_shapes)-1):
-            total_ops += layer_shapes[ii] * layer_shapes[-1]
+            total_ops += layer_shapes[ii] * layer_shapes[ii+1]
             
     return total_ops
 
