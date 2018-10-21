@@ -351,6 +351,9 @@ tf.global_variables_initializer().run()
 train_handle = sess.run(train_iterator.string_handle())
 val_handle = sess.run(val_iterator.string_handle())
 
+train_accs = []
+val_accs = []
+
 for ii in range(0, epochs):
 
     if args.opt == 'decay' or args.opt == 'gd':
@@ -371,8 +374,10 @@ for ii in range(0, epochs):
         _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, learning_rate: lr})
         train_correct += _total_correct
         train_total += batch_size
-
-        print ("train accuracy: " + str(train_correct / train_total))        
+        train_acc = train_correct / train_total
+        print ("train accuracy: " + str(train_acc))        
+    
+    train_accs.append(train_acc)
     
     sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
     val_correct = 0.0
@@ -385,11 +390,15 @@ for ii in range(0, epochs):
         [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle, learning_rate: lr})
         val_correct += _total_correct
         val_total += batch_size
+        val_acc = val_correct / val_total
+        print ("val accuracy: " + str(val_acc))
 
-        print ("val accuracy: " + str(val_correct / val_total))
+    val_accs.append(val_acc)
 
     if args.save:
         [w] = sess.run([weights], feed_dict={handle: val_handle, learning_rate: lr})
+        w['train_acc'] = train_accs
+        w['val_acc'] = val_accs
         np.save(args.name, w)
 
     print('epoch {}/{}'.format(ii, epochs))

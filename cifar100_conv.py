@@ -142,9 +142,8 @@ else:
     else:
         train = model.train(X=XTRAIN, Y=YTRAIN)
 
-correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
-correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
+total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
 ##############################################
 
@@ -182,36 +181,65 @@ f.close()
 
 ##############################################
 
+train_accs = []
+test_accs = []
+
 for ii in range(EPOCHS):
-    decay = np.power(args.decay, ii)
-    lr = ALPHA * decay
+    if args.opt == 'decay' or args.opt == 'gd':
+        decay = np.power(args.decay, ii)
+        lr = args.alpha * decay
+    else:
+        lr = args.alpha
+        
     print (ii)
-    for jj in range(0, int(TRAIN_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
-        start = jj % TRAIN_EXAMPLES
-        end = jj % TRAIN_EXAMPLES + BATCH_SIZE
-        sess.run([train], feed_dict={batch_size: BATCH_SIZE, learning_rate: lr, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
     
-    count = 0
-    total_correct = 0
+    #############################
     
-    for jj in range(0, int(TEST_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
-        start = jj % TEST_EXAMPLES
-        end = jj % TEST_EXAMPLES + BATCH_SIZE
-        correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, learning_rate: 0.0, XTEST: x_test[start:end], YTEST: y_test[start:end]})
+    _count = 0
+    _total_correct = 0
+    
+    for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
+        xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: lr, X: xs, Y: ys})
+        
+        _total_correct += _correct
+        _count += BATCH_SIZE
 
-        count += BATCH_SIZE
-        total_correct += correct
+    train_acc = 1.0 * _total_correct / _count
+    train_accs.append(train_acc)
 
-    print (total_correct * 1.0 / count)
-    sys.stdout.flush()
+    #############################
+
+    _count = 0
+    _total_correct = 0
+
+    for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
+        xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        _correct = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
+        
+        _total_correct += _correct
+        _count += BATCH_SIZE
+        
+    test_acc = 1.0 * _total_correct / _count
+    test_accs.append(test_acc)
+    
+    #############################
+            
+    print ("train acc: %f test acc: %f" % (train_acc, test_acc))
     
     f = open(filename, "a")
-    f.write(str(total_correct * 1.0 / count) + "\n")
+    f.write(str(test_acc) + "\n")
     f.close()
-    
-    if args.save:
-        [w] = sess.run([weights], feed_dict={})
-        np.save(args.name, w)
 
+##############################################
+
+if args.save:
+    [w] = sess.run([weights], feed_dict={})
+    w['train_acc'] = train_accs
+    w['test_acc'] = test_accs
+    np.save(args.name, w)
+    
 ##############################################
 
