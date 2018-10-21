@@ -65,7 +65,7 @@ assert(False)
 '''
 
 for sparse in range(1, 10+1):
-    for rank in range(sparse, 10+1):
+    for rank in range(10, 10+1):
         for itr in itrs:
             fname = benchmark + "/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
             print (fname)
