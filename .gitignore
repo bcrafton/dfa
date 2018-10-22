@@ -4,3 +4,4 @@
 */MNIST_data
 *.results
 nohup.out
+*.png

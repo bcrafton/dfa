@@ -83,14 +83,11 @@ tf.set_random_seed(0)
 tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
+dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
-XTRAIN = tf.placeholder(tf.float32, [None, 32, 32, 3])
-YTRAIN = tf.placeholder(tf.float32, [None, 100])
-XTRAIN = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), XTRAIN)
-
-XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
-YTEST = tf.placeholder(tf.float32, [None, 100])
-XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
+X = tf.placeholder(tf.float32, [None, 32, 32, 3])
+X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
+Y = tf.placeholder(tf.float32, [None, 100])
 
 l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
 l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
@@ -117,15 +114,15 @@ l14 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, 
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14])
 
-predict = model.predict(X=XTEST)
+predict = model.predict(X=X)
 
 weights = model.get_weights()
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
     if args.dfa:
-        grads_and_vars = model.dfa_gvs(X=XTRAIN, Y=YTRAIN)
+        grads_and_vars = model.dfa_gvs(X=X, Y=Y)
     else:
-        grads_and_vars = model.gvs(X=XTRAIN, Y=YTRAIN)
+        grads_and_vars = model.gvs(X=X, Y=Y)
         
     if args.opt == "adam":
         train = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
@@ -138,9 +135,9 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
 
 else:
     if args.dfa:
-        train = model.dfa(X=XTRAIN, Y=YTRAIN)
+        train = model.dfa(X=X, Y=Y)
     else:
-        train = model.train(X=XTRAIN, Y=YTRAIN)
+        train = model.train(X=X, Y=Y)
 
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
