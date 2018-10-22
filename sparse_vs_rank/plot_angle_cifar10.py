@@ -30,6 +30,29 @@ sparses = [0, 1]
 all_accs = []
 all_angles = []
 
+def compute_angles(fbs, ws):
+    assert(len(ws) == len(fbs)+1)
+    angles = []
+    num = len(ws)
+    
+    start = num - 2
+    end = -1
+    
+    for ii in range(start, end, -1):
+        print (ii)
+    
+        if ii == start:
+            w = ws[ii + 1]
+        else:
+            w = np.dot(ws[ii + 1], w)
+        
+        _fb = np.reshape(fbs[ii].T, (-1))
+        _w = np.reshape(w, (-1))
+        angle = angle_between(_fb, _w) * (180. / 3.14)
+        angles.append(angle)
+    
+    return angles
+        
 for sparse in sparses:
     accs = []
     angles = []
@@ -40,12 +63,18 @@ for sparse in sparses:
         
         acc = np.max(results['acc'])
         accs.append(acc)
-      
-        fb = results['fc3_fb']
-        w2 = results['fc4']
-        fb = np.reshape(fb.T, (-1))
-        w2 = np.reshape(w2, (-1))
-        angle = angle_between(fb, w2) * (180. / 3.14)
+
+        fb1 = results['fc1_fb']
+        fb2 = results['fc2_fb']
+        fb3 = results['fc3_fb']
+
+        w1 = results['fc1']
+        w2 = results['fc2']
+        w3 = results['fc3']
+        w4 = results['fc4']
+        
+        ret = compute_angles([fb1, fb2, fb3], [w1, w2, w3, w4])
+        angle = np.average(ret)
         angles.append(angle)
         
         print ("sparse %d itr %d acc %f angle %f" % (sparse, itr, acc, angle))
@@ -73,3 +102,4 @@ plt.yticks(fontsize=14)
 plt.legend(fontsize=18, markerscale=4.0)
 plt.savefig('angle_vs_acc.png')
 
+##########################

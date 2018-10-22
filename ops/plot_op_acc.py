@@ -9,6 +9,8 @@ import argparse
 # parser = argparse.ArgumentParser()
 # args = parser.parse_args()
 
+fig = plt.figure(figsize=(10, 10))
+
 #######################################
 
 def get_ops(alg, sparse, layer_shapes):
@@ -18,13 +20,13 @@ def get_ops(alg, sparse, layer_shapes):
         for ii in range(len(layer_shapes)-1):
             total_ops += layer_shapes[ii] * layer_shapes[ii+1]
             
-    if alg == 'dfa' and sparse > 0:
-        for ii in range(len(layer_shapes)-1):
-            total_ops += sparse * layer_shapes[-1]
-            
-    if alg == 'dfa':
-        for ii in range(len(layer_shapes)-1):
-            total_ops += layer_shapes[ii] * layer_shapes[ii+1]
+    elif alg == 'dfa':
+        if sparse > 0:
+            for ii in range(len(layer_shapes)-1):
+                total_ops += sparse * layer_shapes[-1]
+        else:
+            for ii in range(len(layer_shapes)-1):
+                total_ops += layer_shapes[ii] * layer_shapes[-1]
             
     return total_ops
 
@@ -32,21 +34,31 @@ def get_ops(alg, sparse, layer_shapes):
 
 # benchmarks = ['cifar100', 'imagenet']
 sparses = [0, 1, 5, 10, 25, 100]
-itrs = range(10)
+itrs = range(1)
 layer_shapes = (9216, 4096, 4096, 1000)
 
-for sparse in range(1, 10+1):
+accs = []
+ops = []
+
+for sparse in sparses:
     for itr in itrs:
     
+        '''
         fname = args.benchmark + "/sparse%ditr%d.npy" % (sparse, itr)
         results = np.load(fname).item()
         
         acc = np.max(results['acc'])
-        ops = get_ops(alg='dfa', sparse=sparse, layer_shapes=layer_shapes)
+        accs.append(acc)
+        '''
+        
+        op = get_ops(alg='dfa', sparse=sparse, layer_shapes=layer_shapes)
+        ops.append(op)
+
+accs = np.linspace(0.55, 0.65, len(sparses))
 
 #######################################
 
-plt.scatter(acc, ops, s=30)
+plt.scatter(accs, ops, s=30)
     
 plt.xlabel('Accuracy', fontsize=18)
 plt.xticks(fontsize=14)
