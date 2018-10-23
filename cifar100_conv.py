@@ -102,17 +102,20 @@ l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2,
 l8 = FeedbackConv(size=[batch_size, 4, 4, 256], num_classes=100, sparse=sparse, rank=rank, name='conv3_fb')
 
 l9 = ConvToFullyConnected(shape=[4, 4, 256])
+
 l10 = FullyConnected(size=[4*4*256, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
-l11 = FeedbackFC(size=[4*4*256, 2048], num_classes=100, sparse=sparse, rank=rank, name='fc1_fb')
+l11 = Dropout(rate=dropout_rate)
+l12 = FeedbackFC(size=[4*4*256, 2048], num_classes=100, sparse=sparse, rank=rank, name='fc1_fb')
 
-l12 = FullyConnected(size=[2048, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
-l13 = FeedbackFC(size=[2048, 2048], num_classes=100, sparse=sparse, rank=rank, name='fc2_fb')
+l13 = FullyConnected(size=[2048, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
+l14 = Dropout(rate=dropout_rate)
+l15 = FeedbackFC(size=[2048, 2048], num_classes=100, sparse=sparse, rank=rank, name='fc2_fb')
 
-l14 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc)
+l16 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc)
 
 ##############################################
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 
 predict = model.predict(X=X)
 
@@ -198,7 +201,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: lr, X: xs, Y: ys})
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
         _count += BATCH_SIZE
