@@ -53,7 +53,7 @@ class FeedbackConv(Layer):
 
                 b = np.transpose(b)
                 b = b * self.mask
-                b = b * (hi / np.average(np.absolute(b)))
+                b = b * (hi / np.std(b))
                 assert(np.linalg.matrix_rank(b) == self.rank)
                 
                 self.B = tf.cast(tf.Variable(b), tf.float32)
@@ -63,7 +63,6 @@ class FeedbackConv(Layer):
 
                 b = np.random.uniform(lo, hi, size=(self.num_classes, self.f * self.h * self.w))
                 b = b * self.mask
-                b = b * (hi / np.average(np.absolute(b)))
                 self.B = tf.cast(tf.Variable(b), tf.float32)
 
             FeedbackConv.num = FeedbackConv.num + 1
