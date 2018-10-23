@@ -33,13 +33,13 @@ def get_ops(alg, sparse, layer_shapes):
 #######################################
 
 # benchmarks = ['cifar100', 'imagenet']
-sparses = [1, 5, 10, 25, 100, 1000]
+sparses = [1, 5, 10, 25, 100]
 itrs = range(1)
-layer_shapes = (9216, 4096, 4096, 1000)
+layer_shapes = (4096, 2048, 2048, 100)
 
-start = 0.55
+start = 0.45
 accum = 0.0
-delta = (0.65 - 0.55) / (len(sparses) * len(itrs))
+delta = (0.55 - 0.45) / (len(sparses) * len(itrs))
 
 for sparse in sparses:
     accs = []
@@ -91,9 +91,7 @@ title = 'Ops vs Accuracy'
 plt.title(title, fontsize=10)
 
 plt.legend(fontsize=10)
-plt.savefig('ops_vs_acc.png', bbox_inches='tight', dpi=1000)
-
-
+plt.savefig('ops_vs_acc_cifar100.png', bbox_inches='tight', dpi=1000)
 
 
 

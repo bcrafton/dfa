@@ -20,4 +20,4 @@ for ii in range(16):
     else:
         img = np.concatenate((img, row), axis=0)
   
-plt.imsave("img.png", img, cmap="gray")
+plt.imsave("alexnet_dfa.png", img, cmap="gray")
