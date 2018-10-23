@@ -259,9 +259,9 @@ val_iterator = val_dataset.make_initializable_iterator()
 
 ###############################################################
 
-train_conv=False
+train_conv=True
 train_fc=True
-weights_conv='../vgg_weights/vgg_weights.npy'
+weights_conv=None # '../vgg_weights/vgg_weights.npy'
 weights_fc=None # '../vgg_weights/vgg_weights.npy'
 
 if args.dfa:
