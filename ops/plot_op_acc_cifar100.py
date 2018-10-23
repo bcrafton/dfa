@@ -37,28 +37,33 @@ sparses = [1, 5, 10, 25, 100]
 itrs = range(1)
 layer_shapes = (4096, 2048, 2048, 100)
 
+'''
 start = 0.45
 accum = 0.0
 delta = (0.55 - 0.45) / (len(sparses) * len(itrs))
+'''
 
 for sparse in sparses:
     accs = []
     ops = []
     for itr in itrs:
     
-        '''
-        fname = args.benchmark + "/sparse%ditr%d.npy" % (sparse, itr)
-        results = np.load(fname).item()
-        
-        acc = np.max(results['acc'])
+        if sparse > 0:
+            fname = 'cifar100/cifar100_sparse%d.npy' % (sparse)
+        else:
+            fname = 'cifar100/cifar100_dfa.npy'
+
+        results = np.load(fname).item()        
+
+        acc = np.max(results['test_acc'])
         accs.append(acc)
-        '''
-        
+        print (acc)     
+   
         op = get_ops(alg='dfa', sparse=sparse, layer_shapes=layer_shapes)
         ops.append(op)
 
-        accum += delta
-        accs.append(start + accum)
+        # accum += delta
+        # accs.append(start + accum)
 
         label = 'Sparse-' + str(sparse)
         plt.semilogy(accs, ops, '.', label=label)
@@ -71,8 +76,15 @@ for itr in itrs:
     op = get_ops(alg='bp', sparse=0, layer_shapes=layer_shapes)
     ops.append(op)
 
-    accum += delta
-    accs.append(start + accum)
+    fname = 'cifar100/cifar100_bp.npy'
+    results = np.load(fname).item()
+
+    acc = np.max(results['test_acc'])
+    accs.append(acc)
+    print (acc)
+
+    # accum += delta
+    # accs.append(start + accum)
 
     label = 'BP'
     plt.semilogy(accs, ops, '.', label=label)
