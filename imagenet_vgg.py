@@ -271,6 +271,7 @@ else:
 
 ###############################################################
 
+dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
 
 l0 = Convolution(input_sizes=[batch_size, 224, 224, 3], filter_sizes=[3, 3, 3, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0.0, last_layer=False, name="conv1", load=weights_conv, train=train_conv)
@@ -298,17 +299,18 @@ l17 = MaxPool(size=[batch_size, 14, 14, 512], ksize=[1, 2, 2, 1], strides=[1, 2,
 
 l18 = ConvToFullyConnected(shape=[7, 7, 512])
 l19 = FullyConnected(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc)
-l20 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc1_fb")
+l20 = Dropout(rate=dropout_rate)
+l21 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc1_fb")
 
-l21 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
-l22 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc2_fb")
+l22 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
+l23 = Dropout(rate=dropout_rate)
+l24 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc2_fb")
 
-l23 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
+l25 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
 
 ###############################################################
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23])
-#model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l21, l23])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23, l24, l25])
 
 predict = tf.nn.softmax(model.predict(X=features))
 
@@ -371,7 +373,7 @@ for ii in range(0, epochs):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, learning_rate: lr})
+        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: 0.5, learning_rate: lr})
         train_correct += _total_correct
         train_total += batch_size
         train_acc = train_correct / train_total
@@ -387,7 +389,7 @@ for ii in range(0, epochs):
     for j in range(0, len(val_imgs), batch_size):
         print (j)
 
-        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle, learning_rate: lr})
+        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: lr})
         val_correct += _total_correct
         val_total += batch_size
         val_acc = val_correct / val_total
@@ -396,7 +398,7 @@ for ii in range(0, epochs):
     val_accs.append(val_acc)
 
     if args.save:
-        [w] = sess.run([weights], feed_dict={handle: val_handle, learning_rate: lr})
+        [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: lr})
         w['train_acc'] = train_accs
         w['val_acc'] = val_accs
         np.save(args.name, w)
