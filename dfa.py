@@ -15,14 +15,16 @@ def run_command(sparse, name):
         gpu = counter % num_gpus
         counter = counter + 1
     
-    cmd = "python mnist_fc.py --epochs 100 --batch_size 32 --alpha 0.01 --gpu %d --dfa 1 --sparse %d --rank 0 --init zero --opt gd --save 1 --name %s" % (gpu, sparse, name)
+    cmd = "python cifar10_fc.py --epochs 100 --batch_size 64 --alpha 0.01 --gpu %d --dfa 1 --sparse %d --rank 0 --init zero --opt gd --save 1 --name %s" % (gpu, sparse, name)
     os.system(cmd)
     return
 
 ################################################
 
-sparses = [0, 1]
-itrs = range(500)
+sparses = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+# itrs = range(500)
+# sparses = range(1, 10+1, 1)
+itrs = range(50)
 
 runs = []
 for sparse in sparses:

@@ -25,7 +25,7 @@ fig = plt.figure(figsize=(10, 10))
 itrs = range(50)
 # sparses = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 # sparses = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-sparses = [0, 1]
+sparses = [0]
 
 all_accs = []
 all_angles = []
@@ -39,8 +39,6 @@ def compute_angles(fbs, ws):
     end = -1
     
     for ii in range(start, end, -1):
-        print (ii)
-    
         if ii == start:
             w = ws[ii + 1]
         else:
@@ -79,15 +77,18 @@ for sparse in sparses:
         
         print ("sparse %d itr %d acc %f angle %f" % (sparse, itr, acc, angle))
 
-    scatter = plt.scatter(angles, accs, s=10, label="Sparse " + str(sparse))
+    plt.scatter(angles, accs, s=10, label="Sparse " + str(sparse))
 
-    all_accs.extend(accs)
-    all_angles.extend(angles)
-     
+    all_accs.append(accs)
+    all_angles.append(angles)
+
+all_angles_flat = np.reshape(all_angles, (-1))
+all_accs_flat = np.reshape(all_accs, (-1))
+
 ##########################
 
-fit = np.poly1d(np.polyfit(all_angles, all_accs, 1))
-pred_xs = all_angles
+fit = np.poly1d(np.polyfit(all_angles_flat, all_accs_flat, 1))
+pred_xs = all_angles_flat
 pred_ys = fit(pred_xs)
 plt.plot(pred_xs, pred_ys)
 

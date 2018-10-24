@@ -276,23 +276,23 @@ learning_rate = tf.placeholder(tf.float32, shape=())
 
 l0 = Convolution(input_sizes=[batch_size, 224, 224, 3], filter_sizes=[3, 3, 3, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0.0, last_layer=False, name="conv1", load=weights_conv, train=train_conv)
 l1 = MaxPool(size=[batch_size, 224, 224, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
-l2 = FeedbackConv(size=[batch_size, 112, 112, 64], num_classes=10, sparse=sparse, rank=rank, name="conv1_fb")
+l2 = FeedbackConv(size=[batch_size, 112, 112, 64], num_classes=num_classes, sparse=sparse, rank=rank, name="conv1_fb")
 
 l3 = Convolution(input_sizes=[batch_size, 112, 112, 64], filter_sizes=[3, 3, 64, 128], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0.0, last_layer=False, name="conv3", load=weights_conv, train=train_conv)
 l4 = MaxPool(size=[batch_size, 112, 112, 128], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
-l5 = FeedbackConv(size=[batch_size, 56, 56, 128], num_classes=10, sparse=sparse, rank=rank, name="conv2_fb")
+l5 = FeedbackConv(size=[batch_size, 56, 56, 128], num_classes=num_classes, sparse=sparse, rank=rank, name="conv2_fb")
 
 l6 = Convolution(input_sizes=[batch_size, 56, 56, 128], filter_sizes=[3, 3, 128, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0.0, last_layer=False, name="conv5", load=weights_conv, train=train_conv)
 l7 = MaxPool(size=[batch_size, 56, 56, 256], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
-l8 = FeedbackConv(size=[batch_size, 28, 28, 256], num_classes=10, sparse=sparse, rank=rank, name="conv3_fb")
+l8 = FeedbackConv(size=[batch_size, 28, 28, 256], num_classes=num_classes, sparse=sparse, rank=rank, name="conv3_fb")
 
 l9 = Convolution(input_sizes=[batch_size, 28, 28, 256], filter_sizes=[3, 3, 256, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0.0, last_layer=False, name="conv8", load=weights_conv, train=train_conv)
 l10 = MaxPool(size=[batch_size, 28, 28, 512], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
-l11 = FeedbackConv(size=[batch_size, 14, 14, 512], num_classes=10, sparse=sparse, rank=rank, name="conv4_fb")
+l11 = FeedbackConv(size=[batch_size, 14, 14, 512], num_classes=num_classes, sparse=sparse, rank=rank, name="conv4_fb")
 
 l12 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512, 512], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0.0, last_layer=False, name="conv11", load=weights_conv, train=train_conv)
 l13 = MaxPool(size=[batch_size, 14, 14, 512], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
-l14 = FeedbackConv(size=[batch_size, 7, 7, 512], num_classes=10, sparse=sparse, rank=rank, name="conv5_fb")
+l14 = FeedbackConv(size=[batch_size, 7, 7, 512], num_classes=num_classes, sparse=sparse, rank=rank, name="conv5_fb")
 
 l15 = ConvToFullyConnected(shape=[7, 7, 512])
 
