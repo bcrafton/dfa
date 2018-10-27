@@ -17,9 +17,6 @@ class FeedbackFC(Layer):
         self.input_size, self.output_size = self.size
         self.name = name
 
-        if self.rank and self.sparse:
-            assert(self.rank >= self.sparse)
-
         if load:
             weight_dict = np.load(load).item()
             self.B = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
@@ -29,10 +26,19 @@ class FeedbackFC(Layer):
                 self.mask = np.zeros(shape=(self.output_size, self.num_classes))
                 for ii in range(self.output_size):
                     if self.rank > 0:
-                        idx = np.random.randint(0, self.rank, size=self.sparse)
+                        # idx = np.random.randint(0, max(self.rank, self.sparse), size=self.sparse)
+                        choices = range(0, max(self.rank, self.sparse))
+                        idx = np.random.choice(choices, size=self.sparse, replace=False)
                     else:
-                        idx = np.random.randint(0, self.num_classes, size=self.sparse)
+                        # idx = np.random.randint(0, self.num_classes, size=self.sparse)
+                        choices = range(0, self.num_classes)
+                        idx = np.random.choice(choices, size=self.sparse, replace=False)
+                        
                     self.mask[ii][idx] = 1.0
+
+                if not (np.all(np.sum(self.mask, axis=1) == self.sparse)):
+                    print (np.sum(self.mask, axis=1))
+                    assert(np.all(np.sum(self.mask, axis=0) == self.sparse))
                     
                 self.mask = np.transpose(self.mask)
             else:
@@ -59,7 +65,9 @@ class FeedbackFC(Layer):
                 # this does take into account the sqrt(sparse)
                 b = b * (hi / np.std(b))
                 # print (np.std(b))
-                assert(np.linalg.matrix_rank(b) == self.rank)
+                if not (np.linalg.matrix_rank(b) == self.rank):
+                    print (np.linalg.matrix_rank(b), self.rank)
+                    assert(np.linalg.matrix_rank(b) == self.rank)
                 
                 self.B = tf.cast(tf.Variable(b), tf.float32)
             else:
