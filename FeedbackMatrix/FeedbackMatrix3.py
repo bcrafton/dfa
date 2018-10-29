@@ -2,6 +2,14 @@
 import numpy as np
 import math
 
+def matrix_rank(mat):
+    return np.linalg.matrix_rank(B)
+    
+def matrix_sparsity(mat):
+    a = np.sum(mat[0] != 0)
+    assert(np.all(np.sum(mat != 0, axis=1) == a))
+    return a
+
 def FeedbackMatrix(size : tuple, sparse : int, rank : int):
     input_size, output_size = size
     sqrt_fan_out = np.sqrt(output_size)
@@ -11,46 +19,30 @@ def FeedbackMatrix(size : tuple, sparse : int, rank : int):
     fb = np.zeros(shape=size)
     fb = np.transpose(fb)
 
-    idxs = range(input_size)
+    choices = range(input_size)
     counts = np.zeros(input_size)
     total_connects = (1.0 * sparse * output_size)
     connects_per = (1.0 * sparse * output_size / input_size)
     
-    # if sparse < rank, then pick 4 columns to do every time.
+    idxs = []
+    
     if sparse and rank:
-        if sparse < rank:
-            idxs = np.random.choice(idxs, sparse, replace=True)
-            counts = np.zeros(sparse)
-            connects_per = (1.0 * sparse * output_size / input_size) * np.ceil(1.0 * input_size / sparse)
-        elif sparse > rank:
-            idxs = np.random.choice(idxs, sparse, replace=True)
-            connects_per = (1.0 * sparse * output_size / input_size) * np.ceil(1.0 * input_size / sparse)
-            
-    for ii in range(output_size):
-        if sparse:
-            remaining_connects = total_connects - np.sum(counts)
-            pdf = (connects_per - counts) / remaining_connects
-            
-            idx = np.random.choice(idxs, sparse, replace=True, p=pdf)
-            fb[ii][idx] = np.random.uniform(low=low, high=high)
-            counts[idx] += 1.
+        for ii in range(rank):
+            choice = np.random.choice(choices, sparse, replace=False)
+            idxs.append(choice)
         
+        for ii in range(output_size):
+            choice = np.random.choice(range(len(idxs)))
+            idx = idxs[choice]
+            fb[ii][idx] = 1.
+
     return fb
 
 size = (10, 100)
-sparse = 1
-rank = 10
+rank = 4
+sparse = 3
 
 B = FeedbackMatrix(size, sparse, rank)
 
-dist = [0] * 10
-for ii in range(100):
-    idx = np.argmax(B[ii] != 0.0)
-    if dist[idx] < 10:
-        dist[idx] += 1
-        
-count = np.sum(dist)
-print (count)
-
-
-
+print ('rank', matrix_rank(B))
+print ('sparse', matrix_sparsity(B))
