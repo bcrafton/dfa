@@ -7,6 +7,10 @@ from Layer import Layer
 from Activation import Activation
 from Activation import Sigmoid
 
+from FeedbackMatrix import FeedbackMatrix
+
+np.set_printoptions(threshold=np.inf)
+
 class FeedbackFC(Layer):
     num = 0
     def __init__(self, size : tuple, num_classes : int, sparse : int, rank : int, name=None, load=None):
@@ -21,67 +25,15 @@ class FeedbackFC(Layer):
             weight_dict = np.load(load).item()
             self.B = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
         else:
-            #### CREATE THE SPARSE MASK ####
-            if self.sparse:
-                self.mask = np.zeros(shape=(self.output_size, self.num_classes))
-                for ii in range(self.output_size):
-                    if self.rank > 0:
-                        # idx = np.random.randint(0, max(self.rank, self.sparse), size=self.sparse)
-                        choices = range(0, max(self.rank, self.sparse))
-                        idx = np.random.choice(choices, size=self.sparse, replace=False)
-                    else:
-                        # idx = np.random.randint(0, self.num_classes, size=self.sparse)
-                        choices = range(0, self.num_classes)
-                        idx = np.random.choice(choices, size=self.sparse, replace=False)
-                        
-                    self.mask[ii][idx] = 1.0
+            b = FeedbackMatrix(size=(self.num_classes, self.output_size), sparse=self.sparse, rank=self.rank)
+            self.B = tf.cast(tf.Variable(b), tf.float32) 
+  
 
-                if not (np.all(np.sum(self.mask, axis=1) == self.sparse)):
-                    print (np.sum(self.mask, axis=1))
-                    assert(np.all(np.sum(self.mask, axis=0) == self.sparse))
-                    
-                self.mask = np.transpose(self.mask)
-            else:
-                self.mask = np.ones(shape=(self.num_classes, self.output_size))
-            
-            #### IF MATRIX HAS USER-SPECIFIED RANK ####
-            if sparse:
-                sqrt_fan_out = np.sqrt(1.0 * self.output_size / self.num_classes * self.sparse)
-            else:
-                sqrt_fan_out = np.sqrt(self.output_size)
-
-            if self.rank > 0:
-                hi = 1.0 / sqrt_fan_out
-                lo = -hi
-                
-                b = np.zeros(shape=(self.output_size, self.num_classes))
-                for ii in range(self.rank):
-                    tmp1 = np.random.uniform(lo, hi, size=(self.output_size, 1))
-                    tmp2 = np.random.uniform(lo, hi, size=(1, self.num_classes))
-                    b = b + np.dot(tmp1, tmp2)
-
-                b = np.transpose(b)
-                b = b * self.mask
-                # this does take into account the sqrt(sparse)
-                b = b * (hi / np.std(b))
-                # print (np.std(b))
-                if not (np.linalg.matrix_rank(b) == self.rank):
-                    print (np.linalg.matrix_rank(b), self.rank)
-                    assert(np.linalg.matrix_rank(b) == self.rank)
-                
-                self.B = tf.cast(tf.Variable(b), tf.float32)
-            else:
-                hi = 1.0 / sqrt_fan_out
-                lo = -hi
-
-                b = np.random.uniform(lo, hi, size=(self.num_classes, self.output_size))
-                b = b * self.mask
-
-                self.B = tf.cast(tf.Variable(b), tf.float32)            
-
-            # self.B = tf.get_variable(name="feedback_fc_" + str(FeedbackFC.num), shape=(self.num_classes, self.output_size))
-            # self.B = tf.Variable(tf.random_normal(mean=0.0, stddev=0.01, shape=(self.num_classes, self.output_size)))
-            FeedbackFC.num = FeedbackFC.num + 1
+            print("rank:", np.linalg.matrix_rank(b))
+            print("sparse: ", np.sum(b != 0, axis=0))
+            D, V = np.linalg.eig( np.dot(b, b.T) )
+            print(D)
+            print(np.max(b.T), np.min(b.T))
 
     def get_weights(self):
         return [(self.name, self.B)]
