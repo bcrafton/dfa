@@ -6,16 +6,27 @@ def matrix_rank(mat):
     return np.linalg.matrix_rank(B)
     
 def matrix_sparsity(mat):
-    a = np.sum(mat[0] != 0)
-    assert (np.all(np.sum(mat != 0, axis=1) == a))
+    # we want to make sure all the [10]s have some sparisty.
+    # so we transpose the matrix from [10, 100] -> [100, 10] so that way we can look at the first [10]
+    # summing along the 0 axis, sums along the 10s ... so we get a [100] vector sum 
+    
+    a = np.sum(mat.T[0] != 0)
+    assert (np.all(np.sum(mat != 0, axis=0) == a))
     return a
     
 def full_feedback(mat):
-    return (np.all(np.sum(mat != 0, axis=0) > 0))
+    # sum along the opposite axis here.
+    
+    return (np.all(np.sum(mat != 0, axis=1) > 0))
 
 def FeedbackMatrix(size : tuple, sparse : int, rank : int):
     input_size, output_size = size
-    sqrt_fan_out = np.sqrt(output_size)
+
+    if sparse:
+        sqrt_fan_out = np.sqrt(1.0 * output_size / input_size * sparse)
+    else:
+        sqrt_fan_out = np.sqrt(output_size)
+
     high = 1.0 / sqrt_fan_out
     low = -high
 
@@ -57,7 +68,29 @@ def FeedbackMatrix(size : tuple, sparse : int, rank : int):
             tmp1 = np.random.uniform(low, high, size=(output_size, 1))
             tmp2 = np.random.uniform(low, high, size=(1, input_size))
             fb = fb + masks[ii] * np.dot(tmp1, tmp2)
+            
+        fb = fb.T
         
+    elif sparse:
+        mask = np.zeros(shape=(output_size, input_size))
+        for ii in range(output_size):
+            idx = np.random.choice(choices, size=sparse, replace=False)
+            mask[ii][idx] = 1.0
+        
+        mask = mask.T
+        fb = np.random.uniform(low, high, size=(input_size, output_size))
+        fb = fb * mask
+        
+    elif rank:
+        fb = np.zeros(shape=(input_size, output_size))
+        for ii in range(rank):
+            tmp1 = np.random.uniform(low, high, size=(input_size, 1))
+            tmp2 = np.random.uniform(low, high, size=(1, output_size))
+            fb = fb + np.dot(tmp1, tmp2)
+
+    else:
+        fb = np.random.uniform(low, high, size=(input_size, output_size))
+
     return fb
 
 size = (10, 100)
@@ -73,8 +106,22 @@ for rank in range(10):
             passed = (sparse == matrix_sparsity(B)) and (rank == matrix_rank(B)) and full_feedback(B)
             print (rank, sparse, passed)
             
-            if not passed:
-                print (np.sum(B != 0, axis=0))
+            # if not passed:
+            #    print (np.sum(B != 0, axis=0))
+
+for rank in range(10):
+    B = FeedbackMatrix(size, 0, rank)
+    passed = (10 == matrix_sparsity(B)) and (rank == matrix_rank(B)) and full_feedback(B)
+    print (rank, 0, passed)
+
+for sparse in range(10):
+    B = FeedbackMatrix(size, sparse, 0)
+    passed = (sparse == matrix_sparsity(B)) and (10 == matrix_rank(B)) and full_feedback(B)
+    print (0, sparse, passed)
+
+
+
+
 
 
 
