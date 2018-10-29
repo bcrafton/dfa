@@ -29,14 +29,14 @@ def get_data():
     itrs = range(1, 10+1)
 
     for sparse in range(1, 10+1):
-        for rank in range(sparse, 10+1):
+        for rank in range(1, 10+1):
             for itr in itrs:
             
-                fname = "mnist/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
+                fname = "cifar10/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
                 results = np.load(fname).item()
                 
-                fb = results['fc1_fb']
-                w2 = results['fc2']
+                fb = results['fc3_fb']
+                w2 = results['fc4']
                 
                 acc = np.max(results['acc'])
 
@@ -124,8 +124,8 @@ for ii in range(len(points)):
 
 f.subplots_adjust(hspace=0)
 
-plt.show()
-
+#f.savefig('samplefigure', bbox_extra_artists=(lgd,), bbox_inches='tight')
+f.savefig('samplefigure', bbox_inches='tight')
 
 
 
