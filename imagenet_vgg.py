@@ -10,6 +10,7 @@ parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--decay', type=float, default=0.99)
+parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -116,7 +117,7 @@ def _mean_image_subtraction(image, means):
   return tf.concat(axis=2, values=channels)
 
 
-def parse_function(filename, label):
+def parse_function_train(filename, label):
 
     # filename = tf.Print(filename, [filename], message="", summarize=100)
 
@@ -126,11 +127,27 @@ def parse_function(filename, label):
     image = tf.image.decode_jpeg(image_string, channels=3)
 
     # This will convert to float values in [0, 1]
-    #image = tf.image.convert_image_dtype(image, tf.float32) * 256.
+    image = tf.image.convert_image_dtype(image, tf.float32) * 256.
 
-    #image = tf.random_crop(value=image, size=[224, 224, 3])
+    if image.get_shape()[0] >= 224 and image.get_shape()[1] >= 224:
+        image = tf.random_crop(value=image, size=[224, 224, 3])
+    else:
+        image = tf.image.resize_images(image, [224, 224])
+
+    _R_MEAN = 123.68
+    _G_MEAN = 116.78
+    _B_MEAN = 103.94
+    image = _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+
+    return image, label
+
+def parse_function_val(filename, label):
+
+    image_string = tf.read_file(filename)
+
+    image = tf.image.decode_jpeg(image_string, channels=3)
+
     image = tf.image.resize_images(image, [224, 224])
-    # image = tf.crop_and_resize()
 
     _R_MEAN = 123.68
     _G_MEAN = 116.78
@@ -228,7 +245,7 @@ val_imgs, val_labs = get_validation_dataset()
 
 val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
 val_dataset = val_dataset.shuffle(len(val_imgs))
-val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
+val_dataset = val_dataset.map(parse_function_val, num_parallel_calls=4)
 val_dataset = val_dataset.map(train_preprocess, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
 val_dataset = val_dataset.repeat()
@@ -240,7 +257,7 @@ train_imgs, train_labs = get_train_dataset()
 
 train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
 train_dataset = train_dataset.shuffle(len(train_imgs))
-train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
+train_dataset = train_dataset.map(parse_function_train, num_parallel_calls=4)
 train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
 train_dataset = train_dataset.batch(batch_size)
 train_dataset = train_dataset.repeat()
@@ -373,7 +390,7 @@ for ii in range(0, epochs):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: 0.5, learning_rate: lr})
+        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
         train_correct += _total_correct
         train_total += batch_size
         train_acc = train_correct / train_total
