@@ -55,16 +55,16 @@ data = get_data()
 ii = 0
 while ii < len(data):
     d = data[ii]
-    if d['rank'] != 5:
-        del data[ii]
-    else:
+    if d['rank'] == 10 or d['rank'] == 5:
         ii += 1
+    else:
+        del data[ii]
 
 data_grouped = {}
 ii = 0
 for ii in range(len(data)):
     d = data[ii]
-    key = d['sparse']
+    key = d['rank']
     
     if key in data_grouped.keys():
         data_grouped[key].append([d['sparse'], d['acc']])
@@ -91,24 +91,24 @@ data = get_data()
 ii = 0
 while ii < len(data):
     d = data[ii]
-    if d['rank'] != 10:
-        del data[ii]
-    else:
+    if d['rank'] == 10 or d['rank'] == 5:
         ii += 1
+    else:
+        del data[ii]
 
 data_grouped = {}
 ii = 0
 for ii in range(len(data)):
     d = data[ii]
-    key = d['sparse']
-    
+    key = d['rank']
+
     if key in data_grouped.keys():
-        data_grouped[key].append([d['sparse'], d['acc']])
+        data_grouped[key].append([d['sparse'], d['angle']])
     else:
-        data_grouped[key] = [[d['sparse'], d['acc']]]
-        
+        data_grouped[key] = [[d['sparse'], d['angle']]]
+
 points = []
-labels = [] 
+labels = []
 for key in data_grouped:
     points.append( data_grouped[key] )
     labels.append( key )
@@ -117,8 +117,8 @@ for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
     label = "%s %d" % ('sparse', labels[ii])
-    
-    ax1.scatter(p[0], p[1], s=10, label=label)
+
+    ax2.scatter(p[0], p[1], s=10, label=label)
 
 #######################################
 
@@ -127,6 +127,6 @@ f.subplots_adjust(hspace=0)
 #f.savefig('samplefigure', bbox_extra_artists=(lgd,), bbox_inches='tight')
 f.savefig('samplefigure', bbox_inches='tight')
 
-
+np.save('cifar10_data', get_data())
 
 
