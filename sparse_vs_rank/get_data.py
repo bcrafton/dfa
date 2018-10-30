@@ -55,8 +55,8 @@ def get_data(benchmark):
     
 #######################################
 
-#data = get_data('cifar10')
-#np.save('cifar10_data', data)
+data = get_data('cifar10')
+np.save('cifar10_data', data)
 
 #######################################
 
