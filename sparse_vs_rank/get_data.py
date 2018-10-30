@@ -30,7 +30,7 @@ def get_data(benchmark):
 
     for sparse in range(1, 10+1):
         for rank in range(1, 10+1):
-            if sparse * rank > 10:
+            if sparse * rank >= 10:
                 for itr in itrs:
                     fname = benchmark + "/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
                     results = np.load(fname).item()
