@@ -15,21 +15,25 @@ def run_command(benchmark, sparse, rank, name):
         gpu = counter % num_gpus
         counter = counter + 1
     
-    cmd = "python %s --epochs 100 --batch_size 32 --alpha 0.01 --gpu %d --dfa 1 --sparse %d --rank %d --init zero --opt gd --save 1 --name %s" % (benchmark, gpu, sparse, rank, name)
+    # cmd = "python mnist_fc.py --epochs 100 --batch_size 64 --alpha 0.05 --gpu %d --dfa 1 --sparse %d --rank %d --init zero --opt gd --save 1 --name %s" % (gpu, sparse, rank, name)
+    cmd = "python cifar10_fc.py --epochs 200 --batch_size 64 --alpha 0.005 --gpu %d --dfa 1 --sparse %d --rank %d --init zero --opt adam --save 1 --name %s" % (gpu, sparse, rank, name)
+
     os.system(cmd)
     # print (cmd)
+
     return
 
 ################################################
 
-benchmark = 'mnist_fc.py'
-# benchmark = 'cifar10_fc.py'
+# benchmark = 'mnist_fc.py'
+benchmark = 'cifar10_fc.py'
 
 runs = []
 for sparse in range(1, 10+1, 1):
-    for rank in range(sparse, 10+1, 1):
+    for rank in range(1, 10+1, 1):
         for itr in range(1, 10+1, 1):
-            runs.append((benchmark, sparse, rank, "sparse%drank%ditr%d" % (sparse, rank, itr)))
+            if (sparse * rank >= 10):
+                runs.append((benchmark, sparse, rank, "sparse%drank%ditr%d" % (sparse, rank, itr)))
 
 num_runs = len(runs)
 parallel_runs = 8
