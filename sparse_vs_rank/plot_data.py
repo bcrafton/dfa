@@ -7,8 +7,6 @@ import matplotlib.cm as cmap
 
 #######################################
 
-# fig = plt.figure(figsize=(10., 10.))
-
 f, [[ax1, ax3], [ax2, ax4]] = plt.subplots(2, 2, sharex=True, sharey=False)
 
 #######################################
@@ -35,7 +33,7 @@ data = []
 ii = 0
 for ii in range(len(mnist)):
     d = mnist[ii]
-    if d['rank'] == 10 or d['rank'] == 2:
+    if d['rank'] == 10 or d['rank'] == 5:
         data.append(d)
 
 data_grouped = {}
@@ -58,7 +56,7 @@ for key in data_grouped:
 for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
-    label = "%s %d" % ('sparse', labels[ii])
+    label = "%s %d" % ('Sparse', labels[ii])
     
     ax1.scatter(p[0], p[1], s=10, label=label)
 
@@ -71,7 +69,7 @@ data = []
 ii = 0
 for ii in range(len(mnist)):
     d = mnist[ii]
-    if d['rank'] == 10 or d['rank'] == 2:
+    if d['rank'] == 10 or d['rank'] == 5:
         data.append(d)
 
 data_grouped = {}
@@ -94,7 +92,7 @@ for key in data_grouped:
 for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
-    label = "%s %d" % ('sparse', labels[ii])
+    label = "%s %d" % ('Sparse', labels[ii])
 
     ax2.scatter(p[0], p[1], s=10, label=label)
 
@@ -107,7 +105,7 @@ data = []
 ii = 0
 for ii in range(len(cifar10)):
     d = cifar10[ii]
-    if d['rank'] == 10 or d['rank'] == 2:
+    if d['rank'] == 10 or d['rank'] == 5:
         data.append(d)
 
 data_grouped = {}
@@ -130,7 +128,7 @@ for key in data_grouped:
 for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
-    label = "%s %d" % ('sparse', labels[ii])
+    label = "%s %d" % ('Sparse', labels[ii])
     
     ax3.scatter(p[0], p[1], s=10, label=label)
 
@@ -143,7 +141,7 @@ data = []
 ii = 0
 for ii in range(len(cifar10)):
     d = cifar10[ii]
-    if d['rank'] == 10 or d['rank'] == 2:
+    if d['rank'] == 10 or d['rank'] == 5:
         data.append(d)
 
 data_grouped = {}
@@ -166,14 +164,38 @@ for key in data_grouped:
 for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
-    label = "%s %d" % ('sparse', labels[ii])
+    label = "%s %d" % ('Sparse', labels[ii])
 
     ax4.scatter(p[0], p[1], s=10, label=label)
 
 #######################################
 
+plt.rcParams['font.sans-serif'] = "Arial"
+plt.rcParams['font.family'] = "sans-serif"
+plt.rcParams['font.size'] = 10
+
+# ax1.set_yticks(np.linspace(.8, .98, 7))
+
+ax2.set_xlabel(xlabel='Sparsity')
+ax4.set_xlabel(xlabel='Sparsity')
+
+ax1.set_ylabel(ylabel='Accuracy')
+ax2.set_ylabel(ylabel='Angle')
+# ax3.set_ylabel(ylabel='Accuracy')
+# ax4.set_ylabel(ylabel='Angle')
+
+f.set_size_inches(8., 6.)
+
+for ax in [ax1, ax2, ax3, ax4]:
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(8) 
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(8) 
+
+lgd = ax4.legend(loc='upper left', bbox_to_anchor=(1.02, 1.5), fontsize=8)
+
 f.subplots_adjust(hspace=0)
-f.savefig('plot2', bbox_inches='tight')
+f.savefig('plot2', bbox_extra_artists=(lgd,), bbox_inches='tight')
 
 
 

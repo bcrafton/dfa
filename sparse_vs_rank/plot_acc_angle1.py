@@ -17,35 +17,15 @@ def angle_between(v1, v2):
 
 #######################################
 
-data = []
-
-itrs = range(1, 10+1)
-
-for sparse in range(1, 10+1):
-    for rank in range(sparse, 10+1):
-        for itr in itrs:
-        
-            fname = "mnist/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
-            results = np.load(fname).item()
-            
-            fb = results['fc1_fb']
-            w2 = results['fc2']
-            
-            acc = np.max(results['acc'])
-
-            # dont forget transpose
-            fb = np.reshape(fb.T, (-1))
-            w2 = np.reshape(w2, (-1))
-            angle = angle_between(fb, w2) * (180. / 3.14)
-            
-            data.append({"sparse":sparse, "rank":rank, "acc":acc, "angle":angle})
+mnist = np.load('mnist_data.npy')
+cifar10 = np.load('cifar10_data.npy')
 
 #######################################
 
 data_grouped = {}
 ii = 0
-for ii in range(len(data)):
-    d = data[ii]
+for ii in range(len(mnist)):
+    d = mnist[ii]
     key = d['sparse']
     
     if key in data_grouped.keys():
@@ -63,8 +43,8 @@ for key in data_grouped:
 
 data_grouped = {}
 ii = 0
-for ii in range(len(data)):
-    d = data[ii]
+for ii in range(len(mnist)):
+    d = mnist[ii]
     key = d['sparse']
     
     if key in data_grouped.keys():
@@ -79,35 +59,11 @@ for key in data_grouped:
     labels2.append( key )
 
 #######################################
-data = []
-
-itrs = range(1, 10+1)
-
-for sparse in range(1, 10+1):
-    for rank in range(sparse, 10+1):
-        for itr in itrs:
-        
-            fname = "cifar10/sparse%drank%ditr%d.npy" % (sparse, rank, itr)
-            results = np.load(fname).item()
-            
-            fb = results['fc3_fb']
-            w2 = results['fc4']
-
-            acc = np.max(results['acc'])
-
-            # dont forget transpose
-            fb = np.reshape(fb.T, (-1))
-            w2 = np.reshape(w2, (-1))
-            angle = angle_between(fb, w2) * (180. / 3.14)
-            
-            data.append({"sparse":sparse, "rank":rank, "acc":acc, "angle":angle})
-
-#######################################
 
 data_grouped = {}
 ii = 0
-for ii in range(len(data)):
-    d = data[ii]
+for ii in range(len(cifar10)):
+    d = cifar10[ii]
     key = d['sparse']
     
     if key in data_grouped.keys():
@@ -125,8 +81,8 @@ for key in data_grouped:
 
 data_grouped = {}
 ii = 0
-for ii in range(len(data)):
-    d = data[ii]
+for ii in range(len(cifar10)):
+    d = cifar10[ii]
     key = d['sparse']
     
     if key in data_grouped.keys():
@@ -174,15 +130,15 @@ for ii in range(len(points4)):
 # ax2.set_xticks(range(1, 11))
 # ax4.set_xticks(range(1, 11))
 
-ax1.set_yticks(np.linspace(.8, .98, 7))
+# ax1.set_yticks(np.linspace(.8, .98, 7))
 
-ax2.set_xlabel(xlabel='Sparsity')
-ax4.set_xlabel(xlabel='Sparsity')
+ax2.set_xlabel(xlabel='Rank')
+ax4.set_xlabel(xlabel='Rank')
 
 ax1.set_ylabel(ylabel='Accuracy')
 ax2.set_ylabel(ylabel='Angle')
-ax3.set_ylabel(ylabel='Accuracy')
-ax4.set_ylabel(ylabel='Angle')
+# ax3.set_ylabel(ylabel='Accuracy')
+# ax4.set_ylabel(ylabel='Angle')
 
 f.subplots_adjust(hspace=0)
 f.set_size_inches(8., 6.)
@@ -195,7 +151,7 @@ for ax in [ax1, ax2, ax3, ax4]:
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(8) 
 
-f.savefig('samplefigure', bbox_extra_artists=(lgd,), bbox_inches='tight')
+f.savefig('plot1', bbox_extra_artists=(lgd,), bbox_inches='tight')
 # plt.show()
 
 
