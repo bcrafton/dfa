@@ -8,7 +8,7 @@ import argparse
 ##############################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--make_filters', type=int, default=1)
+parser.add_argument('--make_filters', type=int, default=0)
 args = parser.parse_args()
 
 ##############################################
@@ -27,7 +27,7 @@ def run_command(param):
     
     name = '%s_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
     if param['load']:
-        name += '_' + args.load
+        name += '_transfer'
         cmd = "python %s --gpu %d --epochs %d --batch_size %d --alpha %f --dfa %d --sparse %d --rank %d --init %s --opt %s --save %d --name %s --load %s" % \
               (param['benchmark'], gpu, param['epochs'], param['batch_size'], param['alpha'], param['dfa'], param['sparse'], param['rank'], param['init'], param['opt'], 1, name, param['load'])
     else:

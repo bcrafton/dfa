@@ -162,19 +162,7 @@ y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################
 
-filename = "cifar10_conv_" +            \
-           str(args.epochs) + "_" +     \
-           str(args.batch_size) + "_" + \
-           str(args.alpha) + "_" +      \
-           str(args.dfa) + "_" +        \
-           str(args.sparse) + "_" +     \
-           str(args.gpu) + "_" +        \
-           args.init + "_" +            \
-           args.opt + "_" +             \
-           str(args.save) + "_" +       \
-           args.name +                  \
-           ".results"
-
+filename = args.name + '.results'
 f = open(filename, "w")
 f.write(filename + "\n")
 f.write("total params: " + str(model.num_params()) + "\n")
