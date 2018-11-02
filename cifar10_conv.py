@@ -129,9 +129,9 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         grads_and_vars = model.gvs(X=X, Y=Y)
         
     if args.opt == "adam":
-        train = tf.train.AdamOptimizer(learning_rate=args.alpha, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "rms":
-        train = tf.train.RMSPropOptimizer(learning_rate=args.alpha, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "decay":
         train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
     else:
