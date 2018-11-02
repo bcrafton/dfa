@@ -26,6 +26,8 @@ def run_command(param):
         counter = counter + 1
     
     name = '%s_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
+    if param['load'] != '':
+        name += '_' + args.load
     
     cmd = "python %s --gpu %d --epochs %d --batch_size %d --alpha %f --dfa %d --sparse %d --rank %d --init %s --opt %s --save %d --name %s --load %s" % \
           (param['benchmark'], gpu, param['epochs'], param['batch_size'], param['alpha'], param['dfa'], param['sparse'], param['rank'], param['init'], param['opt'], 1, name, param['load'])
