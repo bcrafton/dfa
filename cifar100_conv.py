@@ -18,6 +18,7 @@ parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="cifar100_conv_weights")
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -66,11 +67,13 @@ ALPHA = args.alpha
 sparse = args.sparse
 rank = args.rank
 
-train_conv=False
 train_fc=True
+if not args.load:
+    train_conv=False
 
-weights_conv='./cifar100/cifar100_conv_0.01_decay.npy'
 weights_fc=None
+# weights_conv='./cifar100/cifar100_conv_0.01_decay.npy'
+weights_conv=args.load
 
 if args.dfa:
     bias = 0.0
