@@ -68,11 +68,12 @@ sparse = args.sparse
 rank = args.rank
 
 train_fc=True
-if not args.load:
+if args.load:
     train_conv=False
+else:
+    train_conv=True
 
 weights_fc=None
-# weights_conv=''
 weights_conv=args.load
 
 if args.dfa:

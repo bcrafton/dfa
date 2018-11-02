@@ -6,15 +6,19 @@ import sys
 ##############################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, default=25)
+parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--alpha', type=float, default=5e-3)
+parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--decay', type=float, default=0.99)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
+parser.add_argument('--save', type=int, default=0)
+parser.add_argument('--name', type=str, default="mnist_conv_weights")
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -26,9 +30,9 @@ if args.gpu >= 0:
 import time
 import tensorflow as tf
 import keras
-from keras.datasets import mnist
 import math
 import numpy as np
+from tensorflow.examples.tutorials.mnist import input_data
 
 from Model import Model
 
@@ -51,28 +55,28 @@ from Activation import Linear
 
 ##############################################
 
-EPOCHS = args.epochs
-TRAIN_EXAMPLES = 60000
-TEST_EXAMPLES = 10000
-NUM_CLASSES = 10
-BATCH_SIZE = args.batch_size
-ALPHA = args.alpha
-sparse = args.sparse
-rank = args.rank
+mnist = tf.keras.datasets.mnist.load_data()
 
 ##############################################
 
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+EPOCHS = args.epochs
+TRAIN_EXAMPLES = 60000
+TEST_EXAMPLES = 10000
+BATCH_SIZE = args.batch_size
 
-x_train = x_train.reshape(TRAIN_EXAMPLES, 28, 28, 1)
-x_test = x_test.reshape(TEST_EXAMPLES, 28, 28, 1)
-x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
-x_train /= 255
-x_test /= 255
+train_fc=True
+if args.load:
+    train_conv=False
+else:
+    train_conv=True
 
-y_train = keras.utils.to_categorical(y_train, NUM_CLASSES)
-y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
+weights_fc=None
+weights_conv=args.load
+
+if args.dfa:
+    bias = 0.0
+else:
+    bias = 0.0
 
 ##############################################
 
@@ -80,60 +84,77 @@ tf.set_random_seed(0)
 tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
-XTRAIN = tf.placeholder(tf.float32, [None, 28, 28, 1])
-YTRAIN = tf.placeholder(tf.float32, [None, 10])
-XTRAIN = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), XTRAIN)
+dropout_rate = tf.placeholder(tf.float32, shape=())
+learning_rate = tf.placeholder(tf.float32, shape=())
+X = tf.placeholder(tf.float32, [None, 28, 28, 1])
+X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
+Y = tf.placeholder(tf.float32, [None, 10])
 
-XTEST = tf.placeholder(tf.float32, [None, 28, 28, 1])
-YTEST = tf.placeholder(tf.float32, [None, 10])
-XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
+l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
+l1 = FeedbackConv(size=[batch_size, 28, 28, 32], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv1_fb')
 
-l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
-l1 = MaxPool(size=[batch_size, 28, 28, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l2 = FeedbackConv(size=[batch_size, 14, 14, 32], num_classes=10, sparse=sparse, rank=rank)
+l2 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l3 = FeedbackConv(size=[batch_size, 28, 28, 32], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv2_fb')
 
-l3 = Convolution(input_sizes=[batch_size, 14, 14, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
-l4 = MaxPool(size=[batch_size, 14, 14, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l5 = FeedbackConv(size=[batch_size, 7, 7, 64], num_classes=10, sparse=sparse, rank=rank)
+l4 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv)
+l5 = FeedbackConv(size=[batch_size, 28, 28, 64], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv3_fb')
 
-l6 = Convolution(input_sizes=[batch_size, 7, 7, 64], filter_sizes=[3, 3, 64, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
-l7 = MaxPool(size=[batch_size, 7, 7, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l8 = FeedbackConv(size=[batch_size, 4, 4, 64], num_classes=10, sparse=sparse, rank=rank)
+l6 = Convolution(input_sizes=[batch_size, 28, 28, 64], filter_sizes=[3, 3, 64, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv4', load=weights_conv, train=train_conv)
+l7 = MaxPool(size=[batch_size, 28, 28, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l8 = FeedbackConv(size=[batch_size, 14, 14, 64], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv4_fb')
 
-l9 = ConvToFullyConnected(shape=[4, 4, 64])
-l10 = FullyConnected(size=[4*4*64, 512], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
-l11 = FeedbackFC(size=[4*4*64, 512], num_classes=10, sparse=sparse, rank=rank)
+l9 = ConvToFullyConnected(shape=[14, 14, 64])
+l10 = FullyConnected(size=[14*14*64, 512], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
+l11 = Dropout(rate=0.0)
+l12 = FeedbackFC(size=[14*14*64, 512], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
 
-l12 = FullyConnected(size=[512, 128], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
-l13 = FeedbackFC(size=[512, 128], num_classes=10, sparse=sparse, rank=rank)
+l13 = FullyConnected(size=[512, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc2', load=weights_fc, train=train_fc)
 
-l14 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
-
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13])
 
 ##############################################
 
-predict = model.predict(X=XTEST)
+predict = model.predict(X=X)
 
-if args.dfa:
-    grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
-else:
-    grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
-    
-if args.opt == "adam":
-    optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
-elif args.opt == "rms":
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=1.0, momentum=0.0).apply_gradients(grads_and_vars=grads_and_vars)
-else:
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
+weights = model.get_weights()
 
-correct = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
+if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
+    if args.dfa:
+        grads_and_vars = model.dfa_gvs(X=X, Y=Y)
+    else:
+        grads_and_vars = model.gvs(X=X, Y=Y)
+        
+    if args.opt == "adam":
+        train = tf.train.AdamOptimizer(learning_rate=args.alpha, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "rms":
+        train = tf.train.RMSPropOptimizer(learning_rate=args.alpha, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "decay":
+        train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
+    else:
+        assert(False)
+
+else:
+    if args.dfa:
+        train = model.dfa(X=X, Y=Y)
+    else:
+        train = model.train(X=X, Y=Y)
+
+correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
 ##############################################
 
 sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
+tf.local_variables_initializer().run()
+
+(x_train, y_train), (x_test, y_test) = mnist
+
+x_train = x_train.reshape(TRAIN_EXAMPLES, 28, 28, 1)
+y_train = keras.utils.to_categorical(y_train, 10)
+
+x_test = x_test.reshape(TEST_EXAMPLES, 28, 28, 1)
+y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################
 
@@ -145,7 +166,9 @@ filename = "mnist_conv_" +              \
            str(args.sparse) + "_" +     \
            str(args.gpu) + "_" +        \
            args.init + "_" +            \
-           args.opt +                   \
+           args.opt + "_" +             \
+           str(args.save) + "_" +       \
+           args.name +                  \
            ".results"
 
 f = open(filename, "w")
@@ -155,27 +178,65 @@ f.close()
 
 ##############################################
 
+train_accs = []
+test_accs = []
+
 for ii in range(EPOCHS):
+    if args.opt == 'decay' or args.opt == 'gd':
+        decay = np.power(args.decay, ii)
+        lr = args.alpha * decay
+    else:
+        lr = args.alpha
+        
+    print (ii)
+    
+    #############################
+    
+    _count = 0
+    _total_correct = 0
+    
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        sess.run([optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: xs, YTRAIN: ys})
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
         
-    total_correct_examples = 0.0
-    total_examples = 0.0
+        _total_correct += _correct
+        _count += BATCH_SIZE
+
+    train_acc = 1.0 * _total_correct / _count
+    train_accs.append(train_acc)
+
+    #############################
+
+    _count = 0
+    _total_correct = 0
 
     for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
         xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        tmp = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, XTEST: xs, YTEST: ys})
-        total_correct_examples += tmp
-        total_examples += BATCH_SIZE
+        _correct = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
+        
+        _total_correct += _correct
+        _count += BATCH_SIZE
+        
+    test_acc = 1.0 * _total_correct / _count
+    test_accs.append(test_acc)
+    
+    #############################
             
-    print ("acc: " + str(total_correct_examples / total_examples))
+    print ("train acc: %f test acc: %f" % (train_acc, test_acc))
     
     f = open(filename, "a")
-    f.write(str(total_correct_examples * 1.0 / total_examples) + "\n")
+    f.write(str(test_acc) + "\n")
     f.close()
 
+##############################################
+
+if args.save:
+    [w] = sess.run([weights], feed_dict={})
+    w['train_acc'] = train_accs
+    w['test_acc'] = test_accs
+    np.save(args.name, w)
+    
 ##############################################
 
