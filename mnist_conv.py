@@ -18,7 +18,7 @@ parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="gd")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="mnist_conv_weights")
-parser.add_argument('--load', type=str, default='')
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -65,7 +65,7 @@ TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
 train_fc=True
-if args.load != '':
+if args.load:
     train_conv=False
 else:
     train_conv=True
@@ -163,8 +163,7 @@ filename = "mnist_conv_" +              \
            args.init + "_" +            \
            args.opt + "_" +             \
            str(args.save) + "_" +       \
-           args.name + "_" +            \
-           args.load +
+           args.name +                  \
            ".results"
 
 f = open(filename, "w")
