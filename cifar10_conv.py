@@ -18,7 +18,7 @@ parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="gd")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="cifar10_conv_weights")
-parser.add_argument('--load', type=str, default=None)
+parser.add_argument('--load', type=str, default='')
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -65,7 +65,7 @@ TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
 train_fc=True
-if args.load:
+if args.load != '':
     train_conv=False
 else:
     train_conv=True
@@ -162,7 +162,7 @@ y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################
 
-filename = "cifar10_conv_" +           \
+filename = "cifar10_conv_" +            \
            str(args.epochs) + "_" +     \
            str(args.batch_size) + "_" + \
            str(args.alpha) + "_" +      \
@@ -172,7 +172,8 @@ filename = "cifar10_conv_" +           \
            args.init + "_" +            \
            args.opt + "_" +             \
            str(args.save) + "_" +       \
-           args.name +                  \
+           args.name + "_" +            \
+           args.load +
            ".results"
 
 f = open(filename, "w")
