@@ -48,8 +48,7 @@ cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':
 
 ################################################
 
-# params = [mnist_fc_bp, mnist_fc_dfa, cifar10_fc_bp, cifar10_fc_dfa, cifar100_fc_bp, cifar100_fc_dfa, mnist_conv_bp, mnist_conv_dfa, cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
-params = [mnist_fc_bp, mnist_fc_dfa, cifar10_fc_bp, cifar10_fc_dfa, mnist_conv_bp, mnist_conv_dfa, cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
+params = [mnist_fc_bp, mnist_fc_dfa, cifar10_fc_bp, cifar10_fc_dfa, cifar100_fc_bp, cifar100_fc_dfa, mnist_conv_bp, mnist_conv_dfa, cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
 
 ################################################
 
