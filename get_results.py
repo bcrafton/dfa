@@ -48,7 +48,8 @@ cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':
 
 ################################################
 
-params = [mnist_fc_bp, mnist_fc_dfa, cifar10_fc_bp, cifar10_fc_dfa, cifar100_fc_bp, cifar100_fc_dfa, mnist_conv_bp, mnist_conv_dfa, cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
+# params = [mnist_fc_bp, mnist_fc_dfa, cifar10_fc_bp, cifar10_fc_dfa, cifar100_fc_bp, cifar100_fc_dfa, mnist_conv_bp, mnist_conv_dfa, cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
+params = [mnist_fc_bp, mnist_fc_dfa, cifar10_fc_bp, cifar10_fc_dfa, mnist_conv_bp, mnist_conv_dfa, cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
 
 ################################################
 
@@ -60,11 +61,24 @@ for param in params:
     
 ################################################
 
+results = {}
+
 num_runs = len(runs)
 for ii in range(num_runs):
     param = runs[ii]
     name = '%s_%f_%d_%d_%s_%s.npy' % (param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
-    results = np.load(name)
+    res = np.load(name)
+    
+    key = (param['benchmark'], param['dfa'], param['sparse'])
+    val = res['test_acc']
+    
+    if key in results.keys():
+        # use an if instead of max because we gonna want to save the winner run information
+        if results[key] < val:
+            results[key] = val
+    else:
+        results[key] = val
+            
     
 
 
