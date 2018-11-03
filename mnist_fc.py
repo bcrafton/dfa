@@ -15,9 +15,9 @@ parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="adam")
+parser.add_argument('--opt', type=str, default="gd")
 parser.add_argument('--save', type=int, default=0)
-parser.add_argument('--name', type=str, default="weights")
+parser.add_argument('--name', type=str, default="mnist_fc_weights")
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -53,43 +53,37 @@ from Activation import Linear
 
 ##############################################
 
+mnist = tf.keras.datasets.mnist.load_data()
+
+##############################################
+
 EPOCHS = args.epochs
 TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
-NUM_CLASSES = 10
 BATCH_SIZE = args.batch_size
-sparse = args.sparse
 
-##############################################
-
-(x_train, y_train), (x_test, y_test) = mnist.load_data()
+if args.dfa:
+    bias = 0.0
+else:
+    bias = 0.0
     
-x_train = x_train.reshape(TRAIN_EXAMPLES, 784)
-x_test = x_test.reshape(TEST_EXAMPLES, 784)
-x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
-x_train /= 255.
-x_test /= 255.
-
-y_train = keras.utils.to_categorical(y_train, NUM_CLASSES)
-y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
-
 ##############################################
 
-#tf.set_random_seed(0)
-#tf.reset_default_graph()
+tf.set_random_seed(0)
+tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
+
 X = tf.placeholder(tf.float32, [None, 784])
 Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = FullyConnected(size=[784, 400], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=0.0, last_layer=False, name="fc1")
+l0 = FullyConnected(size=[784, 400], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc1")
 l1 = Dropout(rate=dropout_rate)
-l2 = FeedbackFC(size=[784, 400], num_classes=10, sparse=sparse, rank=args.rank, name="fc1_fb")
+l2 = FeedbackFC(size=[784, 400], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l3 = FullyConnected(size=[400, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=0.0, last_layer=True, name="fc2")
+l3 = FullyConnected(size=[400, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc2")
 
 model = Model(layers=[l0, l1, l2, l3])
 
@@ -127,22 +121,23 @@ total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
 sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
+tf.local_variables_initializer().run()
+
+(x_train, y_train), (x_test, y_test) = mnist
+
+x_train = x_train.reshape(TRAIN_EXAMPLES, 784)
+x_train = x_train.astype('float32')
+x_train /= 255.
+y_train = keras.utils.to_categorical(y_train, 10)
+
+x_test = x_test.reshape(TEST_EXAMPLES, 784)
+x_test = x_test.astype('float32')
+x_test /= 255.
+y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################
 
-filename = "mnist_" +                   \
-           str(args.epochs) + "_" +     \
-           str(args.batch_size) + "_" + \
-           str(args.alpha) + "_" +      \
-           str(args.gpu) + "_" +        \
-           str(args.dfa) + "_" +        \
-           str(args.sparse) + "_" +     \
-           str(args.rank) + "_" +       \
-           args.init + "_" +            \
-           args.opt + "_" +             \
-           args.name +                  \
-           ".results"
-
+filename = args.name + '.results'
 f = open(filename, "w")
 f.write(filename + "\n")
 f.write("total params: " + str(model.num_params()) + "\n")
@@ -150,7 +145,8 @@ f.close()
 
 ##############################################
 
-accs = []
+train_accs = []
+test_accs = []
 
 for ii in range(EPOCHS):
     if args.opt == 'decay' or args.opt == 'gd':
@@ -169,12 +165,13 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: lr, X: xs, Y: ys})
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
         _count += BATCH_SIZE
 
     train_acc = 1.0 * _total_correct / _count
+    train_accs.append(train_acc)
 
     #############################
 
@@ -190,11 +187,11 @@ for ii in range(EPOCHS):
         _count += BATCH_SIZE
         
     test_acc = 1.0 * _total_correct / _count
+    test_accs.append(test_acc)
     
     #############################
             
     print ("train acc: %f test acc: %f" % (train_acc, test_acc))
-    accs.append(test_acc)
     
     f = open(filename, "a")
     f.write(str(test_acc) + "\n")
@@ -204,7 +201,8 @@ for ii in range(EPOCHS):
 
 if args.save:
     [w] = sess.run([weights], feed_dict={})
-    w['acc'] = accs
+    w['train_acc'] = train_accs
+    w['test_acc'] = test_accs
     np.save(args.name, w)
     
 ##############################################
