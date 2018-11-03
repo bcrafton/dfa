@@ -67,7 +67,7 @@ num_runs = len(runs)
 for ii in range(num_runs):
     param = runs[ii]
     name = '%s_%f_%d_%d_%s_%s.npy' % (param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
-    res = np.load(name)
+    res = np.load(name).item()
     
     key = (param['benchmark'], param['dfa'], param['sparse'])
     val = res['test_acc']
