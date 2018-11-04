@@ -69,7 +69,7 @@ for ii in range(num_runs):
     res = np.load(name).item()
     
     key = (param['benchmark'], param['dfa'], param['sparse'])
-    val = res['test_acc']
+    val = max(res['test_acc'])
     
     if key in results.keys():
         # use an if instead of max because we gonna want to save the winner run information
@@ -78,8 +78,8 @@ for ii in range(num_runs):
     else:
         results[key] = val
             
-    
-
+for key in sorted(results.keys()):   
+    print (key, results[key])
 
 
 
