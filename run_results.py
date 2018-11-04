@@ -7,12 +7,6 @@ import argparse
 
 ##############################################
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--make_filters', type=int, default=0)
-args = parser.parse_args()
-
-##############################################
-
 num_gpus = 4
 counter = 0
 
