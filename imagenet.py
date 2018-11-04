@@ -364,9 +364,9 @@ val_handle = sess.run(val_iterator.string_handle())
 
 ###############################################################
 
-filename = args.name + '.results'
-f = open(filename, "w")
-f.write(filename + "\n")
+results_filename = args.name + '.results'
+f = open(results_filename, "w")
+f.write(results_filename + "\n")
 f.write("total params: " + str(model.num_params()) + "\n")
 f.close()
 
@@ -398,7 +398,7 @@ for ii in range(0, epochs):
         train_acc = train_correct / train_total
         
         print ("train accuracy: " + str(train_acc))     
-        f = open(filename, "a")
+        f = open(results_filename, "a")
         f.write(str(train_acc) + "\n")
         f.close()
     
@@ -418,7 +418,7 @@ for ii in range(0, epochs):
         val_acc = val_correct / val_total
         
         print ("val accuracy: " + str(val_acc))
-        f = open(filename, "a")
+        f = open(results_filename, "a")
         f.write(str(val_acc) + "\n")
         f.close()
 
