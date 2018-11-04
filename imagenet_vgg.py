@@ -10,13 +10,12 @@ parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--decay', type=float, default=0.99)
-parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="adam")
+parser.add_argument('--opt', type=str, default="gd")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="imagenet_vgg")
 args = parser.parse_args()
@@ -387,7 +386,7 @@ for ii in range(0, epochs):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
+        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: 0.5, learning_rate: lr})
         train_correct += _total_correct
         train_total += batch_size
         train_acc = train_correct / train_total
