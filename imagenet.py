@@ -7,14 +7,18 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--decay', type=float, default=0.99)
+parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
+parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
+parser.add_argument('--name', type=str, default="imagenet_vgg")
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -38,9 +42,13 @@ import math
 import numpy
 import numpy as np
 np.set_printoptions(threshold=1000)
-
 import time
+
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import numpy as np
 from PIL import Image
+import scipy.misc
 
 from Model import Model
 
@@ -70,22 +78,79 @@ data_augmentation = False
 
 EPOCHS = args.epochs
 BATCH_SIZE = args.batch_size
-ALPHA = args.alpha
-sparse = args.sparse
-rank = args.rank
 
 ##############################################
 
-def parse_function(filename, label):
+def _mean_image_subtraction(image, means):
+  """Subtracts the given means from each image channel.
+
+  For example:
+    means = [123.68, 116.779, 103.939]
+    image = _mean_image_subtraction(image, means)
+
+  Note that the rank of `image` must be known.
+
+  Args:
+    image: a tensor of size [height, width, C].
+    means: a C-vector of values to subtract from each channel.
+
+  Returns:
+    the centered image.
+
+  Raises:
+    ValueError: If the rank of `image` is unknown, if `image` has a rank other
+      than three or if the number of channels in `image` doesn't match the
+      number of values in `means`.
+  """
+  if image.get_shape().ndims != 3:
+    raise ValueError('Input must be of size [height, width, C>0]')
+  num_channels = image.get_shape().as_list()[-1]
+  if len(means) != num_channels:
+    raise ValueError('len(means) must match the number of channels')
+
+  channels = tf.split(axis=2, num_or_size_splits=num_channels, value=image)
+  for i in range(num_channels):
+    channels[i] = tf.subtract(channels[i], means[i])
+  return tf.concat(axis=2, values=channels)
+
+
+def parse_function_train(filename, label):
+
+    # filename = tf.Print(filename, [filename], message="", summarize=100)
+
     image_string = tf.read_file(filename)
 
     # Don't use tf.image.decode_image, or the output shape will be undefined
     image = tf.image.decode_jpeg(image_string, channels=3)
 
     # This will convert to float values in [0, 1]
-    image = tf.image.convert_image_dtype(image, tf.float32)
+    image = tf.image.convert_image_dtype(image, tf.float32) * 256.
+
+    if image.get_shape()[0] >= 227 and image.get_shape()[1] >= 227:
+        image = tf.random_crop(value=image, size=[227, 227, 3])
+    else:
+        image = tf.image.resize_images(image, [227, 227])
+
+    _R_MEAN = 123.68
+    _G_MEAN = 116.78
+    _B_MEAN = 103.94
+    image = _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+
+    return image, label
+
+def parse_function_val(filename, label):
+
+    image_string = tf.read_file(filename)
+
+    image = tf.image.decode_jpeg(image_string, channels=3)
 
     image = tf.image.resize_images(image, [227, 227])
+
+    _R_MEAN = 123.68
+    _G_MEAN = 116.78
+    _B_MEAN = 103.94
+    image = _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])    
+
     return image, label
 
 def train_preprocess(image, label):
@@ -96,6 +161,9 @@ def train_preprocess(image, label):
 
     # Make sure the image is still in [0, 1]
     # image = tf.clip_by_value(image, 0.0, 1.0)
+
+    # plt.imsave("img.png", image, cmap="gray")
+    # assert(False)
 
     return image, label
 
@@ -111,6 +179,7 @@ def get_validation_dataset():
     for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/val/'):
         for file in files:
             validation_images.append(os.path.join('/home/bcrafton3/ILSVRC2012/val/', file))
+    validation_images = sorted(validation_images)
 
     validation_labels_file = open('/home/bcrafton3/dfa/imagenet_labels/validation_labels.txt')
     lines = validation_labels_file.readlines()
@@ -173,7 +242,7 @@ val_imgs, val_labs = get_validation_dataset()
 
 val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
 val_dataset = val_dataset.shuffle(len(val_imgs))
-val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
+val_dataset = val_dataset.map(parse_function_val, num_parallel_calls=4)
 val_dataset = val_dataset.map(train_preprocess, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
 val_dataset = val_dataset.repeat()
@@ -185,7 +254,7 @@ train_imgs, train_labs = get_train_dataset()
 
 train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
 train_dataset = train_dataset.shuffle(len(train_imgs))
-train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
+train_dataset = train_dataset.map(parse_function_train, num_parallel_calls=4)
 train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
 train_dataset = train_dataset.batch(batch_size)
 train_dataset = train_dataset.repeat()
@@ -204,35 +273,47 @@ val_iterator = val_dataset.make_initializable_iterator()
 
 ###############################################################
 
-train = True
-weights = None
+train_conv=False
+train_fc=True
+weights_conv=None
+weights_fc=None
 
-l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv1", load=weights, train=train)
+if args.dfa:
+    bias = 0.0
+else:
+    bias = 0.0
+
+###############################################################
+
+dropout_rate = tf.placeholder(tf.float32, shape=())
+learning_rate = tf.placeholder(tf.float32, shape=())
+
+l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv1", load=weights, train=train)
 l1 = MaxPool(size=[batch_size, 55, 55, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-# l2 = FeedbackConv(size=[batch_size, 27, 27, 96], num_classes=num_classes, sparse=sparse, rank=rank, name="conv1_fb")
+# l2 = FeedbackConv(size=[batch_size, 27, 27, 96], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="conv1_fb")
 
-l3 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv2", load=weights, train=train)
+l3 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv2", load=weights, train=train)
 l4 = MaxPool(size=[batch_size, 27, 27, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-# l5 = FeedbackConv(size=[batch_size, 13, 13, 256], num_classes=num_classes, sparse=sparse, rank=rank, name="conv2_fb")
+# l5 = FeedbackConv(size=[batch_size, 13, 13, 256], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="conv2_fb")
 
-l6 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv3", load=weights, train=train)
-# l7 = FeedbackConv(size=[batch_size, 13, 13, 384], num_classes=num_classes, sparse=sparse, rank=rank, name="conv3_fb")
+l6 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv3", load=weights, train=train)
+# l7 = FeedbackConv(size=[batch_size, 13, 13, 384], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="conv3_fb")
 
-l8 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv4", load=weights, train=train)
-# l9 = FeedbackConv(size=[batch_size, 13, 13, 384], num_classes=num_classes, sparse=sparse, rank=rank, name="conv4_fb")
+l8 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv4", load=weights, train=train)
+# l9 = FeedbackConv(size=[batch_size, 13, 13, 384], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="conv4_fb")
 
-l10 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="conv5", load=weights, train=train)
+l10 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv5", load=weights, train=train)
 l11 = MaxPool(size=[batch_size, 13, 13, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-# l12 = FeedbackConv(size=[batch_size, 6, 6, 256], num_classes=num_classes, sparse=sparse, rank=rank, name="conv5_fb")
+# l12 = FeedbackConv(size=[batch_size, 6, 6, 256], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="conv5_fb")
 
 l13 = ConvToFullyConnected(shape=[6, 6, 256])
-l14 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="fc1", load=weights, train=train)
-# l15 = FeedbackFC(size=[6*6*256, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc1_fb")
+l14 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1", load=weights, train=train)
+# l15 = FeedbackFC(size=[6*6*256, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l16 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=False, name="fc2", load=weights, train=train)
-# l17 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=sparse, rank=rank, name="fc2_fb")
+l16 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2", load=weights, train=train)
+# l17 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l18 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), bias=0.0, last_layer=True, name="fc3", load=weights, train=train)
+l18 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=True, name="fc3", load=weights, train=train)
 
 ###############################################################
 
@@ -241,10 +322,26 @@ model = Model(layers=[l0, l1, l3, l4, l6, l8, l10, l11, l13, l14, l16, l18])
 
 predict = tf.nn.softmax(model.predict(X=features))
 
-if args.dfa:
-    train = model.dfa(X=features, Y=labels)
+if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
+    if args.dfa:
+        grads_and_vars = model.dfa_gvs(X=features, Y=labels)
+    else:
+        grads_and_vars = model.gvs(X=features, Y=labels)
+        
+    if args.opt == "adam":
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "rms":
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "decay":
+        train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
+    else:
+        assert(False)
+
 else:
-    train = model.train(X=features, Y=labels)
+    if args.dfa:
+        train = model.dfa(X=features, Y=labels)
+    else:
+        train = model.train(X=features, Y=labels)
 
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
@@ -264,36 +361,57 @@ tf.global_variables_initializer().run()
 train_handle = sess.run(train_iterator.string_handle())
 val_handle = sess.run(val_iterator.string_handle())
 
-for i in range(0, epochs):
+train_accs = []
+val_accs = []
+
+for ii in range(0, epochs):
+
+    if args.opt == 'decay' or args.opt == 'gd':
+        decay = np.power(args.decay, ii)
+        lr = args.alpha * decay
+    else:
+        lr = args.alpha
+        
+    print (ii)
 
     sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
     train_correct = 0.0
     train_total = 0.0
+    # for j in range(0, 32 * 10, batch_size):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle})
+        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
         train_correct += _total_correct
         train_total += batch_size
-
-        print ("train accuracy: " + str(train_correct / train_total))        
+        train_acc = train_correct / train_total
+        print ("train accuracy: " + str(train_acc))        
+    
+    train_accs.append(train_acc)
     
     sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
     val_correct = 0.0
     val_total = 0.0
+    lr = 0.0
+    # for j in range(0, 32 * 10, batch_size):
     for j in range(0, len(val_imgs), batch_size):
         print (j)
-        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle})
+
+        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: lr})
         val_correct += _total_correct
         val_total += batch_size
+        val_acc = val_correct / val_total
+        print ("val accuracy: " + str(val_acc))
 
-        print ("val accuracy: " + str(val_correct / val_total))
+    val_accs.append(val_acc)
 
     if args.save:
-        [w] = sess.run([weights], feed_dict={})
-        np.save("imagenet_weights", w)
+        [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: lr})
+        w['train_acc'] = train_accs
+        w['val_acc'] = val_accs
+        np.save(args.name, w)
 
-    print('epoch {}/{}'.format(i, epochs))
+    print('epoch {}/{}'.format(ii, epochs))
     
     
     
