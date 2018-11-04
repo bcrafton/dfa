@@ -366,6 +366,16 @@ tf.global_variables_initializer().run()
 train_handle = sess.run(train_iterator.string_handle())
 val_handle = sess.run(val_iterator.string_handle())
 
+###############################################################
+
+filename = args.name + '.results'
+f = open(filename, "w")
+f.write(filename + "\n")
+f.write("total params: " + str(model.num_params()) + "\n")
+f.close()
+
+###############################################################
+
 train_accs = []
 val_accs = []
 
@@ -390,8 +400,12 @@ for ii in range(0, epochs):
         train_correct += _total_correct
         train_total += batch_size
         train_acc = train_correct / train_total
+        
         print ("train accuracy: " + str(train_acc))        
-    
+        f = open(filename, "a")
+        f.write(str(train_acc) + "\n")
+        f.close()
+
     train_accs.append(train_acc)
     
     sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
@@ -406,7 +420,11 @@ for ii in range(0, epochs):
         val_correct += _total_correct
         val_total += batch_size
         val_acc = val_correct / val_total
+        
         print ("val accuracy: " + str(val_acc))
+        f = open(filename, "a")
+        f.write(str(val_acc) + "\n")
+        f.close()
 
     val_accs.append(val_acc)
 
