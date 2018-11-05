@@ -392,7 +392,7 @@ for ii in range(0, epochs):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: lr})
+        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: 0.5, learning_rate: lr})
         train_correct += _total_correct
         train_total += batch_size
         train_acc = train_correct / train_total

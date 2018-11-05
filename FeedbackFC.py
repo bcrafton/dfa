@@ -28,12 +28,13 @@ class FeedbackFC(Layer):
             b = FeedbackMatrix(size=(self.num_classes, self.output_size), sparse=self.sparse, rank=self.rank)
             self.B = tf.cast(tf.Variable(b), tf.float32) 
   
-
+            '''
             print("rank:", np.linalg.matrix_rank(b))
             print("sparse: ", np.sum(b != 0, axis=0))
             D, V = np.linalg.eig( np.dot(b, b.T) )
             print(D)
             print(np.max(b.T), np.min(b.T))
+            '''
 
     def get_weights(self):
         return [(self.name, self.B)]

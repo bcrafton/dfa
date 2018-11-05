@@ -76,9 +76,8 @@ cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':
 
 ################################################
 
-imagenet_alexnet_bp = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[0.01], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':'gd', 'load':None}
-imagenet_vgg_bp = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32, 'alpha':[0.01, 0.005, 0.001], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':'gd', 'load':None}
-
+imagenet_alexnet_bp = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[0.01], 'dfa':0, 'sparse':0, 'rank':0, 'init':['NA'], 'opt':'gd', 'load':None}
+imagenet_vgg_bp = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32, 'alpha':[0.01], 'dfa':0, 'sparse':0, 'rank':0, 'init':['sqrt_fan_in'], 'opt':'gd', 'load':None}
 
 ################################################
 
@@ -99,7 +98,9 @@ params = [mnist_fc_bp,      \
 
 # params = [mnist_fc_dfa, cifar10_conv_dfa]
 
-params = [imagenet_alexnet_bp]
+params = [imagenet_alexnet_bp, imagenet_vgg_bp]
+
+# params = [imagenet_vgg_bp]
 
 ################################################
 

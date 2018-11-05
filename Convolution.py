@@ -42,9 +42,10 @@ class Convolution(Layer):
             elif init_filters == "sqrt_fan_in":
                 sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
                 self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-            elif init_filters == "small":
-                sqrt_fan_in = math.sqrt(self.h*self.w*self.fin) / 10.
-                self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+            elif init_filters == "alexnet":
+                # self.filters = tf.random_normal(shape=self.filter_sizes, mean=0.0, stddev=0.01)
+                _filters = np.random.normal(loc=0.0, scale=0.01, size=self.filter_sizes)
+                self.filters = tf.Variable(_filters, dtype=tf.float32)
             else:
                 self.filters = tf.get_variable(name=self.name, shape=self.filter_sizes)
 
