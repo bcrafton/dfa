@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class Convolution(Layer):
-    num = 0
+
     def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None, load=None, train=True):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
@@ -46,8 +46,7 @@ class Convolution(Layer):
                 sqrt_fan_in = math.sqrt(self.h*self.w*self.fin) / 10.
                 self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
             else:
-                self.filters = tf.get_variable(name="conv" + str(Convolution.num), shape=self.filter_sizes)
-                Convolution.num = Convolution.num + 1
+                self.filters = tf.get_variable(name=self.name, shape=self.filter_sizes)
 
     ###################################################################
 

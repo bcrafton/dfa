@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class FullyConnected(Layer):
-    num = 0
+
     def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None, load=None, train=True):
         
         # TODO
@@ -47,8 +47,7 @@ class FullyConnected(Layer):
                 sqrt_fan_in = math.sqrt(self.input_size) / 10.
                 self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
             else:
-                self.weights = tf.get_variable(name="fc" + str(FullyConnected.num), shape=self.size)
-                FullyConnected.num = FullyConnected.num + 1
+                self.weights = tf.get_variable(name=self.name, shape=self.size)
 
     ###################################################################
         

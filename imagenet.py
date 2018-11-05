@@ -123,16 +123,16 @@ def parse_function_train(filename, label):
     image = tf.image.decode_jpeg(image_string, channels=3)
 
     # This will convert to float values in [0, 1]
-    image = tf.image.convert_image_dtype(image, tf.float32) * 256.
+    image = tf.image.convert_image_dtype(image, tf.float32)
 
     if image.get_shape()[0] >= 227 and image.get_shape()[1] >= 227:
         image = tf.random_crop(value=image, size=[227, 227, 3])
     else:
         image = tf.image.resize_images(image, [227, 227])
 
-    _R_MEAN = 123.68
-    _G_MEAN = 116.78
-    _B_MEAN = 103.94
+    _R_MEAN = 123.68 / 255.
+    _G_MEAN = 116.78 / 255.
+    _B_MEAN = 103.94 / 255.
     image = _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
 
     return image, label
@@ -145,9 +145,9 @@ def parse_function_val(filename, label):
 
     image = tf.image.resize_images(image, [227, 227])
 
-    _R_MEAN = 123.68
-    _G_MEAN = 116.78
-    _B_MEAN = 103.94
+    _R_MEAN = 123.68 / 255.
+    _G_MEAN = 116.78 / 255.
+    _B_MEAN = 103.94 / 255.
     image = _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])    
 
     return image, label
@@ -272,7 +272,7 @@ val_iterator = val_dataset.make_initializable_iterator()
 
 ###############################################################
 
-train_conv=False
+train_conv=True
 train_fc=True
 weights_conv=None
 weights_fc=None
