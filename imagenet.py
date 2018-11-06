@@ -115,14 +115,10 @@ def _mean_image_subtraction(image, means):
 
 def parse_function_train(filename, label):
 
-    # filename = tf.Print(filename, [filename], message="", summarize=100)
-
     image_string = tf.read_file(filename)
 
-    # Don't use tf.image.decode_image, or the output shape will be undefined
     image = tf.image.decode_jpeg(image_string, channels=3)
 
-    # This will convert to float values in [0, 1]
     image = tf.image.convert_image_dtype(image, tf.float32)
 
     if image.get_shape()[0] >= 227 and image.get_shape()[1] >= 227:
@@ -142,6 +138,8 @@ def parse_function_val(filename, label):
     image_string = tf.read_file(filename)
 
     image = tf.image.decode_jpeg(image_string, channels=3)
+
+    image = tf.image.convert_image_dtype(image, tf.float32)
 
     image = tf.image.resize_images(image, [227, 227])
 
