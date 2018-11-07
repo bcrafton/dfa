@@ -5,8 +5,10 @@ import copy
 import threading
 import argparse
 
-##############################################
+from results import get_runs
 
+'''
+##############################################
 def get_perms(param):
     params = [param]
     
@@ -29,11 +31,11 @@ def get_perms(param):
 mnist_fc_bp = {'benchmark':'mnist_fc.py', 'epochs':300, 'batch_size':32, 'alpha':[0.05, 0.03], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':'gd', 'load':None}
 mnist_fc_dfa = {'benchmark':'mnist_fc.py', 'epochs':300, 'batch_size':32, 'alpha':[0.1, 0.075, 0.05, 0.03], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':'gd', 'load':None}
 
-cifar10_fc_bp = {'benchmark':'cifar10_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':'gd', 'load':None}
-cifar10_fc_dfa = {'benchmark':'cifar10_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':'gd', 'load':None}
+cifar10_fc_bp = {'benchmark':'cifar10_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005, 0.003, 0.001], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['gd', 'adam'], 'load':None}
+cifar10_fc_dfa = {'benchmark':'cifar10_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005, 0.003, 0.001], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':['gd', 'adam'], 'load':None}
 
-cifar100_fc_bp = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':'gd', 'load':None}
-cifar100_fc_dfa = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':'gd', 'load':None}
+cifar100_fc_bp = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005, 0.003, 0.001], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['gd', 'adam'], 'load':None}
+cifar100_fc_dfa = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005, 0.003, 0.001], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':['gd', 'adam'], 'load':None}
 
 ################################################
 
@@ -50,6 +52,8 @@ cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':
 
 params = [mnist_fc_bp, mnist_fc_dfa, cifar10_fc_bp, cifar10_fc_dfa, cifar100_fc_bp, cifar100_fc_dfa, mnist_conv_bp, mnist_conv_dfa, cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
 
+params = [cifar10_fc_bp, cifar10_fc_dfa, cifar100_fc_bp, cifar100_fc_dfa] 
+
 ################################################
 
 runs = []
@@ -57,8 +61,11 @@ runs = []
 for param in params:
     perms = get_perms(param)
     runs.extend(perms)
-    
+ 
 ################################################
+'''
+
+runs = get_runs()
 
 results = {}
 
@@ -85,10 +92,10 @@ for ii in range(num_runs):
     
     if key in results.keys():
         # use an if instead of max because we gonna want to save the winner run information
-        if results[key] < val:
-            results[key] = val
+        if results[key][0] < val:
+            results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
     else:
-        results[key] = val
+        results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
             
 for key in sorted(results.keys()):   
     print (key, results[key])

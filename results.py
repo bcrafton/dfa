@@ -5,8 +5,6 @@ import copy
 import threading
 import argparse
 
-from results import get_results
-
 ##############################################
 
 num_gpus = 4
@@ -35,7 +33,6 @@ def run_command(param):
 
     return
 
-'''
 ################################################
 
 def get_perms(param):
@@ -84,6 +81,21 @@ imagenet_vgg_bp = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32,
 
 ################################################
 
+'''
+params = [mnist_fc_bp,      \
+          mnist_fc_dfa,     \
+          cifar10_fc_bp,    \
+          cifar10_fc_dfa,   \
+          cifar100_fc_bp,   \
+          cifar100_fc_dfa,  \
+          mnist_conv_bp,    \
+          mnist_conv_dfa,   \
+          cifar10_conv_bp,  \ 
+          cifar10_conv_dfa, \
+          cifar100_conv_bp, \
+          cifar100_conv_dfa]
+'''
+
 # params = [mnist_fc_dfa, cifar10_conv_dfa]
 
 # params = [imagenet_alexnet_bp, imagenet_vgg_bp]
@@ -91,31 +103,18 @@ imagenet_vgg_bp = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32,
 # params = [imagenet_vgg_bp]
 
 params = [cifar10_fc_bp, cifar10_fc_dfa, cifar100_fc_bp, cifar100_fc_dfa]
-# params = [cifar10_conv_bp, cifar10_conv_dfa]
 
 ################################################
 
-runs = []
+def get_runs():
+    runs = []
 
-for param in params:
-    perms = get_perms(param)
-    runs.extend(perms)
-    
+    for param in params:
+        perms = get_perms(param)
+        runs.extend(perms)
+
+    return runs
+
 ################################################
-'''
 
-runs = get_runs()
-
-num_runs = len(runs)
-parallel_runs = 4
-
-for run in range(0, num_runs, parallel_runs):
-    threads = []
-    for parallel_run in range( min(parallel_runs, num_runs - run)):
-        args = runs[run + parallel_run]
-        t = threading.Thread(target=run_command, args=(args,))
-        threads.append(t)
-        t.start()
-    for t in threads:
-        t.join()
         

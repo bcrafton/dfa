@@ -101,7 +101,7 @@ class Model:
             else:
                 A[ii] = l.forward(A[ii-1])
             
-        E = A[self.num_layers-1] - Y
+        E = tf.nn.softmax(A[self.num_layers-1]) - Y
         N = tf.shape(A[self.num_layers-1])[0]
         N = tf.cast(N, dtype=tf.float32)
         E = E / N
@@ -136,7 +136,7 @@ class Model:
             else:
                 A[ii] = l.forward(A[ii-1])
             
-        E = A[self.num_layers-1] - Y
+        E = tf.nn.softmax(A[self.num_layers-1]) - Y
         N = tf.shape(A[self.num_layers-1])[0]
         N = tf.cast(N, dtype=tf.float32)
         E = E / N
