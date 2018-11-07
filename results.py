@@ -5,34 +5,6 @@ import copy
 import threading
 import argparse
 
-##############################################
-
-num_gpus = 4
-counter = 0
-
-def run_command(param):
-    global num_gpus, counter
-
-    if num_gpus == 0:
-        gpu = -1
-    else:
-        gpu = counter % num_gpus
-        counter = counter + 1
-    
-    name = '%s_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
-    if param['load']:
-        name += '_transfer'
-        cmd = "python %s --gpu %d --epochs %d --batch_size %d --alpha %f --dfa %d --sparse %d --rank %d --init %s --opt %s --save %d --name %s --load %s" % \
-              (param['benchmark'], gpu, param['epochs'], param['batch_size'], param['alpha'], param['dfa'], param['sparse'], param['rank'], param['init'], param['opt'], 1, name, param['load'])
-    else:
-        cmd = "python %s --gpu %d --epochs %d --batch_size %d --alpha %f --dfa %d --sparse %d --rank %d --init %s --opt %s --save %d --name %s" % \
-              (param['benchmark'], gpu, param['epochs'], param['batch_size'], param['alpha'], param['dfa'], param['sparse'], param['rank'], param['init'], param['opt'], 1, name)
-
-    # print cmd
-    os.system(cmd)
-
-    return
-
 ################################################
 
 def get_perms(param):
@@ -97,7 +69,6 @@ params = [mnist_fc_bp,      \
 '''
 
 # params = [mnist_fc_dfa, cifar10_conv_dfa]
-
 # params = [imagenet_alexnet_bp, imagenet_vgg_bp]
 # params = [imagenet_alexnet_bp]
 # params = [imagenet_vgg_bp]

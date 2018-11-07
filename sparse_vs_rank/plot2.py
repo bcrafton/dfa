@@ -56,7 +56,7 @@ for key in data_grouped:
 for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
-    label = "%s %d" % ('Sparse', labels[ii])
+    label = "%s %d" % ('Rank', labels[ii])
     
     ax1.scatter(p[0], p[1], s=10, label=label)
 
@@ -92,7 +92,7 @@ for key in data_grouped:
 for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
-    label = "%s %d" % ('Sparse', labels[ii])
+    label = "%s %d" % ('Rank', labels[ii])
 
     ax2.scatter(p[0], p[1], s=10, label=label)
 
@@ -128,7 +128,7 @@ for key in data_grouped:
 for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
-    label = "%s %d" % ('Sparse', labels[ii])
+    label = "%s %d" % ('Rank', labels[ii])
     
     ax3.scatter(p[0], p[1], s=10, label=label)
 
@@ -164,7 +164,7 @@ for key in data_grouped:
 for ii in range(len(points)):
     p = points[ii]
     p = np.transpose(p)
-    label = "%s %d" % ('Sparse', labels[ii])
+    label = "%s %d" % ('Rank', labels[ii])
 
     ax4.scatter(p[0], p[1], s=10, label=label)
 
