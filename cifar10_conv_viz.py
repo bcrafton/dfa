@@ -8,14 +8,17 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--alpha', type=float, default=5e-5)
+parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--decay', type=float, default=0.99)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="adam")
-parser.add_argument('--imgs', type=int, default=0)
+parser.add_argument('--opt', type=str, default="gd")
+parser.add_argument('--save', type=int, default=0)
+parser.add_argument('--name', type=str, default="cifar10_conv_weights")
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -29,6 +32,7 @@ import tensorflow as tf
 import keras
 import math
 import numpy as np
+from tensorflow.examples.tutorials.mnist import input_data
 
 from Model import Model
 
@@ -50,10 +54,6 @@ from Activation import LeakyRelu
 from Activation import Linear
 
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-import numpy as np
-from PIL import Image
-import scipy.misc
 
 ##############################################
 
@@ -65,9 +65,20 @@ EPOCHS = args.epochs
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
-ALPHA = args.alpha
-sparse = args.sparse
-rank = args.rank
+
+train_fc=True
+if args.load:
+    train_conv=False
+else:
+    train_conv=True
+
+weights_fc=None
+weights_conv=args.load
+
+if args.dfa:
+    bias = 0.0
+else:
+    bias = 0.0
 
 ##############################################
 
@@ -75,55 +86,71 @@ tf.set_random_seed(0)
 tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
-XTRAIN = tf.placeholder(tf.float32, [None, 32, 32, 3])
-YTRAIN = tf.placeholder(tf.float32, [None, 10])
-XTRAIN = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), XTRAIN)
+dropout_rate = tf.placeholder(tf.float32, shape=())
+learning_rate = tf.placeholder(tf.float32, shape=())
+X = tf.placeholder(tf.float32, [None, 32, 32, 3])
+X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
+Y = tf.placeholder(tf.float32, [None, 10])
 
-XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
-YTEST = tf.placeholder(tf.float32, [None, 10])
-XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
+l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
+l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l2 = FeedbackConv(size=[batch_size, 16, 16, 96], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv1_fb')
 
-l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
-l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-l2 = FeedbackConv(size=[batch_size, 15, 15, 96], num_classes=10, sparse=sparse, rank=rank)
+l3 = Convolution(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l4 = MaxPool(size=[batch_size, 16, 16, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l5 = FeedbackConv(size=[batch_size, 8, 8, 128], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv2_fb')
 
-l3 = Convolution(input_sizes=[batch_size, 15, 15, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
-l4 = MaxPool(size=[batch_size, 15, 15, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-l5 = FeedbackConv(size=[batch_size, 7, 7, 128], num_classes=10, sparse=sparse, rank=rank)
+l6 = Convolution(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv)
+l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l8 = FeedbackConv(size=[batch_size, 4, 4, 256], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv3_fb')
 
-l6 = Convolution(input_sizes=[batch_size, 7, 7, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
-l7 = MaxPool(size=[batch_size, 7, 7, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
-l8 = FeedbackConv(size=[batch_size, 3, 3, 256], num_classes=10, sparse=sparse, rank=rank)
+l9 = ConvToFullyConnected(shape=[4, 4, 256])
 
-l9 = ConvToFullyConnected(shape=[3, 3, 256])
-l10 = FullyConnected(size=[3*3*256, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
-l11 = FeedbackFC(size=[3*3*256, 2048], num_classes=10, sparse=sparse, rank=rank)
+l10 = FullyConnected(size=[4*4*256, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
+l11 = Dropout(rate=dropout_rate)
+l12 = FeedbackFC(size=[4*4*256, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
 
-l12 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), bias=0.0, last_layer=False)
-l13 = FeedbackFC(size=[2048, 2048], num_classes=10, sparse=sparse, rank=rank)
+l13 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
+l14 = Dropout(rate=dropout_rate)
+l15 = FeedbackFC(size=[2048, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc2_fb')
 
-# need to adjust lr a lot if using sigmoid
-l14 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), bias=0.0, last_layer=True)
-
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14])
+l16 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc)
 
 ##############################################
 
-if args.imgs:
-    convolved_image0 = model.layers[0].forward(X=XTEST)
-    convolved_image1 = model.up_to(X=XTEST, N=4)
-    convolved_image2 = model.up_to(X=XTEST, N=7)
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 
-predict = model.predict(X=XTEST)
+predict = model.predict(X=X)
 
-if args.dfa:
-    train = model.dfa(X=XTRAIN, Y=YTRAIN)
+weights = model.get_weights()
+
+if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
+    if args.dfa:
+        grads_and_vars = model.dfa_gvs(X=X, Y=Y)
+        backwards = model.dfa_backwards(X=X, Y=Y)
+    else:
+        grads_and_vars = model.gvs(X=X, Y=Y)
+        backwards = model.backwards(X=X, Y=Y)
+        
+    if args.opt == "adam":
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "rms":
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "decay":
+        train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
+    else:
+        assert(False)
+
 else:
-    train = model.train(X=XTRAIN, Y=YTRAIN)
+    if args.dfa:
+        train = model.dfa(X=X, Y=Y)
+        backwards = model.dfa_backwards(X=X, Y=Y)
+    else:
+        train = model.train(X=X, Y=Y)
+        backwards = model.backwards(X=X, Y=Y)
 
-correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
-correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
+total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
 ##############################################
 
@@ -141,17 +168,7 @@ y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################
 
-filename = "cifar10_" +                 \
-           str(args.epochs) + "_" +     \
-           str(args.batch_size) + "_" + \
-           str(args.alpha) + "_" +      \
-           str(args.dfa) + "_" +        \
-           str(args.sparse) + "_" +     \
-           str(args.gpu) + "_" +        \
-           args.init + "_" +            \
-           args.opt +                   \
-           ".results"
-
+filename = args.name + '.results'
 f = open(filename, "w")
 f.write(filename + "\n")
 f.write("total params: " + str(model.num_params()) + "\n")
@@ -159,104 +176,80 @@ f.close()
 
 ##############################################
 
+train_accs = []
+test_accs = []
+
 for ii in range(EPOCHS):
+    if args.opt == 'decay' or args.opt == 'gd':
+        decay = np.power(args.decay, ii)
+        lr = args.alpha * decay
+    else:
+        lr = args.alpha
+        
     print (ii)
-    for jj in range(0, int(TRAIN_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
-        start = jj % TRAIN_EXAMPLES
-        end = jj % TRAIN_EXAMPLES + BATCH_SIZE
-        sess.run([train], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
     
-    count = 0
-    total_correct = 0
+    ##########################################################
     
-    for jj in range(0, int(TEST_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
-        start = jj % TEST_EXAMPLES
-        end = jj % TEST_EXAMPLES + BATCH_SIZE
-        correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, XTEST: x_test[start:end], YTEST: y_test[start:end]})
+    _count = 0
+    _total_correct = 0
+    
+    for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
+        xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+        
+        _total_correct += _correct
+        _count += BATCH_SIZE
 
-        count += BATCH_SIZE
-        total_correct += correct
+    train_acc = 1.0 * _total_correct / _count
+    train_accs.append(train_acc)
 
-    print (total_correct * 1.0 / count)
-    sys.stdout.flush()
-    
-    f = open(filename, "a")
-    f.write(str(total_correct * 1.0 / count) + "\n")
-    f.close()
+    _backwards = sess.run(backwards, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
+    print (len(_backwards))
+    for jj in range(len(_backwards)):
+        back = _backwards[jj][0]
+        print (jj, np.shape(back))
 
-##############################################
+    ##########################################################
 
-if args.imgs:
-    img_num = 7
-    xs = x_test[img_num]
-    xs = np.reshape(xs, (1, 32, 32, 3))
-    ys = y_test[img_num]
-    ys = np.reshape(ys, (1, 10))
+    back1 = _backwards[2][0]
+    print (np.shape(back1))
+    back1 = np.reshape(back1.T, (16, 6, 16, 16))
     
-    # xs = np.ones(shape=np.shape(xs)) * 0.1
-    
-    convolved_image0 = sess.run([convolved_image0], feed_dict={batch_size: 1, XTEST: xs, YTEST: ys})
-    convolved_image1 = sess.run([convolved_image1], feed_dict={batch_size: 1, XTEST: xs, YTEST: ys})
-    convolved_image2 = sess.run([convolved_image2], feed_dict={batch_size: 1, XTEST: xs, YTEST: ys})
-    
-    ###################################################################
-    
-    convolved_image0 = np.reshape(convolved_image0, (32, 32, 96))
-    convolved_image0 = np.transpose(convolved_image0)
-    
-    for ii in range(8):
-        for jj in range(12):
-            if jj == 0:
-                row = convolved_image0[ii * 12 + jj]
+    for jj in range(16):
+        for kk in range(6):
+            if kk == 0:
+                row = back1[jj][kk]
             else:
-                row = np.concatenate((row, convolved_image0[ii * 12 + jj]), axis=1)
+                row = np.concatenate((row, back1[jj][kk]), axis=1)
                 
-        if ii == 0:
+        if jj == 0:
             img = row
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave(filename + "0img.png", img, cmap="gray")
+    plt.imsave("back1_" + str(ii) + ".png", img, cmap="gray")
 
-    ###################################################################
+    ##########################################################
 
-    convolved_image1 = np.reshape(convolved_image1, (15, 15, 128))
-    convolved_image1 = np.transpose(convolved_image1)
-    
-    for ii in range(8):
-        for jj in range(16):
-            if jj == 0:
-                row = convolved_image1[ii * 16 + jj]
+    back3 = _backwards[8][0]
+    print (np.shape(back3))
+    back3 = np.reshape(back3.T, (16, 16, 4, 4))
+
+    for jj in range(16):
+        for kk in range(16):
+            if kk == 0:
+                row = back3[jj][kk]
             else:
-                row = np.concatenate((row, convolved_image1[ii * 16 + jj]), axis=1)
+                row = np.concatenate((row, back3[jj][kk]), axis=1)
                 
-        if ii == 0:
+        if jj == 0:
             img = row
         else:
             img = np.concatenate((img, row), axis=0)
       
-    plt.imsave(filename + "img1.png", img, cmap="gray")
+    plt.imsave("back3_" + str(ii) + ".png", img, cmap="gray")
 
-    ###################################################################
-
-    convolved_image2 = np.reshape(convolved_image2, (7, 7, 256))
-    convolved_image2 = np.transpose(convolved_image2)
-    
-    for ii in range(16):
-        for jj in range(16):
-            if jj == 0:
-                row = convolved_image2[ii * 16 + jj]
-            else:
-                row = np.concatenate((row, convolved_image2[ii * 16 + jj]), axis=1)
-                
-        if ii == 0:
-            img = row
-        else:
-            img = np.concatenate((img, row), axis=0)
-      
-    plt.imsave(filename + "img2.png", img, cmap="gray")
-
-    ###################################################################
-
+    ##########################################################
 
 
