@@ -32,23 +32,20 @@ class FullyConnected(Layer):
         self.name = name
         self._train = train
         
-        if load:
-            print ("Loading Weights: " + self.name)
-            weight_dict = np.load(load).item()
-            self.weights = tf.Variable(weight_dict[self.name])
-            self.bias = tf.Variable(weight_dict[self.name + '_bias'])
+        if init_weights == "zero":
+            self.weights = tf.Variable(tf.zeros(shape=self.size))
+        elif init_weights == "sqrt_fan_in":
+            sqrt_fan_in = math.sqrt(self.input_size)
+            self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+        elif init_weights == "alexnet":
+            # self.weights = tf.random_normal(shape=self.size, mean=0.0, stddev=0.01)
+            _weights = np.random.normal(loc=0.0, scale=0.01, size=self.size)
+            self.weights = tf.Variable(_weights, dtype=tf.float32)
         else:
-            if init_weights == "zero":
-                self.weights = tf.Variable(tf.zeros(shape=self.size))
-            elif init_weights == "sqrt_fan_in":
-                sqrt_fan_in = math.sqrt(self.input_size)
-                self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-            elif init_weights == "alexnet":
-                # self.weights = tf.random_normal(shape=self.size, mean=0.0, stddev=0.01)
-                _weights = np.random.normal(loc=0.0, scale=0.01, size=self.size)
-                self.weights = tf.Variable(_weights, dtype=tf.float32)
-            else:
-                self.weights = tf.get_variable(name=self.name, shape=self.size)
+            self.weights = tf.get_variable(name=self.name, shape=self.size)
+
+        sqrt_fan_in = math.sqrt(self.input_size)
+        self.fb = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 
     ###################################################################
         
@@ -69,7 +66,7 @@ class FullyConnected(Layer):
             
     def backward(self, AI, AO, DO):
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DI = tf.matmul(DO, tf.transpose(self.weights))
+        DI = tf.matmul(DO, tf.transpose(self.fb))
         return DI
         
     def gv(self, AI, AO, DO):
@@ -98,9 +95,11 @@ class FullyConnected(Layer):
     ###################################################################
     
     def dfa_backward(self, AI, AO, E, DO):
+        assert(False)
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
+        assert(False)
         if not self._train:
             return []
 
@@ -110,6 +109,7 @@ class FullyConnected(Layer):
         return [(DW, self.weights), (DB, self.bias)]
         
     def dfa(self, AI, AO, E, DO):
+        assert(False)
         if not self._train:
             return []
 

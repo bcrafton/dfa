@@ -31,23 +31,20 @@ class Convolution(Layer):
         self.name = name
         self._train = train
         
-        if load:
-            print ("Loading Weights: " + self.name)
-            weight_dict = np.load(load, encoding='latin1').item()
-            self.filters = tf.Variable(weight_dict[self.name])
-            self.bias = tf.Variable(weight_dict[self.name + '_bias'])
+        if init_filters == "zero":
+            self.filters = tf.Variable(tf.zeros(shape=self.filter_sizes))
+        elif init_filters == "sqrt_fan_in":
+            sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
+            self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+        elif init_filters == "alexnet":
+            # self.filters = tf.random_normal(shape=self.filter_sizes, mean=0.0, stddev=0.01)
+            _filters = np.random.normal(loc=0.0, scale=0.01, size=self.filter_sizes)
+            self.filters = tf.Variable(_filters, dtype=tf.float32)
         else:
-            if init_filters == "zero":
-                self.filters = tf.Variable(tf.zeros(shape=self.filter_sizes))
-            elif init_filters == "sqrt_fan_in":
-                sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
-                self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-            elif init_filters == "alexnet":
-                # self.filters = tf.random_normal(shape=self.filter_sizes, mean=0.0, stddev=0.01)
-                _filters = np.random.normal(loc=0.0, scale=0.01, size=self.filter_sizes)
-                self.filters = tf.Variable(_filters, dtype=tf.float32)
-            else:
-                self.filters = tf.get_variable(name=self.name, shape=self.filter_sizes)
+            self.filters = tf.get_variable(name=self.name, shape=self.filter_sizes)
+
+        sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
+        self.fb = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 
     ###################################################################
 
@@ -69,7 +66,7 @@ class Convolution(Layer):
         
     def backward(self, AI, AO, DO):    
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.filters, out_backprop=DO, strides=self.strides, padding=self.padding)
+        DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.fb, out_backprop=DO, strides=self.strides, padding=self.padding)
         return DI
 
     def gv(self, AI, AO, DO):    
@@ -99,9 +96,11 @@ class Convolution(Layer):
     ###################################################################
 
     def dfa_backward(self, AI, AO, E, DO):
+        assert(False)
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
+        assert(False)
         if not self._train:
             return []
     
@@ -111,6 +110,7 @@ class Convolution(Layer):
         return [(DF, self.filters), (DB, self.bias)]
         
     def dfa(self, AI, AO, E, DO): 
+        assert(False)
         if not self._train:
             return []
 
