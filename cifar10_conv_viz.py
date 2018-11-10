@@ -227,8 +227,30 @@ for ii in range(EPOCHS):
             img = row
         else:
             img = np.concatenate((img, row), axis=0)
-      
-    plt.imsave("back1_" + str(ii) + ".png", img, cmap="gray")
+
+    img_name = 'back1_' + str(args.dfa) + '_' + str(ii) + '.png'    
+    plt.imsave(img_name, img, cmap="gray")
+
+    ##########################################################
+
+    back2 = _backwards[5][0]
+    print (np.shape(back2))
+    back2 = np.reshape(back2.T, (16, 8, 8, 8))
+
+    for jj in range(16):
+        for kk in range(8):
+            if kk == 0:
+                row = back2[jj][kk]
+            else:
+                row = np.concatenate((row, back2[jj][kk]), axis=1)
+                
+        if jj == 0:
+            img = row
+        else:
+            img = np.concatenate((img, row), axis=0)
+
+    img_name = 'back2_' + str(args.dfa) + '_' + str(ii) + '.png'
+    plt.imsave(img_name, img, cmap="gray")
 
     ##########################################################
 
@@ -242,14 +264,13 @@ for ii in range(EPOCHS):
                 row = back3[jj][kk]
             else:
                 row = np.concatenate((row, back3[jj][kk]), axis=1)
-                
+
         if jj == 0:
             img = row
         else:
             img = np.concatenate((img, row), axis=0)
-      
-    plt.imsave("back3_" + str(ii) + ".png", img, cmap="gray")
+
+    img_name = 'back3_' + str(args.dfa) + '_' + str(ii) + '.png'
+    plt.imsave(img_name, img, cmap="gray")
 
     ##########################################################
-
-

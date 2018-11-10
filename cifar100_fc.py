@@ -64,7 +64,7 @@ TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
 if args.dfa:
-    bias = 0.0
+    bias = 1.0
 else:
     bias = 0.0
 
@@ -80,15 +80,15 @@ learning_rate = tf.placeholder(tf.float32, shape=())
 Y = tf.placeholder(tf.float32, [None, 100])
 X = tf.placeholder(tf.float32, [None, 3072])
 
-l0 = FullyConnected(size=[3072, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc1")
+l0 = FullyConnected(size=[3072, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1")
 l1 = Dropout(rate=dropout_rate/4.)
 l2 = FeedbackFC(size=[3072, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l3 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc2")
+l3 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2")
 l4 = Dropout(rate=dropout_rate/2.)
 l5 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l6 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc3")
+l6 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3")
 l7 = Dropout(rate=dropout_rate)
 l8 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc3_fb")
 

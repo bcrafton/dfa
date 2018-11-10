@@ -5,7 +5,7 @@ import copy
 import threading
 import argparse
 
-from results import get_results
+from results import get_runs
 
 ##############################################
 
