@@ -107,12 +107,12 @@ def parse_function(filename, label):
     return resized_image, label
 
 # Preprocessing (for training)
-# (3) Take a random 224x224 crop to the scaled image
+# (3) Take a random 227x227 crop to the scaled image
 # (4) Horizontally flip the image with probability 1/2
 # (5) Substract the per color mean `IMAGENET_MEAN`
 # Note: we don't normalize the data here, as VGG was trained without normalization
 def train_preprocess(image, label):
-    crop_image = tf.random_crop(image, [224, 224, 3])                       # (3)
+    crop_image = tf.random_crop(image, [227, 227, 3])                       # (3)
     flip_image = tf.image.random_flip_left_right(crop_image)                # (4)
 
     means = tf.reshape(tf.constant(IMAGENET_MEAN), [1, 1, 3])
@@ -122,11 +122,11 @@ def train_preprocess(image, label):
     
 
 # Preprocessing (for validation)
-# (3) Take a central 224x224 crop to the scaled image
+# (3) Take a central 227x227 crop to the scaled image
 # (4) Substract the per color mean `IMAGENET_MEAN`
 # Note: we don't normalize the data here, as VGG was trained without normalization
 def val_preprocess(image, label):
-    crop_image = tf.image.resize_image_with_crop_or_pad(image, 224, 224)    # (3)
+    crop_image = tf.image.resize_image_with_crop_or_pad(image, 227, 227)    # (3)
 
     means = tf.reshape(tf.constant(IMAGENET_MEAN), [1, 1, 3])
     centered_image = crop_image - means                                     # (4)
