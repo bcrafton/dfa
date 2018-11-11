@@ -78,91 +78,60 @@ data_augmentation = False
 EPOCHS = args.epochs
 BATCH_SIZE = args.batch_size
 
+IMAGENET_MEAN = [123.68, 116.78, 103.94]
+
 ##############################################
 
-def _mean_image_subtraction(image, means):
-  """Subtracts the given means from each image channel.
+# https://gist.githubusercontent.com/omoindrot/dedc857cdc0e680dfb1be99762990c9c/raw/e560edd240f8b97e1f0483843dc4d64729ce025c/tensorflow_finetune.py
 
-  For example:
-    means = [123.68, 116.779, 103.939]
-    image = _mean_image_subtraction(image, means)
-
-  Note that the rank of `image` must be known.
-
-  Args:
-    image: a tensor of size [height, width, C].
-    means: a C-vector of values to subtract from each channel.
-
-  Returns:
-    the centered image.
-
-  Raises:
-    ValueError: If the rank of `image` is unknown, if `image` has a rank other
-      than three or if the number of channels in `image` doesn't match the
-      number of values in `means`.
-  """
-  if image.get_shape().ndims != 3:
-    raise ValueError('Input must be of size [height, width, C>0]')
-  num_channels = image.get_shape().as_list()[-1]
-  if len(means) != num_channels:
-    raise ValueError('len(means) must match the number of channels')
-
-  channels = tf.split(axis=2, num_or_size_splits=num_channels, value=image)
-  for i in range(num_channels):
-    channels[i] = tf.subtract(channels[i], means[i])
-  return tf.concat(axis=2, values=channels)
-
-
-def parse_function_train(filename, label):
-
+# Preprocessing (for both training and validation):
+# (1) Decode the image from jpg format
+# (2) Resize the image so its smaller side is 256 pixels long
+def parse_function(filename, label):
     image_string = tf.read_file(filename)
+    image_decoded = tf.image.decode_jpeg(image_string, channels=3)          # (1)
+    image = tf.cast(image_decoded, tf.float32)
 
-    image = tf.image.decode_jpeg(image_string, channels=3)
+    smallest_side = 256.0
+    height, width = tf.shape(image)[0], tf.shape(image)[1]
+    height = tf.to_float(height)
+    width = tf.to_float(width)
 
-    image = tf.image.convert_image_dtype(image, tf.float32)
+    scale = tf.cond(tf.greater(height, width),
+                    lambda: smallest_side / width,
+                    lambda: smallest_side / height)
+    new_height = tf.to_int32(height * scale)
+    new_width = tf.to_int32(width * scale)
 
-    if image.get_shape()[0] >= 227 and image.get_shape()[1] >= 227:
-        image = tf.random_crop(value=image, size=[227, 227, 3])
-    else:
-        image = tf.image.resize_images(image, [227, 227])
+    resized_image = tf.image.resize_images(image, [new_height, new_width])  # (2)
+    return resized_image, label
 
-    _R_MEAN = 123.68 / 255.
-    _G_MEAN = 116.78 / 255.
-    _B_MEAN = 103.94 / 255.
-    image = _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
-
-    return image, label
-
-def parse_function_val(filename, label):
-
-    image_string = tf.read_file(filename)
-
-    image = tf.image.decode_jpeg(image_string, channels=3)
-
-    image = tf.image.convert_image_dtype(image, tf.float32)
-
-    image = tf.image.resize_images(image, [227, 227])
-
-    _R_MEAN = 123.68 / 255.
-    _G_MEAN = 116.78 / 255.
-    _B_MEAN = 103.94 / 255.
-    image = _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])    
-
-    return image, label
-
+# Preprocessing (for training)
+# (3) Take a random 224x224 crop to the scaled image
+# (4) Horizontally flip the image with probability 1/2
+# (5) Substract the per color mean `IMAGENET_MEAN`
+# Note: we don't normalize the data here, as VGG was trained without normalization
 def train_preprocess(image, label):
-    # image = tf.image.random_flip_left_right(image)
+    crop_image = tf.random_crop(image, [224, 224, 3])                       # (3)
+    flip_image = tf.image.random_flip_left_right(crop_image)                # (4)
 
-    # image = tf.image.random_brightness(image, max_delta=32.0 / 255.0)
-    # image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+    means = tf.reshape(tf.constant(IMAGENET_MEAN), [1, 1, 3])
+    centered_image = flip_image - means                                     # (5)
 
-    # Make sure the image is still in [0, 1]
-    # image = tf.clip_by_value(image, 0.0, 1.0)
+    return centered_image, label
+    
 
-    # plt.imsave("img.png", image, cmap="gray")
-    # assert(False)
+# Preprocessing (for validation)
+# (3) Take a central 224x224 crop to the scaled image
+# (4) Substract the per color mean `IMAGENET_MEAN`
+# Note: we don't normalize the data here, as VGG was trained without normalization
+def val_preprocess(image, label):
+    crop_image = tf.image.resize_image_with_crop_or_pad(image, 224, 224)    # (3)
 
-    return image, label
+    means = tf.reshape(tf.constant(IMAGENET_MEAN), [1, 1, 3])
+    centered_image = crop_image - means                                     # (4)
+
+    return centered_image, label
 
 ##############################################
 
@@ -239,8 +208,8 @@ val_imgs, val_labs = get_validation_dataset()
 
 val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
 val_dataset = val_dataset.shuffle(len(val_imgs))
-val_dataset = val_dataset.map(parse_function_val, num_parallel_calls=4)
-val_dataset = val_dataset.map(train_preprocess, num_parallel_calls=4)
+val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
+val_dataset = val_dataset.map(val_preprocess, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
 val_dataset = val_dataset.repeat()
 val_dataset = val_dataset.prefetch(8)
@@ -251,7 +220,7 @@ train_imgs, train_labs = get_train_dataset()
 
 train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
 train_dataset = train_dataset.shuffle(len(train_imgs))
-train_dataset = train_dataset.map(parse_function_train, num_parallel_calls=4)
+train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
 train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
 train_dataset = train_dataset.batch(batch_size)
 train_dataset = train_dataset.repeat()
