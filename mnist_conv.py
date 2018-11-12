@@ -95,12 +95,12 @@ l1 = FeedbackConv(size=[batch_size, 28, 28, 32], num_classes=10, sparse=args.spa
 
 l2 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
 l3 = MaxPool(size=[batch_size, 28, 28, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-l4 = Dropout(rate=0.0)
+l4 = Dropout(rate=dropout_rate/2.)
 l5 = FeedbackConv(size=[batch_size, 14, 14, 64], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv2_fb')
 
 l6 = ConvToFullyConnected(shape=[14, 14, 64])
 l7 = FullyConnected(size=[14*14*64, 128], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
-l8 = Dropout(rate=0.0)
+l8 = Dropout(rate=dropout_rate)
 l9 = FeedbackFC(size=[14*14*64, 128], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
 
 l10 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc2', load=weights_fc, train=train_fc)
