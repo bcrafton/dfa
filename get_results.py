@@ -39,9 +39,9 @@ for ii in range(num_runs):
         if key in results.keys():
             # use an if instead of max because we gonna want to save the winner run information
             if results[key][0] < val:
-                results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
+                results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
         else:
-            results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
+            results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
     except:
         print ("Could not find: %s" % name)
             
