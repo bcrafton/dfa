@@ -50,8 +50,8 @@ cifar100_fc_dfa = {'benchmark':'cifar100_fc.py', 'epochs':100, 'batch_size':64, 
 mnist_conv_bp = {'benchmark':'mnist_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':'gd', 'load':[None, './transfer/mnist_conv_weights.npy']}
 mnist_conv_dfa = {'benchmark':'mnist_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':'gd', 'load':[None, './transfer/mnist_conv_weights.npy']}
 
-cifar10_conv_bp = {'benchmark':'cifar10_conv.py', 'epochs':500, 'batch_size':64, 'alpha':[0.005, 0.003, 0.001], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['gd', 'adam'], 'load':[None]}
-cifar10_conv_dfa = {'benchmark':'cifar10_conv.py', 'epochs':500, 'batch_size':64, 'alpha':[0.003, 0.001, 0.0005], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':['gd', 'adam'], 'load':[None]}
+cifar10_conv_bp = {'benchmark':'cifar10_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[0.0001, 0.00003, 0.00001], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-6, 1e-8]}
+cifar10_conv_dfa = {'benchmark':'cifar10_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[0.0001, 0.00003, 0.00001], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-6, 1e-8]}
 
 cifar100_conv_bp = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['gd', 'adam'], 'load':[None]}
 cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':['gd', 'adam'], 'load':[None]}

@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--eps', type=float, default=1.)
 parser.add_argument('--decay', type=float, default=0.99)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
@@ -64,9 +65,9 @@ TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
 if args.dfa:
-    bias = 0.1
+    bias = 0.0
 else:
-    bias = 0.1
+    bias = 0.0
 
 ##############################################
 
@@ -80,17 +81,17 @@ learning_rate = tf.placeholder(tf.float32, shape=())
 Y = tf.placeholder(tf.float32, [None, 10])
 X = tf.placeholder(tf.float32, [None, 3072])
 
-l0 = Dropout(rate=0.1)
+l0 = Dropout(rate=dropout_rate/5.)
 
-l1 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1")
+l1 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc1")
 l2 = Dropout(rate=dropout_rate)
 l3 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2")
+l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc2")
 l5 = Dropout(rate=dropout_rate)
 l6 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l7 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3")
+l7 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc3")
 l8 = Dropout(rate=dropout_rate)
 l9 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc3_fb")
 
@@ -111,9 +112,9 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         grads_and_vars = model.gvs(X=X, Y=Y)
         
     if args.opt == "adam":
-        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "rms":
-        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "decay":
         train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
     else:
@@ -139,13 +140,13 @@ tf.local_variables_initializer().run()
 mean = np.mean(x_train, axis=(0, 1, 2), keepdims=True)
 std = np.std(x_train, axis=(0, 1, 2), keepdims=True)
 
-# x_train = x_train / 255.
-x_train = (x_train - mean) / std
+x_train = x_train / np.max(x_train)
+# x_train = (x_train - mean) / std
 x_train = x_train.reshape(TRAIN_EXAMPLES, 3072)
 y_train = keras.utils.to_categorical(y_train, 10)
 
-# x_test = x_test / 255.
-x_test = (x_test - mean) / std
+x_test = x_test / np.max(x_train)
+# x_test = (x_test - mean) / std
 x_test = x_test.reshape(TEST_EXAMPLES, 3072)
 y_test = keras.utils.to_categorical(y_test, 10)
 ##############################################
