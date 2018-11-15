@@ -290,7 +290,7 @@ model = Model(layers=[l0, l1, l3, l4, l6, l8, l10, l11, l13, l14, l15, l17, l18,
 
 predict = tf.nn.softmax(model.predict(X=features))
 
-if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
+if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt = "momentum":
     if args.dfa:
         grads_and_vars = model.dfa_gvs(X=features, Y=labels)
     else:
@@ -302,6 +302,8 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "decay":
         train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
+    elif args.opt == "momentum":
+        train = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9).apply_gradients(grads_and_vars=grads_and_vars)
     else:
         assert(False)
 
@@ -342,14 +344,19 @@ f.close()
 train_accs = []
 val_accs = []
 
+alpha = args.alpha
+phase = 0
+
 for ii in range(0, epochs):
 
-    if args.opt == 'decay' or args.opt == 'gd':
+    '''
+    if args.opt == 'decay' or args.opt == 'gd' or args.opt == 'momentum':
         decay = np.power(args.decay, ii)
         lr = args.alpha * decay
     else:
         lr = args.alpha
-        
+    '''
+
     print (ii)
 
     sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
@@ -368,9 +375,9 @@ for ii in range(0, epochs):
         f = open(results_filename, "a")
         f.write(str(train_acc) + "\n")
         f.close()
-    
+
     train_accs.append(train_acc)
-    
+
     sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
     val_correct = 0.0
     val_total = 0.0
@@ -390,6 +397,22 @@ for ii in range(0, epochs):
         f.close()
 
     val_accs.append(val_acc)
+
+    if phase == 0:
+        phase = 1
+        print ('phase 1')
+    elif phase == 1:
+        dacc = test_accs[-1] - test_accs[-2]
+        if dacc <= 0.01:
+            alpha = 0.001
+            phase = 2
+            print ('phase 2')
+    elif phase == 2:
+        dacc = test_accs[-1] - test_accs[-2]
+        if dacc <= 0.001:
+            alpha = 0.0001
+            phase = 3
+            print ('phase 3')
 
     if args.save:
         [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: lr})
