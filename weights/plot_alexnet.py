@@ -26,4 +26,4 @@ for ii in range(16):
     else:
         img = np.concatenate((img, row), axis=0)
   
-plt.imsave("alexnet.png", img, cmap="gray", dpi=1000)
+plt.imsave("alexnet.svg", img, cmap="gray", dpi=1000)

@@ -7,6 +7,36 @@ import matplotlib.cm as cmap
 
 #######################################
 
+'''
+Lime 	              #00FF00 	(0,255,0)
+Blue 	              #0000FF 	(0,0,255)
+Yellow 	            #FFFF00 	(255,255,0)
+Cyan / Aqua 	      #00FFFF 	(0,255,255)
+
+Magenta / Fuchsia 	#FF00FF 	(255,0,255)
+Silver 	            #C0C0C0 	(192,192,192)
+Gray 	              #808080 	(128,128,128)
+Maroon 	            #800000 	(128,0,0)
+
+Olive 	            #808000 	(128,128,0)
+Teal 	              #008080 	(0,128,128)
+
+Green 	            #008000 	(0,128,0)
+Purple 	            #800080 	(128,0,128)
+Navy 	              #000080 	(0,0,128)
+
+orange 	            #FFA500 	(255,165,0)
+'''
+
+colors = {5:  '#FFA500', \
+          10: '#2020FF'}
+
+#######################################
+
+plt.rcParams['font.sans-serif'] = "Arial"
+plt.rcParams['font.family'] = "sans-serif"
+plt.rcParams['font.size'] = 10.
+
 f, [[ax1, ax3], [ax2, ax4]] = plt.subplots(2, 2, sharex=True, sharey=False)
 
 #######################################
@@ -58,7 +88,7 @@ for ii in range(len(points)):
     p = np.transpose(p)
     label = "%s %d" % ('Rank', labels[ii])
     
-    ax1.scatter(p[0], p[1], s=10, label=label)
+    ax1.scatter(p[0], p[1], s=10, label=label, color=colors[labels[ii]])
 
 #######################################
 
@@ -94,7 +124,7 @@ for ii in range(len(points)):
     p = np.transpose(p)
     label = "%s %d" % ('Rank', labels[ii])
 
-    ax2.scatter(p[0], p[1], s=10, label=label)
+    ax2.scatter(p[0], p[1], s=10, label=label, color=colors[labels[ii]])
 
 #######################################
 
@@ -130,7 +160,7 @@ for ii in range(len(points)):
     p = np.transpose(p)
     label = "%s %d" % ('Rank', labels[ii])
     
-    ax3.scatter(p[0], p[1], s=10, label=label)
+    ax3.scatter(p[0], p[1], s=10, label=label, color=colors[labels[ii]])
 
 #######################################
 
@@ -166,36 +196,36 @@ for ii in range(len(points)):
     p = np.transpose(p)
     label = "%s %d" % ('Rank', labels[ii])
 
-    ax4.scatter(p[0], p[1], s=10, label=label)
+    ax4.scatter(p[0], p[1], s=10, label=label, color=colors[labels[ii]])
 
 #######################################
 
-plt.rcParams['font.sans-serif'] = "Arial"
-plt.rcParams['font.family'] = "sans-serif"
-plt.rcParams['font.size'] = 10
-
 # ax1.set_yticks(np.linspace(.8, .98, 7))
+ax3.set_yticks([.45, .47, .49, .51])
 
-ax2.set_xlabel(xlabel='Sparsity')
-ax4.set_xlabel(xlabel='Sparsity')
+ax2.set_xticks(range(1, 10+1, 1))
+ax4.set_xticks(range(1, 10+1, 1))
 
-ax1.set_ylabel(ylabel='Accuracy')
-ax2.set_ylabel(ylabel='Angle')
+ax2.set_xlabel(xlabel='Sparsity', fontsize=10.)
+ax4.set_xlabel(xlabel='Sparsity', fontsize=10.)
+
+ax1.set_ylabel(ylabel='Accuracy', fontsize=10.)
+ax2.set_ylabel(ylabel='Angle', fontsize=10.)
 # ax3.set_ylabel(ylabel='Accuracy')
 # ax4.set_ylabel(ylabel='Angle')
 
-f.set_size_inches(8., 6.)
+f.set_size_inches(7., 5.)
 
 for ax in [ax1, ax2, ax3, ax4]:
     for tick in ax.yaxis.get_major_ticks():
-        tick.label.set_fontsize(8) 
+        tick.label.set_fontsize(10.) 
     for tick in ax.xaxis.get_major_ticks():
-        tick.label.set_fontsize(8) 
+        tick.label.set_fontsize(10.) 
 
-lgd = ax4.legend(loc='upper left', bbox_to_anchor=(1.02, 1.5), fontsize=8)
+# lgd = ax4.legend(loc='upper left', bbox_to_anchor=(1.02, 1.5), fontsize=10)
 
 f.subplots_adjust(hspace=0)
-f.savefig('plot2', bbox_extra_artists=(lgd,), bbox_inches='tight')
-
+# plt.show()
+f.savefig('plot2.svg', dpi=300)
 
 
