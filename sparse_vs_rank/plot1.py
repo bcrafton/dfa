@@ -62,17 +62,17 @@ data_grouped = {}
 ii = 0
 for ii in range(len(mnist)):
     d = mnist[ii]
-    key = d['sparse']
+    key = (d['rank'], d['sparse'])
     
     if key in data_grouped.keys():
-        data_grouped[key].append([d['rank'], d['acc']])
+        data_grouped[key].append(d['acc'])
     else:
-        data_grouped[key] = [[d['rank'], d['acc']]]
+        data_grouped[key] = [d['acc']]
         
 points1 = []
 labels1 = [] 
-for key in data_grouped:
-    points1.append( data_grouped[key] )
+for key in data_grouped:    
+    points1.append( np.average(data_grouped[key]) )
     labels1.append( key )
 
 #######################################
@@ -81,17 +81,17 @@ data_grouped = {}
 ii = 0
 for ii in range(len(mnist)):
     d = mnist[ii]
-    key = d['sparse']
+    key = (d['rank'], d['sparse'])
     
     if key in data_grouped.keys():
-        data_grouped[key].append([d['rank'], d['angle']])
+        data_grouped[key].append(d['angle'])
     else:
-        data_grouped[key] = [[d['rank'], d['angle']]]
+        data_grouped[key] = [d['angle']]
         
 points2 = []
 labels2 = [] 
-for key in data_grouped:
-    points2.append( data_grouped[key] )
+for key in data_grouped:    
+    points2.append( np.average(data_grouped[key]) )
     labels2.append( key )
 
 #######################################
@@ -100,17 +100,17 @@ data_grouped = {}
 ii = 0
 for ii in range(len(cifar10)):
     d = cifar10[ii]
-    key = d['sparse']
+    key = (d['rank'], d['sparse'])
     
     if key in data_grouped.keys():
-        data_grouped[key].append([d['rank'], d['acc']])
+        data_grouped[key].append(d['acc'])
     else:
-        data_grouped[key] = [[d['rank'], d['acc']]]
+        data_grouped[key] = [d['acc']]
         
 points3 = []
 labels3 = [] 
-for key in data_grouped:
-    points3.append( data_grouped[key] )
+for key in data_grouped:    
+    points3.append( np.average(data_grouped[key]) )
     labels3.append( key )
 
 #######################################
@@ -119,18 +119,19 @@ data_grouped = {}
 ii = 0
 for ii in range(len(cifar10)):
     d = cifar10[ii]
-    key = d['sparse']
+    key = (d['rank'], d['sparse'])
     
     if key in data_grouped.keys():
-        data_grouped[key].append([d['rank'], d['angle']])
+        data_grouped[key].append(d['angle'])
     else:
-        data_grouped[key] = [[d['rank'], d['angle']]]
+        data_grouped[key] = [d['angle']]
         
 points4 = []
 labels4 = [] 
-for key in data_grouped:
-    points4.append( data_grouped[key] )
+for key in data_grouped:    
+    points4.append( np.average(data_grouped[key]) )
     labels4.append( key )
+    
 #######################################
 
 plt.rcParams['font.sans-serif'] = "Arial"
@@ -141,27 +142,19 @@ f, [[ax1, ax3], [ax2, ax4]] = plt.subplots(2, 2, sharex=True, sharey=False)
 
 for ii in range(len(points1)):
     p = points1[ii]
-    p = np.transpose(p)
-    label = "%s %d" % ('Sparse', labels1[ii])
-    ax1.scatter(p[0], p[1], s=10, label=label, color=colors[labels1[ii]])
+    ax1.scatter(labels1[ii][0], p, s=10, color=colors[labels1[ii][1]])
 
 for ii in range(len(points2)):
     p = points2[ii]
-    p = np.transpose(p)
-    label = "%s %d" % ('Sparse', labels2[ii])
-    ax2.scatter(p[0], p[1], s=10, label=label, color=colors[labels1[ii]])
+    ax2.scatter(labels2[ii][0], p, s=10, color=colors[labels2[ii][1]])
 
 for ii in range(len(points3)):
     p = points3[ii]
-    p = np.transpose(p)
-    label = "%s %d" % ('Sparse', labels3[ii])
-    ax3.scatter(p[0], p[1], s=10, label=label, color=colors[labels1[ii]])
+    ax3.scatter(labels3[ii][0], p, s=10, color=colors[labels3[ii][1]])
 
 for ii in range(len(points4)):
     p = points4[ii]
-    p = np.transpose(p)
-    label = "%s %d" % ('Sparse', labels4[ii])
-    ax4.scatter(p[0], p[1], s=10, label=label, color=colors[labels1[ii]])
+    ax4.scatter(labels4[ii][0], p, s=10, color=colors[labels4[ii][1]])
 
 # ax2.set_xticks(range(1, 11))
 # ax4.set_xticks(range(1, 11))
@@ -195,7 +188,7 @@ for ax in [ax1, ax2, ax3, ax4]:
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(10) 
 
-f.savefig('plot1.svg', bbox_inches='tight', dpi=300)
+f.savefig('plot1.png', bbox_inches='tight', dpi=300)
 # plt.show()
 
 
