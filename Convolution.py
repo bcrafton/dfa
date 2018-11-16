@@ -43,8 +43,12 @@ class Convolution(Layer):
         else:
             self.filters = tf.get_variable(name=self.name, shape=self.filter_sizes)
 
-        sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
-        self.fb = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+        if load:
+            fb = np.load(load).item()[self.name]
+            self.fb = tf.Variable(fb, dtype=tf.float32)
+        else:
+            sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
+            self.fb = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 
     ###################################################################
 

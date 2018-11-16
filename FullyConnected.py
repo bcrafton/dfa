@@ -44,8 +44,12 @@ class FullyConnected(Layer):
         else:
             self.weights = tf.get_variable(name=self.name, shape=self.size)
 
-        sqrt_fan_in = math.sqrt(self.input_size)
-        self.fb = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+        if load:
+            fb = np.load(load).item()[self.name]
+            self.fb = tf.Variable(fb, dtype=tf.float32)
+        else:
+            sqrt_fan_in = math.sqrt(self.input_size)
+            self.fb = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 
     ###################################################################
         
