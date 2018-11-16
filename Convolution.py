@@ -7,6 +7,18 @@ from Layer import Layer
 from Activation import Activation
 from Activation import Sigmoid
 
+def genGabor(sz, omega, theta, func=np.cos, K=np.pi):
+    radius = (int(sz[0]/2.0), int(sz[1]/2.0))
+    [x, y] = np.meshgrid(range(-radius[0], radius[0]+1), range(-radius[1], radius[1]+1))
+
+    x1 = x * np.cos(theta) + y * np.sin(theta)
+    y1 = -x * np.sin(theta) + y * np.cos(theta)
+    
+    gauss = omega**2 / (4*np.pi * K**2) * np.exp(- omega**2 / (8*K**2) * ( 4 * x1**2 + y1**2))
+    sinusoid = func(omega * x1) * np.exp(K**2 / 2)
+    gabor = gauss * sinusoid
+    return gabor
+
 class Convolution(Layer):
 
     def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None, load=None, train=True):
@@ -44,8 +56,25 @@ class Convolution(Layer):
             self.filters = tf.get_variable(name=self.name, shape=self.filter_sizes)
 
         if load:
-            fb = np.load(load).item()[self.name]
+            conv = np.load(load).item()[self.name]
+            # self.fb = tf.Variable(conv, dtype=tf.float32)
+            std = np.std(conv)
+            avg = np.average(conv)
+            
+            # shape = (5, 5, 3, 96)
+            shape = np.shape(conv)
+            
+            fb = np.zeros(shape=shape)
+            
+            n = shape[2]
+            m = shape[3]
+            for ii in range(n):
+                for jj in range(m):
+                    fb[:, :, ii, jj] = genGabor((5, 5), np.random.uniform(-1., 1.), np.random.uniform(-np.pi, np.pi), func=np.cos) 
+                
+            fb = fb * (avg / np.average(fb))
             self.fb = tf.Variable(fb, dtype=tf.float32)
+            
         else:
             sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
             self.fb = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
