@@ -64,10 +64,13 @@ TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
+weights = 'cifar10_fc_weights.npy'
+weights = None
+
 if args.dfa:
-    bias = 0.0
+    bias = 0.1
 else:
-    bias = 0.0
+    bias = 0.1
 
 ##############################################
 
@@ -81,19 +84,19 @@ learning_rate = tf.placeholder(tf.float32, shape=())
 Y = tf.placeholder(tf.float32, [None, 10])
 X = tf.placeholder(tf.float32, [None, 3072])
 
-l0 = Dropout(rate=dropout_rate/5.)
+l0 = Dropout(rate=dropout_rate / 5.)
 
-l1 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc1")
+l1 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1")
 l2 = Dropout(rate=dropout_rate)
-l3 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb")
+l3 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb", std=1., load=weights)
 
-l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc2")
+l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2")
 l5 = Dropout(rate=dropout_rate)
-l6 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc2_fb")
+l6 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc2_fb", std=.1, load=weights)
 
-l7 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc3")
+l7 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3")
 l8 = Dropout(rate=dropout_rate)
-l9 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc3_fb")
+l9 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc3_fb", std=.01, load=weights)
 
 l10 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc4")
 
@@ -137,18 +140,32 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar10
 
+# x_train = np.transpose(x_train, (0, 1, 2, 3))
+# x_test = np.transpose(x_test, (0, 1, 2, 3))
+# print (np.shape(x_train), np.shape(x_test))
+
+assert(np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3))
+assert(np.shape(x_test) == (TEST_EXAMPLES, 32, 32, 3))
+
 mean = np.mean(x_train, axis=(0, 1, 2), keepdims=True)
 std = np.std(x_train, axis=(0, 1, 2), keepdims=True)
 
-x_train = x_train / np.max(x_train)
-# x_train = (x_train - mean) / std
+# _min = np.min(x_train, axis=(0, 1, 2), keepdims=True)
+# x_train = x_train - _min
+# _max = np.max(x_train, axis=(0, 1, 2), keepdims=True)
+# x_train = x_train / _max
+x_train = (x_train - mean) / std
 x_train = x_train.reshape(TRAIN_EXAMPLES, 3072)
 y_train = keras.utils.to_categorical(y_train, 10)
 
-x_test = x_test / np.max(x_train)
-# x_test = (x_test - mean) / std
+# _min = np.min(x_test, axis=(0, 1, 2), keepdims=True)
+# x_test = x_test - _min
+# _max = np.max(x_test, axis=(0, 1, 2), keepdims=True)
+# x_test = x_test / _max
+x_test = (x_test - mean) / std
 x_test = x_test.reshape(TEST_EXAMPLES, 3072)
 y_test = keras.utils.to_categorical(y_test, 10)
+
 ##############################################
 
 filename = args.name + '.results'

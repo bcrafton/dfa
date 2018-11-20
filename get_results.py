@@ -35,6 +35,8 @@ for ii in range(num_runs):
         
         key = (param['benchmark'], param['dfa'], param['sparse'], transfer)
         val = max(res['test_acc'])
+
+        print (name, val)
         
         if key in results.keys():
             # use an if instead of max because we gonna want to save the winner run information
