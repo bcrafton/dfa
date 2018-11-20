@@ -6,6 +6,7 @@ import math
 from Layer import Layer 
 from Activation import Activation
 from Activation import Sigmoid
+from Activation import Linear
 
 def image_to_patches(image, patch_height, patch_width):
     shape = tf.shape(image)
@@ -60,7 +61,7 @@ class BioConvolution(Layer):
         
         # self.h and self.w only equal this for input sizes when padding = "SAME"...
         self.batch_size, self.h, self.w, self.fin = self.input_sizes
-        self.fh, self.fw, self.f = self.filter_sizes
+        self.fh, self.fw, self.fin, self.fout = self.filter_sizes
 
         self.bias = tf.Variable(tf.ones(shape=self.fout) * bias)
 
@@ -75,13 +76,14 @@ class BioConvolution(Layer):
         self.name = name
         self._train = train
         
-        shape = (1, self.h*self.w, self.fh, self.fw, self.fin, self.fout)
+        shape = (1, self.h // self.fh * self.w // self.fw, self.fh, self.fw, self.fin, self.fout)
         
         if init_filters == "zero":
             self.filters = tf.Variable(tf.zeros(shape=shape))
         elif init_filters == "sqrt_fan_in":
-            sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
-            self.filters = tf.Variable(tf.random_uniform(shape=shape, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+            # sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
+            # self.filters = tf.Variable(tf.random_uniform(shape=shape, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+            self.filters = tf.Variable(tf.random_uniform(shape=shape, minval=1.0, maxval=1.0))
         elif init_filters == "alexnet":
             self.filters = tf.Variable(np.random.normal(loc=0.0, scale=0.01, size=shape), dtype=tf.float32)
         else:
@@ -99,42 +101,32 @@ class BioConvolution(Layer):
                 
     def forward(self, X):
         _X = image_to_patches(X, self.fw, self.fw)
+        shape = tf.shape(_X)
+        _X = tf.reshape(_X, (shape[0], shape[1], shape[2], shape[3], shape[4], 1))
         
         Z = tf.multiply(_X, self.filters)
-        Z = tf.reduce_sum(Z, axis=(3, 4, 5))
-        Z = Z + tf.reshape(self.bias, (1, 1, -1))
-        
+        Z = tf.reduce_sum(Z, axis=(2, 3, 4))
+        Z = Z + tf.reshape(self.bias, (1, 1, self.fout))
+        Z = tf.reshape(Z, (-1, self.h // self.fh, self.w // self.fw, self.fout))
+
         A = self.activation.forward(Z)
-        A = patches_to_image(A, self.h // self.fh, self.w // self.fw)
         return A
         
     ###################################################################           
         
     def backward(self, AI, AO, DO):
         # E
+        # shape = (-1, self.h // self.fh * self.w // self.fw, 1, 1, 1, self.fout)
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        # dont think we can actually do this
-        # DO here will be Nx10x10x64 ... cant make it a patch
-        # DO = image_to_patches(DO, self.h // self.fh, self.w // self.fw)
-        # but wait we have [Nx10x10x64]
-        # and we want [N,100x64]
-        # so we can do [N, 100, 1, 1, 1, 64] * [1, 100, 3, 3, 3, 64]
-        # hmmm what do we do here ? 
-        # for now just gonna manually rehsape it.
-        
-        shape = tf.shape(DO)
-        N = shape[0]
-        img_height = shape[1]
-        img_width = shape[2]
-        channels = shape[3]
-        DO = tf.reshape(DO, (N, img_height * img_width, 1, 1, 1, channels))
+        DO = tf.reshape(DO, (-1, self.h // self.fh * self.w // self.fw, 1, 1, 1, self.fout))
         
         # F
-        # self.filters = [1, 100, 3, 3, 3, 64]
+        # shape = (1, self.h // self.fh * self.w // self.fw, self.fh, self.fw, self.fin, self.fout)
         
-        # this depends on stride ... and is not correct.
+        # we are ignoring stride here...
         DI = tf.multiply(DO, self.filters)
-        DI = tf.reduce_sum(DI, axis=(6))
+        DI = tf.reduce_sum(DI, axis=(5))
+        DI = patches_to_image(DI, self.h, self.w)
         
         return DI
 
@@ -142,20 +134,16 @@ class BioConvolution(Layer):
         if not self._train:
             return []
 
-        AI = tf.extract_image_patches(images=AI, ksizes=[1, self.fh, self.fw, 1], strides=self.strides, rates=[1, 1, 1, 1], padding=self.padding)
-        shape = tf.shape(AI)
-        AI = tf.reshape(AI, (shape[0], shape[1] * shape[2], shape[3], 1))
-    
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.reshape(DO, (-1, self.h // self.fh * self.w // self.fw, 1, 1, 1, self.fout))
         
-        shape = tf.shape(DO)
-        DO = tf.reshape(DO, (shape[0], shape[1], 1, shape[2])) # [N, 144, 1, 64]
+        _AI = image_to_patches(AI, self.fw, self.fw)
+        shape = tf.shape(_AI)
+        _AI = tf.reshape(_AI, (shape[0], shape[1], shape[2], shape[3], shape[4], 1))
         
-        shape = tf.shape(AI)
-        AI = tf.reshape(AI, (shape[0], shape[1], shape[2], 1)) # [N, 144, 27, 1]
-        
-        DF = tf.multiply(AI, DO)
-        DB = tf.reduce_sum(DO, axis=[0, 1, 2])
+        DF = tf.multiply(DO, _AI)
+        DF = tf.reduce_sum(DF, axis=0)
+        DB = tf.reduce_sum(DO, axis=[0, 1, 2, 3, 4])
 
         return [(DF, self.filters), (DB, self.bias)]
         
