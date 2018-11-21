@@ -58,7 +58,6 @@ def patches_to_image(patches, img_height, img_width):
 
 image = tf.placeholder(tf.float32, [None, 9, 9, 3])
 pad = tf.pad(tensor=image, paddings=[[0, 0], [2,2], [2,2], [0,0]], mode='CONSTANT')
-filters = tf.placeholder(tf.float32, [1, 1, 3, 3, 3, 64])
 
 #########################################################
 
@@ -114,46 +113,56 @@ sess = tf.Session()
 cifar10 = tf.keras.datasets.cifar10.load_data()
 (x_train, y_train), (x_test, y_test) = cifar10
 
-# _image = Image.open('laska.png')
-# _image.load()
-# _image = np.asarray(_image, dtype="float32")
-# _image = _image[0:224, 0:224, 0:3]
 _image = np.linspace(0.1, 1.0, 1 * 9 * 9 * 3)
 _image = np.reshape(_image, (1, 9, 9, 3))
-# shape = np.shape(_image)
-# _image = np.reshape(_image, (1, shape[0], shape[1], shape[2]))
-    
-_filters = np.random.uniform(low=0.5, high=1.0, size=(1, 1, 3, 3, 3, 64))
-[_pad, _patches, _patch1, _patch2, _patch4] = sess.run([pad, patches, patch1, patch2, patch4], feed_dict={image: _image, filters: _filters})
 
-print (np.shape(_pad), np.shape(_patches))
-_patches = np.transpose(_patches, (0, 1, 3, 2, 4))
-_patches = np.reshape(_patches, (1, 81, 3, 3, 3))
-# _patches = np.transpose(_patches, (0, 1, 3, 2, 4))
-print (np.shape(_pad), np.shape(_patches))
+#####################################################
 
-_patches2 = np.zeros(shape=(81, 3, 3, 3))
+[_pad, _patches, _patch1, _patch2, _patch3, _patches1] = sess.run([pad, patches, patch1, patch2, patch3, patches1], feed_dict={image: _image})
+
+#####################################################
+
+_patches2 = np.zeros(shape=(1, 27, 27, 3))
 for ii in range(9):
     for jj in range(9):
-        _patches2[ii * 9 + jj] = _pad[0, ii:ii+3, jj:jj+3, :]
+        _patches2[0, ii*3:(ii+1)*3, jj*3:(jj+1)*3, :] = _pad[0, ii:ii+3, jj:jj+3, :]
 
-print(np.sum(np.absolute(_patches - _patches2)))
+#####################################################
 
-# _patches = np.reshape(_patches, (1, 27, 27, 3))
-# _patches2 = np.reshape(_patches2, (1, 27, 27, 3))
+print (np.shape(_patches))
+print (np.shape(_patches2))
+
+#####################################################
+
+_patches = np.reshape(_patches, (1, 27, 27, 3))
+'''
+_patches = np.transpose(_patches, (0, 1, 3, 2, 4))
+_patches = np.reshape(_patches, (1, 81, 3, 3, 3))
+_patches = np.transpose(_patches, (0, 1, 3, 2, 4))
+'''
+
+#####################################################
 
 '''
-_patch1 = np.reshape(_patch1, (1, 27, 3, 3))
-plt.imshow(_patch1[0] / np.max(_patch1[0]))
-
-_patch2 = np.reshape(_patch2, (1, 27, 3, 3))
-plt.imshow(_patch2[0] / np.max(_patch2[0]))
+_patches2 = np.copy(_patches2)
+_patches2 = np.reshape(_patches2, (9, 3, 27, 3))
+_patches2 = np.transpose(_patches2, (0, 2, 1, 3))
+_patches2 = np.reshape(_patches2, (81, 3, 3, 3))
+_patches2 = np.transpose(_patches2, (0, 2, 1, 3))
 '''
 
-_patch1 = np.concatenate((_patch1, _patch2), axis=3)
-_patch1 = np.reshape(_patch1, (1, 27, 6, 3))
-print (np.shape(_patch1))
-plt.imshow(_patch1[0] / np.max(_patch1[0]))
+#####################################################
+
+print (np.sum(np.absolute(_patches - _patches2)))
+
+plt.subplot(1, 2, 1)
+_patches = np.reshape(_patches, (1, 27, 27, 3))
+plt.imshow(_patches[0] / np.max(_patches[0]))
+
+plt.subplot(1, 2, 2)
+_patches2 = np.reshape(_patches2, (1, 27, 27, 3))
+plt.imshow(_patches2[0] / np.max(_patches2[0]))
+
 
 plt.show()
 
