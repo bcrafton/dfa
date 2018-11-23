@@ -225,7 +225,7 @@ for ii in range(EPOCHS):
     print ("train acc: %f test acc: %f" % (train_acc, test_acc))
     
     f = open(filename, "a")
-    f.write(str(train_acc) + " " + str(test_acc) + "\n")
+    f.write("train acc: %f test acc: %f" % (train_acc, test_acc))
     f.close()
 
 ##############################################
