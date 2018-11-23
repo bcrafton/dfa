@@ -70,7 +70,7 @@ weights = None
 if args.dfa:
     bias = 0.1
 else:
-    bias = 0.1
+    bias = 0.0
 
 ##############################################
 
