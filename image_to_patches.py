@@ -9,8 +9,6 @@ from PIL import Image
 from BioConvolution import BioConvolution
 from Activation import Linear
 
-tile_size = 3
-
 #########################################################
 
 image = tf.placeholder(tf.float32, [10, 30, 30, 3])

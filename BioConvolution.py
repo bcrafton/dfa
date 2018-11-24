@@ -133,10 +133,7 @@ class BioConvolution(Layer):
         assert(self.sh == self.sw)
         assert(self.sh == 1 or self.sh == self.fh)
         
-        if (self.sh == 1):
-            shape = (1, self.h * self.w, self.fh, self.fw, self.fin, self.fout)
-        else:
-            shape = (1, self.h // self.fh * self.w // self.fw, self.fh, self.fw, self.fin, self.fout)
+        shape = (1, self.h // self.sh * self.w // self.sw, self.fh, self.fw, self.fin, self.fout)
         
         if init_filters == "zero":
             self.filters = tf.Variable(tf.zeros(shape=shape))
@@ -186,7 +183,7 @@ class BioConvolution(Layer):
         # DI
         DI = tf.multiply(DO, self.filters)
         DI = tf.reduce_sum(DI, axis=(5))
-        # DI = patches_to_image(DI, self.h, self.w)
+        DI = tf.reshape(DI, (-1, self.h // self.sh, self.w // self.sw, self.fin))
         
         return DI
 
@@ -208,7 +205,23 @@ class BioConvolution(Layer):
         return [(DF, self.filters), (DB, self.bias)]
         
     def train(self, AI, AO, DO): 
-        pass
+        if not self._train:
+            return []
+
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.reshape(DO, (-1, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
+        
+        _AI = image_to_patches(AI, (self.fh, self.fw), (self.sh, self.sw))
+        shape = tf.shape(_AI)
+        _AI = tf.reshape(_AI, (shape[0], shape[1], shape[2], shape[3], shape[4], 1))
+        
+        DF = tf.multiply(DO, _AI)
+        DF = tf.reduce_sum(DF, axis=0)
+        DB = tf.reduce_sum(DO, axis=[0, 1, 2, 3, 4])
+
+        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        return [(DF, self.filters), (DB, self.bias)]
         
     ###################################################################
 
