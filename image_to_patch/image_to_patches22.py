@@ -14,20 +14,20 @@ def image_to_patches(image, kernel_size, kernel_stride):
     height = shape[1]
     width = shape[2]
     channels = shape[3]
-    rows = height // patch_height
-    cols = width // patch_width
-
     kh, kw = kernel_size
     sh, sw = kernel_stride
+    rows = height // kh
+    cols = width // kw
 
     # assert that kernel height == kernel width ?
     # we have not tested for that at all and i doubt we will ever use it.
     # so lets assert it.
     assert(sh == sw)
-    assert(sh == kh or kh == 1)
-    assert(sw == kw or kw == 1)
+    assert(sh == kh or sh == 1)
+    assert(sw == kw or sw == 1)
     
-    if (sh > 1):
+    if (sh == 1):
+        sh, sw = kh, kw # stride = slice now.
         num_slices = sh * sw
     
         pad = tf.pad(tensor=image, paddings=[[0, 0], [kh-1,kh-1], [kw-1,kw-1], [0,0]], mode='CONSTANT')
@@ -49,72 +49,37 @@ def image_to_patches(image, kernel_size, kernel_stride):
         # [1, 9, 9, 3, 3, 3]
         slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
         # [1, 9, 9, 3, 3, 3]
-        slices = tf.transpose(slices, [0, 1, 4, 2, 3, 5])
-        # [1, 9, 3, 9, 3, 3]
-        slices = tf.reshape(slices, [N, num_slices // sw, sw * kw, rows * cols, kh, channels]) 
-        # [1, 3, 9, 9, 3, 3]
-        slices = tf.transpose(slices, [0, 1, 3, 4, 2, 5])
-        # [1, 3, 9, 3, 9, 3]
-        slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
-        # [1, 3, 9, 9, 3, 3]
-        slices = tf.reshape(slices, [N, num_slices // sw, rows, sw * kw * cols, kh, channels]) 
-        # [1, 3, 3, 27, 3, 3]
-        slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
+        
+        # [1, 9, 9, 3, 3, 3]
+        slices = tf.reshape(slices, [N, sh, sw, rows * cols, kh, kw, channels])
+        # [1, 3, 3, 9, 3, 3, 3]
+        slices = tf.transpose(slices, [0, 1, 3, 2, 4, 5, 6])
+        # [1, 3, 9, 3, 3, 3, 3]
+        slices = tf.reshape(slices, [N, sh, rows, cols * sw, kh, kw, channels])
+        # [1, 3, 3, 9, 3, 3, 3]
+        slices = tf.transpose(slices, [0, 2, 1, 3, 4, 5, 6])
         # [1, 3, 3, 3, 27, 3]
-        slices = tf.transpose(slices, [0, 2, 1, 3, 4, 5])
-        # [1, 3, 3, 3, 27, 3]
-        slices = tf.reshape(slices, [N, num_slices * rows * cols, 27, channels])
+        slices = tf.reshape(slices, [N, rows * sh * cols * sw, kh, kw, channels])
+
+        return slices
 
     else:
+        # [1, 9, 9, 3]
+        patches = tf.reshape(image, [N, rows, kh, width, channels])
+        # [1, 3, 3, 9, 3]
+        patches = tf.transpose(patches, [0, 1, 3, 2, 4])
+        # [1, 3, 9, 3, 3]
+        patches = tf.reshape(patches, [N, rows * cols, kw, kh, channels])
+        # [1, 9, 3, 3, 3]
+        patches = tf.transpose(patches, [0, 1, 3, 2, 4])
         
+        return patches
 
 #########################################################
 
 image = tf.placeholder(tf.float32, [None, 9, 9, 3])
 pad = tf.pad(tensor=image, paddings=[[0, 0], [2,2], [2,2], [0,0]], mode='CONSTANT')
-
-#########################################################
-
-slice1 = tf.reshape(tf.slice(pad, begin=[0, 0, 0, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slice2 = tf.reshape(tf.slice(pad, begin=[0, 0, 1, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slice3 = tf.reshape(tf.slice(pad, begin=[0, 0, 2, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slice4 = tf.reshape(tf.slice(pad, begin=[0, 1, 0, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slice5 = tf.reshape(tf.slice(pad, begin=[0, 1, 1, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slice6 = tf.reshape(tf.slice(pad, begin=[0, 1, 2, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slice7 = tf.reshape(tf.slice(pad, begin=[0, 2, 0, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slice8 = tf.reshape(tf.slice(pad, begin=[0, 2, 1, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slice9 = tf.reshape(tf.slice(pad, begin=[0, 2, 2, 0], size=[1, 9, 9, 3]), (1, 1, 9, 9, 3))
-slices = tf.concat((slice1, slice2, slice3, slice4, slice5, slice6, slice7, slice8, slice9), axis=1)
-
-# [1, 9, 9, 9, 3]
-slices = tf.reshape(slices, [1, 9, 3, 3, 9, 3])
-# [1, 9, 3, 3, 9, 3]
-slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
-# [1, 9, 3, 9, 3, 3]
-slices = tf.reshape(slices, [1, 9, 9, 3, 3, 3])
-# [1, 9, 9, 3, 3, 3]
-slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
-# [1, 9, 9, 3, 3, 3]
-
-# [1, 9, 9, 3, 3, 3]
-slices = tf.transpose(slices, [0, 1, 4, 2, 3, 5])
-# [1, 9, 3, 9, 3, 3]
-slices = tf.reshape(slices, [1, 3, 9, 9, 3, 3])
-# [1, 3, 9, 9, 3, 3]
-slices = tf.transpose(slices, [0, 1, 3, 4, 2, 5])
-# [1, 3, 9, 3, 9, 3]
-
-slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
-# [1, 3, 9, 9, 3, 3]
-slices = tf.reshape(slices, [1, 3, 3, 27, 3, 3])
-# [1, 3, 3, 27, 3, 3]
-slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
-# [1, 3, 3, 3, 27, 3]
-slices = tf.transpose(slices, [0, 2, 1, 3, 4, 5])
-# [1, 3, 3, 3, 27, 3]
-slices = tf.reshape(slices, [1, 27, 27, 3])
-# [1, 27, 27, 3]
-patches = slices
+slices = image_to_patches(image, (3, 3), (1, 1))
 
 #########################################################
 
@@ -125,11 +90,7 @@ _image = np.reshape(_image, (1, 9, 9, 3))
 
 #####################################################
 
-[_pad, _slices, _patches] = sess.run([pad, slices, patches], feed_dict={image: _image})
-
-#####################################################
-
-print (np.shape(_slices))
+[_pad, _patches] = sess.run([pad, slices], feed_dict={image: _image})
 
 #####################################################
 
@@ -137,10 +98,10 @@ plt.subplot(1, 2, 1)
 _patches = np.reshape(_patches, (1, 81, 9, 3))
 plt.imshow(_patches[0] / np.max(_patches[0]))
 
-_patches2 = np.zeros(shape=(1, 27, 27, 3))
+_patches2 = np.zeros(shape=(1, 81, 9, 3))
 for ii in range(9):
     for jj in range(9):
-        _patches2[0, ii*3:(ii+1)*3, jj*3:(jj+1)*3, :] = _pad[0, ii:ii+3, jj:jj+3, :]
+        _patches2[0, ii * 9 + jj, :, :] = np.reshape(_pad[0, ii:(ii+3), jj:(jj+3), :], (9, 3))
 
 plt.subplot(1, 2, 2)
 _patches2 = np.reshape(_patches2, (1, 81, 9, 3))
