@@ -16,16 +16,25 @@ def image_to_patches(image, kernel_size, kernel_stride):
     channels = shape[3]
     kh, kw = kernel_size
     sh, sw = kernel_stride
+    
+    print (height, width)
+    
+    # assert stride height = stride width
+    assert(sh == sw)
+    # assert stride height = kernel height or 1
+    assert(sh == kh or sh == 1)
+    # assert stride width = kernel width or 1
+    assert(sw == kw or sw == 1)
+    # assert kernel width = kernel height
+    assert(kh == kw)
+    # assert kh and divides height
+    # assert((height % kh) == 0)
+    # assert kw and divides width
+    # assert((width % kw) == 0)
+    
     rows = height // kh
     cols = width // kw
-
-    # assert that kernel height == kernel width ?
-    # we have not tested for that at all and i doubt we will ever use it.
-    # so lets assert it.
-    assert(sh == sw)
-    assert(sh == kh or sh == 1)
-    assert(sw == kw or sw == 1)
-    
+   
     if (sh == 1):
         sh, sw = kh, kw # stride = slice now.
         num_slices = sh * sw
