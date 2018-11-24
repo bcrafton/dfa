@@ -7,7 +7,7 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=8)
+parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--decay', type=float, default=0.99)
 parser.add_argument('--gpu', type=int, default=0)
@@ -91,17 +91,17 @@ X = tf.placeholder(tf.float32, [None, 30, 30, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
 Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = BioConvolution(input_sizes=[batch_size, 30, 30, 3], filter_sizes=[5, 5, 3, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
-l1 = MaxPool(size=[batch_size, 30, 30, 32], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l0 = BioConvolution(input_sizes=[batch_size, 30, 30, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
+l1 = MaxPool(size=[batch_size, 30, 30, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[5, 5, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
-l3 = MaxPool(size=[batch_size, 15, 15, 64], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l3 = MaxPool(size=[batch_size, 15, 15, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l6 = ConvToFullyConnected(shape=[8, 8, 64])
+l6 = ConvToFullyConnected(shape=[8, 8, 128])
 
-l7 = FullyConnected(size=[8*8*64, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
+l7 = FullyConnected(size=[8*8*128, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
 l8 = Dropout(rate=dropout_rate)
-l9 = FeedbackFC(size=[8*8*64, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
+l9 = FeedbackFC(size=[8*8*128, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
 
 l10 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
 l11 = Dropout(rate=dropout_rate)
