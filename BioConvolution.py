@@ -138,9 +138,9 @@ class BioConvolution(Layer):
         if init_filters == "zero":
             self.filters = tf.Variable(tf.zeros(shape=shape))
         elif init_filters == "sqrt_fan_in":
-            # sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
-            # self.filters = tf.Variable(tf.random_uniform(shape=shape, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-            self.filters = tf.Variable(np.ones(shape=(shape)), dtype=tf.float32)
+            sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
+            self.filters = tf.Variable(tf.random_uniform(shape=shape, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+            # self.filters = tf.Variable(np.ones(shape=(shape)), dtype=tf.float32)
         elif init_filters == "alexnet":
             self.filters = tf.Variable(np.random.normal(loc=0.0, scale=0.01, size=shape), dtype=tf.float32)
         else:
@@ -157,6 +157,12 @@ class BioConvolution(Layer):
         return filter_weights_size + bias_weights_size
                 
     def forward(self, X):
+        shape = tf.shape(X)
+        N = shape[0]
+        height = shape[1]
+        width = shape[2]
+        channels = shape[3]
+
         _X = image_to_patches(X, (self.fh, self.fw), (self.sh, self.sw))
         shape = tf.shape(_X)
         _X = tf.reshape(_X, (shape[0], shape[1], shape[2], shape[3], shape[4], 1))
@@ -164,7 +170,7 @@ class BioConvolution(Layer):
         Z = tf.multiply(_X, self.filters)
         Z = tf.reduce_sum(Z, axis=(2, 3, 4))
         Z = Z + tf.reshape(self.bias, (1, 1, self.fout))
-        Z = tf.reshape(Z, (-1, self.h // self.sh, self.w // self.sw, self.fout))
+        Z = tf.reshape(Z, (N, self.h // self.sh, self.w // self.sw, self.fout))
 
         A = self.activation.forward(Z)
         return A
@@ -172,27 +178,39 @@ class BioConvolution(Layer):
     ###################################################################           
         
     def backward(self, AI, AO, DO):
+        shape = tf.shape(AI)
+        N = shape[0]
+        height = shape[1]
+        width = shape[2]
+        channels = shape[3]
+
         # E
-        # shape = (-1, self.h // self.fh * self.w // self.fw, 1, 1, 1, self.fout)
+        # shape = (N, self.h // self.fh * self.w // self.fw, 1, 1, 1, self.fout)
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DO = tf.reshape(DO, (-1, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
+        DO = tf.reshape(DO, (N, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
         
         # F
         # shape = (1, self.h // self.fh * self.w // self.fw, self.fh, self.fw, self.fin, self.fout)
         
         # DI
         DI = tf.multiply(DO, self.filters)
-        DI = tf.reduce_sum(DI, axis=(5))
-        DI = tf.reshape(DI, (-1, self.h // self.sh, self.w // self.sw, self.fin))
-        
+        DI = tf.reduce_sum(DI, axis=(2, 3, 5))
+        DI = tf.reshape(DI, (N, self.h // self.sh, self.w // self.sw, self.fin))
+
         return DI
 
     def gv(self, AI, AO, DO):  
         if not self._train:
             return []
 
+        shape = tf.shape(AI)
+        N = shape[0]
+        height = shape[1]
+        width = shape[2]
+        channels = shape[3]
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DO = tf.reshape(DO, (-1, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
+        DO = tf.reshape(DO, (N, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
         
         _AI = image_to_patches(AI, (self.fh, self.fw), (self.sh, self.sw))
         shape = tf.shape(_AI)
@@ -208,8 +226,14 @@ class BioConvolution(Layer):
         if not self._train:
             return []
 
+        shape = tf.shape(AI)
+        N = shape[0]
+        height = shape[1]
+        width = shape[2]
+        channels = shape[3]
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DO = tf.reshape(DO, (-1, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
+        DO = tf.reshape(DO, (N, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
         
         _AI = image_to_patches(AI, (self.fh, self.fw), (self.sh, self.sw))
         shape = tf.shape(_AI)

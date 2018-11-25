@@ -6,11 +6,12 @@ import sys
 ##############################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, default=100)
+parser.add_argument('--epochs', type=int, default=10000)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--eps', type=float, default=1.)
 parser.add_argument('--decay', type=float, default=0.99)
-parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--gpu', type=int, default=1)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
@@ -66,10 +67,7 @@ TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
 train_fc=True
-if args.load:
-    train_conv=False
-else:
-    train_conv=True
+train_conv=True
 
 weights_fc=None
 weights_conv=args.load
@@ -87,33 +85,36 @@ tf.reset_default_graph()
 batch_size = tf.placeholder(tf.int32, shape=())
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
-X = tf.placeholder(tf.float32, [None, 30, 30, 3])
+X = tf.placeholder(tf.float32, [args.batch_size, 30, 30, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
-Y = tf.placeholder(tf.float32, [None, 10])
+Y = tf.placeholder(tf.float32, [args.batch_size, 10])
 
-l0 = BioConvolution(input_sizes=[batch_size, 30, 30, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
-l1 = MaxPool(size=[batch_size, 30, 30, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l0 = BioConvolution(input_sizes=[batch_size, 30, 30, 3], filter_sizes=[3, 3, 3, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
+l1 = MaxPool(size=[batch_size, 30, 30, 32], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
-l3 = MaxPool(size=[batch_size, 15, 15, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l3 = MaxPool(size=[batch_size, 15, 15, 64], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l6 = ConvToFullyConnected(shape=[8, 8, 128])
+l4 = BioConvolution(input_sizes=[batch_size, 8, 8, 64], filter_sizes=[2, 2, 64, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l5 = MaxPool(size=[batch_size, 8, 8, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l7 = FullyConnected(size=[8*8*128, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
+l6 = ConvToFullyConnected(shape=[4, 4, 128])
+
+l7 = FullyConnected(size=[4*4*128, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
 l8 = Dropout(rate=dropout_rate)
-l9 = FeedbackFC(size=[8*8*128, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
 
-l10 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
-l11 = Dropout(rate=dropout_rate)
-l12 = FeedbackFC(size=[2048, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc2_fb')
+l9 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
+l10 = Dropout(rate=dropout_rate)
 
-l13 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc)
+l11 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc)
 
 ##############################################
 
-model = Model(layers=[l0, l1, l2, l3, l6, l7, l8, l9, l10, l11, l12, l13])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11])
 
 predict = model.predict(X=X)
+# l1_forward = model.up_to(X, 1)
+# gvs = model.gvs(X=X, Y=Y)
 
 weights = model.get_weights()
 
@@ -124,9 +125,9 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         grads_and_vars = model.gvs(X=X, Y=Y)
         
     if args.opt == "adam":
-        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "rms":
-        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "decay":
         train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
     else:
@@ -186,12 +187,19 @@ for ii in range(EPOCHS):
     
     # for jj in range(int(12)):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
+        print (jj)
+
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
-        
+        # _correct, _, _l1_forward, _gvs = sess.run([total_correct, train, l1_forward, gvs], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+
+        _correct, _= sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+
         _total_correct += _correct
         _count += BATCH_SIZE
+
+        # print (np.std(_l1_forward), np.average(_l1_forward))
+        # print (np.std(_gvs[0]), np.std(_gvs[1]))
 
     train_acc = 1.0 * _total_correct / _count
     train_accs.append(train_acc)
@@ -203,6 +211,8 @@ for ii in range(EPOCHS):
 
     # for jj in range(int(12)):
     for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
+        print (jj)
+
         xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         _correct = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
