@@ -187,7 +187,7 @@ for ii in range(EPOCHS):
     
     # for jj in range(int(12)):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
-        print (jj)
+        # print (jj)
 
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
@@ -211,7 +211,7 @@ for ii in range(EPOCHS):
 
     # for jj in range(int(12)):
     for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
-        print (jj)
+        # print (jj)
 
         xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
@@ -228,7 +228,7 @@ for ii in range(EPOCHS):
     print ("train acc: %f test acc: %f" % (train_acc, test_acc))
     
     f = open(filename, "a")
-    f.write(str(test_acc) + "\n")
+    f.write("train acc: %f test acc: %f\n" % (train_acc, test_acc))
     f.close()
 
 ##############################################

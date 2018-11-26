@@ -133,18 +133,18 @@ class BioConvolution(Layer):
         assert(self.sh == self.sw)
         assert(self.sh == 1 or self.sh == self.fh)
         
-        shape = (1, self.h // self.sh * self.w // self.sw, self.fh, self.fw, self.fin, self.fout)
-        
+        self.filter_shape = (self.h // self.sh * self.w // self.sw, self.fh, self.fw, self.fin, self.fout)
+        self.filter_reshape = (1, self.h // self.sh * self.w // self.sw, self.fh, self.fw, self.fin, self.fout)
+
         if init_filters == "zero":
-            self.filters = tf.Variable(tf.zeros(shape=shape))
+            self.filters = tf.Variable(tf.zeros(shape=self.filter_shape))
         elif init_filters == "sqrt_fan_in":
             sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
-            self.filters = tf.Variable(tf.random_uniform(shape=shape, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-            # self.filters = tf.Variable(np.ones(shape=(shape)), dtype=tf.float32)
+            self.filters = tf.Variable(tf.random_uniform(shape=self.filter_shape, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
         elif init_filters == "alexnet":
-            self.filters = tf.Variable(np.random.normal(loc=0.0, scale=0.01, size=shape), dtype=tf.float32)
+            self.filters = tf.Variable(np.random.normal(loc=0.0, scale=0.01, size=self.filter_shape), dtype=tf.float32)
         else:
-            self.filters = tf.get_variable(name=self.name, shape=shape)
+            self.filters = tf.get_variable(name=self.name, shape=self.filter_shape)
 
     ###################################################################
 
@@ -152,7 +152,7 @@ class BioConvolution(Layer):
         return [(self.name, self.filters), (self.name + "_bias", self.bias)]
 
     def num_params(self):
-        filter_weights_size = self.h*self.w * self.fh*self.fw * self.fout
+        filter_weights_size = (self.h // self.sh * self.w // self.sw) * self.fh * self.fw * self.fin * self.fout
         bias_weights_size = self.fout
         return filter_weights_size + bias_weights_size
                 
@@ -163,15 +163,21 @@ class BioConvolution(Layer):
         width = shape[2]
         channels = shape[3]
 
+        # X
         _X = image_to_patches(X, (self.fh, self.fw), (self.sh, self.sw))
         shape = tf.shape(_X)
         _X = tf.reshape(_X, (shape[0], shape[1], shape[2], shape[3], shape[4], 1))
-        
-        Z = tf.multiply(_X, self.filters)
+
+        # F 
+        filters = tf.reshape(self.filters, self.filter_reshape)
+
+        # Z
+        Z = tf.multiply(_X, filters)
         Z = tf.reduce_sum(Z, axis=(2, 3, 4))
         Z = Z + tf.reshape(self.bias, (1, 1, self.fout))
         Z = tf.reshape(Z, (N, self.h // self.sh, self.w // self.sw, self.fout))
 
+        # A
         A = self.activation.forward(Z)
         return A
         
@@ -190,10 +196,10 @@ class BioConvolution(Layer):
         DO = tf.reshape(DO, (N, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
         
         # F
-        # shape = (1, self.h // self.fh * self.w // self.fw, self.fh, self.fw, self.fin, self.fout)
-        
+        filters = tf.reshape(self.filters, self.filter_reshape)
+
         # DI
-        DI = tf.multiply(DO, self.filters)
+        DI = tf.multiply(DO, filters)
         DI = tf.reduce_sum(DI, axis=(2, 3, 5))
         DI = tf.reshape(DI, (N, self.h // self.sh, self.w // self.sw, self.fin))
 

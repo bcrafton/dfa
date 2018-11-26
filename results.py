@@ -72,7 +72,7 @@ imagenet_vgg_bp = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32,
 '''
 ################################################
 
-cifar10_bioconv_adam = {'benchmark':'cifar10_bioconv.py', 'epochs':100, 'batch_size':64, 'alpha':[3e-4, 1e-4, 3e-5], 'eps':[1e-4, 1e-5, 1e-6], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
+cifar10_bioconv_adam = {'benchmark':'cifar10_bioconv.py', 'epochs':100, 'batch_size':64, 'alpha':[3e-5, 1e-5, 3e-6], 'eps':[1e-4, 1e-5, 1e-6], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
 cifar10_bioconv_gd = {'benchmark':'cifar10_bioconv.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-1, 1e-2, 1e-3, 1e-4], 'eps':[1.], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['gd'], 'load':None}
 
 ################################################
