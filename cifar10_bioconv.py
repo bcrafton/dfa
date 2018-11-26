@@ -89,21 +89,21 @@ X = tf.placeholder(tf.float32, [args.batch_size, 30, 30, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
 Y = tf.placeholder(tf.float32, [args.batch_size, 10])
 
-l0 = BioConvolution(input_sizes=[batch_size, 30, 30, 3], filter_sizes=[3, 3, 3, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
+l0 = BioConvolution(input_sizes=[batch_size, 30, 30, 3], filter_sizes=[3, 3, 3, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
 l1 = MaxPool(size=[batch_size, 30, 30, 32], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
 l3 = MaxPool(size=[batch_size, 15, 15, 64], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l4 = BioConvolution(input_sizes=[batch_size, 8, 8, 64], filter_sizes=[2, 2, 64, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l4 = BioConvolution(input_sizes=[batch_size, 8, 8, 64], filter_sizes=[2, 2, 64, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
 l5 = MaxPool(size=[batch_size, 8, 8, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
 l6 = ConvToFullyConnected(shape=[4, 4, 128])
 
-l7 = FullyConnected(size=[4*4*128, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
+l7 = FullyConnected(size=[4*4*128, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
 l8 = Dropout(rate=dropout_rate)
 
-l9 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
+l9 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
 l10 = Dropout(rate=dropout_rate)
 
 l11 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc)

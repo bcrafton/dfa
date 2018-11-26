@@ -37,7 +37,7 @@ def image_to_patches(image, kernel_size, kernel_stride):
         sh, sw = kh, kw # stride = slice now.
         num_slices = sh * sw
     
-        pad = tf.pad(tensor=image, paddings=[[0, 0], [kh-1,kh-1], [kw-1,kw-1], [0,0]], mode='CONSTANT')
+        pad = tf.pad(tensor=image, paddings=[[0, 0], [kh // 2, kh // 2], [kw // 2, kw // 2], [0,0]], mode='CONSTANT')
     
         slices = []
         for ii in range(sh):
