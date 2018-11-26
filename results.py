@@ -34,7 +34,8 @@ cifar10_fc_dfa = {'benchmark':'cifar10_fc.py', 'epochs':500, 'batch_size':64, 'a
 
 cifar100_fc_bp = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
 cifar100_fc_dfa_adam = {'benchmark':'cifar100_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[3e-5], 'eps':[1e-4, 1e-5, 1e-6], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
-cifar100_fc_dfa_gd = {'benchmark':'cifar100_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[3e-5], 'eps':[1e-2, 3e-3], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['gd'], 'load':None}
+cifar100_fc_dfa_gd = {'benchmark':'cifar100_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-2, 3e-3], 'eps':[1.], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['gd'], 'load':None}
+cifar100_fc_dfa = cifar100_fc_dfa_adam
 
 ################################################
 
@@ -79,8 +80,8 @@ params = [mnist_fc_bp,      \
 # params = [cifar10_fc_bp]
 # params = [cifar10_fc_bp, cifar10_fc_dfa]
 
-# params = [cifar100_fc_bp, cifar100_fc_dfa]
-params = [cifar100_fc_dfa_adam, cifar100_fc_dfa_gd]
+params = [cifar100_fc_bp, cifar100_fc_dfa]
+# params = [cifar100_fc_dfa_adam, cifar100_fc_dfa_gd]
 # params = [cifar100_fc_bp]
 
 ################################################
