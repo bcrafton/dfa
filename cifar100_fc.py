@@ -70,7 +70,7 @@ weights = None
 if args.dfa:
     bias = 0.1
 else:
-    bias = 0.0
+    bias = 0.1
 
 ##############################################
 
@@ -87,16 +87,16 @@ X = tf.placeholder(tf.float32, [None, 3072])
 l0 = Dropout(rate=dropout_rate / 5.)
 
 l1 = FullyConnected(size=[3072, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1")
-l2 = Dropout(rate=dropout_rate/4.)
-l3 = FeedbackFC(size=[3072, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc1_fb", std=1., load=weights)
+l2 = Dropout(rate=dropout_rate)
+l3 = FeedbackFC(size=[3072, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc1_fb", std=None, load=weights)
 
 l4 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2")
-l5 = Dropout(rate=dropout_rate/2.)
-l6 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc2_fb", std=.1, load=weights)
+l5 = Dropout(rate=dropout_rate)
+l6 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc2_fb", std=None, load=weights)
 
 l7 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3")
 l8 = Dropout(rate=dropout_rate)
-l9 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc3_fb", std=.01, load=weights)
+l9 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc3_fb", std=None, load=weights)
 
 l10 = FullyConnected(size=[1000, 100], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc4")
 
@@ -211,10 +211,10 @@ for ii in range(EPOCHS):
     
     #############################
             
-    print ("train acc: %f test acc: %f" % (train_acc, test_acc))
+    print ("train acc: %f test acc: %f\n" % (train_acc, test_acc))
     
     f = open(filename, "a")
-    f.write("train acc: %f test acc: %f" % (train_acc, test_acc))
+    f.write("train acc: %f test acc: %f\n" % (train_acc, test_acc))
     f.close()
 
 ##############################################
