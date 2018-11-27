@@ -67,10 +67,14 @@ TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
+bias = 0.0
 if args.act == 'tanh':
     act = Tanh()
 elif args.act == 'relu':
     act = Relu()
+    bias = 0.1
+else:
+    assert(False)
 
 train_fc=True
 if args.load:
@@ -80,11 +84,6 @@ else:
 
 weights_fc=None
 weights_conv=args.load
-
-if args.dfa:
-    bias = 0.0
-else:
-    bias = 0.0
 
 ##############################################
 

@@ -82,8 +82,8 @@ params = [mnist_fc_bp,      \
 # params = [cifar100_fc_dfa_adam, cifar100_fc_dfa_gd]
 # params = [cifar100_fc_bp]
 
-# params = [cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
-params = [cifar100_conv_bp, cifar100_conv_dfa]
+params = [cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
+# params = [cifar100_conv_bp, cifar100_conv_dfa]
 
 ################################################
 
