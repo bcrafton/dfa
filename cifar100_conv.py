@@ -10,6 +10,8 @@ parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--eps', type=float, default=1.)
+parser.add_argument('--act', type=str, default='tanh')
+parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
@@ -64,6 +66,11 @@ EPOCHS = args.epochs
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
+
+if args.act == 'tanh':
+    act = Tanh()
+elif args.act == 'relu':
+    act = Relu()
 
 train_fc=True
 if args.load:
