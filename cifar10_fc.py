@@ -10,7 +10,9 @@ parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--eps', type=float, default=1.)
-parser.add_argument('--decay', type=float, default=0.99)
+parser.add_argument('--act', type=str, default='tanh')
+parser.add_argument('--dropout', type=float, default=0.5)
+parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -64,13 +66,14 @@ TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
-weights = 'cifar10_fc_weights.npy'
-weights = None
-
-if args.dfa:
+bias = 0.0
+if args.act == 'tanh':
+    act = Tanh()
+elif args.act == 'relu':
+    act = Relu()
     bias = 0.1
 else:
-    bias = 0.0
+    assert(False)
 
 ##############################################
 
@@ -86,15 +89,15 @@ X = tf.placeholder(tf.float32, [None, 3072])
 
 l0 = Dropout(rate=dropout_rate / 5.)
 
-l1 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1")
+l1 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=act, bias=bias, last_layer=False, name="fc1")
 l2 = Dropout(rate=dropout_rate)
 l3 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb", std=1., load=weights)
 
-l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2")
+l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=act, bias=bias, last_layer=False, name="fc2")
 l5 = Dropout(rate=dropout_rate)
 l6 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc2_fb", std=.1, load=weights)
 
-l7 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3")
+l7 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=act, bias=bias, last_layer=False, name="fc3")
 l8 = Dropout(rate=dropout_rate)
 l9 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc3_fb", std=.01, load=weights)
 
@@ -196,7 +199,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: args.dropout, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
         _count += BATCH_SIZE
@@ -225,7 +228,7 @@ for ii in range(EPOCHS):
     print ("train acc: %f test acc: %f" % (train_acc, test_acc))
     
     f = open(filename, "a")
-    f.write("train acc: %f test acc: %f" % (train_acc, test_acc))
+    f.write("train acc: %f test acc: %f\n" % (train_acc, test_acc))
     f.close()
 
 ##############################################

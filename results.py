@@ -29,26 +29,26 @@ def get_perms(param):
 # mnist_fc_bp = {'benchmark':'mnist_fc.py', 'epochs':300, 'batch_size':32, 'alpha':[0.05, 0.03], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':'gd', 'load':None}
 # mnist_fc_dfa = {'benchmark':'mnist_fc.py', 'epochs':300, 'batch_size':32, 'alpha':[0.1, 0.075, 0.05, 0.03], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':'gd', 'load':None}
 
-cifar10_fc_bp = {'benchmark':'cifar10_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
-cifar10_fc_dfa = {'benchmark':'cifar10_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
+cifar10_fc_bp = {'benchmark':'cifar10_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
+cifar10_fc_dfa = {'benchmark':'cifar10_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
+cifar10_fc_sparse = {'benchmark':'cifar10_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
 
-cifar100_fc_bp = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
-cifar100_fc_dfa_adam = {'benchmark':'cifar100_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[3e-5], 'eps':[1e-4, 1e-5, 1e-6], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
-cifar100_fc_dfa_gd = {'benchmark':'cifar100_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-2, 3e-3], 'eps':[1.], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['gd'], 'load':None}
-cifar100_fc_dfa = cifar100_fc_dfa_adam
+cifar100_fc_bp = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
+cifar100_fc_dfa = {'benchmark':'cifar100_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
+cifar100_fc_sparse = {'benchmark':'cifar100_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
 
 ################################################
 
 mnist_conv_bp = {'benchmark':'mnist_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':'gd', 'load':[None, './transfer/mnist_conv_weights.npy']}
 mnist_conv_dfa = {'benchmark':'mnist_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[0.01, 0.005], 'dfa':1, 'sparse':[0, 1], 'rank':0, 'init':'zero', 'opt':'gd', 'load':[None, './transfer/mnist_conv_weights.npy']}
 
-cifar10_conv_bp = {'benchmark':'cifar10_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
-cifar10_conv_dfa = {'benchmark':'cifar10_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
-cifar10_conv_sparse = {'benchmark':'cifar10_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
+cifar10_conv_bp = {'benchmark':'cifar10_conv.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
+cifar10_conv_dfa = {'benchmark':'cifar10_conv.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
+cifar10_conv_sparse = {'benchmark':'cifar10_conv.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
 
-cifar100_conv_bp = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
-cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
-cifar100_conv_sparse = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
+cifar100_conv_bp = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
+cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
+cifar100_conv_sparse = {'benchmark':'cifar100_conv.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
 
 
 ################################################
@@ -88,6 +88,8 @@ params = [mnist_fc_bp,      \
 # params = [cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
 # params = [cifar100_conv_bp, cifar100_conv_dfa]
 # params = [cifar10_conv_sparse, cifar100_conv_sparse]
+
+params = [cifar10_fc_bp, cifar10_fc_dfa, cifar10_fc_sparse, cifar100_fc_bp, cifar100_fc_dfa, cifar100_fc_sparse]
 params = [cifar10_conv_bp, cifar10_conv_dfa, cifar10_conv_sparse, cifar100_conv_bp, cifar100_conv_dfa, cifar100_conv_sparse]
 
 ################################################
