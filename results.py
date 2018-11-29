@@ -44,9 +44,12 @@ mnist_conv_dfa = {'benchmark':'mnist_conv.py', 'epochs':300, 'batch_size':64, 'a
 
 cifar10_conv_bp = {'benchmark':'cifar10_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
 cifar10_conv_dfa = {'benchmark':'cifar10_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
+cifar10_conv_sparse = {'benchmark':'cifar10_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
 
 cifar100_conv_bp = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':0, 'sparse':0, 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
 cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
+cifar100_conv_sparse = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':[None], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'dropout':[0.25, 0.5]}
+
 
 ################################################
 '''
@@ -82,8 +85,10 @@ params = [mnist_fc_bp,      \
 # params = [cifar100_fc_dfa_adam, cifar100_fc_dfa_gd]
 # params = [cifar100_fc_bp]
 
-params = [cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
+# params = [cifar10_conv_bp, cifar10_conv_dfa, cifar100_conv_bp, cifar100_conv_dfa]
 # params = [cifar100_conv_bp, cifar100_conv_dfa]
+# params = [cifar10_conv_sparse, cifar100_conv_sparse]
+params = [cifar10_conv_bp, cifar10_conv_dfa, cifar10_conv_sparse, cifar100_conv_bp, cifar100_conv_dfa, cifar100_conv_sparse]
 
 ################################################
 
