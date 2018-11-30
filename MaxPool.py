@@ -55,3 +55,18 @@ class MaxPool(Layer):
         return []
         
     ###################################################################   
+    
+    def lel_backward(self, AI, AO, E, DO, Y):
+        grad = gen_nn_ops.max_pool_grad(grad=DO, orig_input=AI, orig_output=AO, ksize=self.ksize, strides=self.strides, padding=self.padding)
+        # grad = tf.Print(grad, [tf.shape(grad), tf.count_nonzero(tf.equal(grad, 1)), tf.count_nonzero(tf.equal(grad, 2)), tf.count_nonzero(tf.equal(grad, 3)), tf.count_nonzero(tf.equal(grad, 4)), tf.count_nonzero(tf.equal(grad, 5))], message="", summarize=1000)
+        return grad
+        
+    def lel_gv(self, AI, AO, E, DO, Y):
+        return []
+        
+    def lel(self, AI, AO, E, DO, Y): 
+        return []
+        
+    ###################################################################
+    
+    

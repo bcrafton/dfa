@@ -11,7 +11,7 @@ parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--decay', type=float, default=0.99)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--alg', type=str, default='bp')
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
@@ -62,11 +62,8 @@ TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
-if args.dfa:
-    bias = 0.0
-else:
-    bias = 0.0
-    
+bias = 0.0
+
 ##############################################
 
 tf.set_random_seed(0)
@@ -94,10 +91,14 @@ predict = model.predict(X=X)
 weights = model.get_weights()
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
-    if args.dfa:
+    if args.alg == 'dfa':
         grads_and_vars = model.dfa_gvs(X=X, Y=Y)
-    else:
+    if args.alg == 'lel':
+        grads_and_vars = model.lel_gvs(X=X, Y=Y)
+    elif args.alg == 'bp':
         grads_and_vars = model.gvs(X=X, Y=Y)
+    else:
+        assert(False)
         
     if args.opt == "adam":
         train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
@@ -109,10 +110,14 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         assert(False)
 
 else:
-    if args.dfa:
+    if args.alg == 'dfa':
         train = model.dfa(X=X, Y=Y)
-    else:
+    if args.alg == 'lel':
+        train = model.lel(X=X, Y=Y)
+    elif args.alg == 'bp':
         train = model.train(X=X, Y=Y)
+    else:
+        assert(False)
     
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))

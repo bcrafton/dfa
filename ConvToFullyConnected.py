@@ -44,3 +44,12 @@ class ConvToFullyConnected(Layer):
         return []
         
     ###################################################################    
+    
+    def lel_backward(self, AI, AO, E, DO, Y):
+        return tf.ones(shape=(tf.shape(AI)))
+        
+    def lel_gv(self, AI, AO, E, DO, Y):
+        return []
+        
+    def lel(self, AI, AO, E, DO, Y): 
+        return []

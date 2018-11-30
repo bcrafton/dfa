@@ -7,8 +7,10 @@ from Layer import Layer
 from Activation import Activation
 from Activation import Sigmoid
 
+from FeedbackMatrix import FeedbackMatrix
+
 class FeedbackConv(Layer):
-    num = 0
+
     def __init__(self, size : tuple, num_classes : int, sparse : int, rank : int, name=None, load=None):
         self.size = size
         self.num_classes = num_classes
@@ -16,56 +18,14 @@ class FeedbackConv(Layer):
         self.rank = rank
         self.batch_size, self.h, self.w, self.f = self.size
         self.name = name
-
-        if self.rank and self.sparse:
-            assert(self.rank >= self.sparse)
+        self.num_output = self.h * self.w * self.f
 
         if load:
             weight_dict = np.load(load).item()
             self.B = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
         else:
-            #### CREATE THE SPARSE MASK ####
-            if self.sparse:
-                self.mask = np.zeros(shape=(self.f * self.h * self.w, self.num_classes))
-                for ii in range(self.f * self.h * self.w):
-                    if self.rank > 0:
-                        idx = np.random.randint(0, self.rank, size=self.sparse)
-                    else:
-                        idx = np.random.randint(0, self.num_classes, size=self.sparse)
-                    self.mask[ii][idx] = 1.0
-                    
-                self.mask = np.transpose(self.mask)
-            else:
-                self.mask = np.ones(shape=(self.num_classes, self.f * self.h * self.w))
-            
-            #### IF MATRIX HAS USER-SPECIFIED RANK ####
-            sqrt_fan_out = np.sqrt(self.f * self.h * self.w)
-            
-            if self.rank > 0:
-                hi = 1.0 / sqrt_fan_out
-                lo = -hi
-                
-                b = np.zeros(shape=(self.f * self.h * self.w, self.num_classes))
-                for ii in range(self.rank):
-                    tmp1 = np.random.uniform(lo, hi, size=(self.f * self.h * self.w, 1))
-                    tmp2 = np.random.uniform(lo, hi, size=(1, self.num_classes))
-                    b = b + (1.0 / self.rank) * np.dot(tmp1, tmp2)
-
-                b = np.transpose(b)
-                b = b * self.mask
-                b = b * (hi / np.std(b))
-                assert(np.linalg.matrix_rank(b) == self.rank)
-                
-                self.B = tf.cast(tf.Variable(b), tf.float32)
-            else:
-                hi = 1.0 / sqrt_fan_out
-                lo = -hi
-
-                b = np.random.uniform(lo, hi, size=(self.num_classes, self.f * self.h * self.w))
-                b = b * self.mask
-                self.B = tf.cast(tf.Variable(b), tf.float32)
-
-            FeedbackConv.num = FeedbackConv.num + 1
+            b = FeedbackMatrix(size=(self.num_classes, self.num_output), sparse=self.sparse, rank=self.rank)
+            self.B = tf.cast(tf.Variable(b), tf.float32) 
 
     ###################################################################
     
@@ -108,6 +68,25 @@ class FeedbackConv(Layer):
         
     ###################################################################   
         
+    def lel_backward(self, AI, AO, E, DO, Y):
+        shape = tf.shape(AO)
+        N = shape[0]
+        AO = tf.reshape(AO, (N, self.num_output))
+        S = tf.matmul(AO, tf.transpose(self.B))
+        # should be doing cross entropy here.
+        ES = tf.subtract(S, Y)
+        DO = tf.matmul(ES, self.B)
+        DO = tf.reshape(DO, self.size)
+        # (* activation.gradient) and (* AI) occur in the actual layer itself.
+        return DO
+        
+    def lel_gv(self, AI, AO, E, DO, Y):
+        return []
+        
+    def lel(self, AI, AO, E, DO, Y): 
+        return []
+        
+    ###################################################################
         
         
-        
+
