@@ -9,13 +9,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--decay', type=float, default=0.99)
+parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
-parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="gd")
+parser.add_argument('--init', type=str, default="alexnet")
+parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="imagenet_alexnet")
 args = parser.parse_args()
@@ -290,7 +290,7 @@ model = Model(layers=[l0, l1, l3, l4, l6, l8, l10, l11, l13, l14, l15, l17, l18,
 
 predict = tf.nn.softmax(model.predict(X=features))
 
-if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt = "momentum":
+if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt == "momentum":
     if args.dfa:
         grads_and_vars = model.dfa_gvs(X=features, Y=labels)
     else:
@@ -345,17 +345,15 @@ train_accs = []
 val_accs = []
 
 alpha = args.alpha
-phase = 0
+# phase = 0
 
 for ii in range(0, epochs):
 
-    '''
     if args.opt == 'decay' or args.opt == 'gd' or args.opt == 'momentum':
         decay = np.power(args.decay, ii)
         lr = args.alpha * decay
     else:
         lr = args.alpha
-    '''
 
     print (ii)
 
@@ -398,21 +396,23 @@ for ii in range(0, epochs):
 
     val_accs.append(val_acc)
 
+    '''
     if phase == 0:
         phase = 1
         print ('phase 1')
     elif phase == 1:
-        dacc = test_accs[-1] - test_accs[-2]
-        if dacc <= 0.01:
+        dacc = train_accs[-1] - train_accs[-2]
+        if dacc <= 0.001:
             alpha = 0.001
             phase = 2
             print ('phase 2')
     elif phase == 2:
-        dacc = test_accs[-1] - test_accs[-2]
-        if dacc <= 0.001:
-            alpha = 0.0001
+        dacc = train_accs[-1] - train_accs[-2]
+        if dacc <= 0.0001:
+            alpha = 0.0005
             phase = 3
             print ('phase 3')
+    '''
 
     if args.save:
         [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: lr})
