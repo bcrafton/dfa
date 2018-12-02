@@ -257,32 +257,32 @@ learning_rate = tf.placeholder(tf.float32, shape=())
 
 l0 = BioConvolution(input_sizes=[batch_size, 225, 225, 3], filter_sizes=[5, 5, 3, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 5, 5, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv1", load=weights_conv, train=train_conv)
 
-l1 = BioConvolution(input_sizes=[batch_size, 45, 45, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 3, 3, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv2", load=weights_conv, train=train_conv)
+l1 = BioConvolution(input_sizes=[batch_size, 45, 45, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 3, 3, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv2", load=weights_conv, train=train_conv)
 
-l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv3", load=weights_conv, train=train_conv)
+l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv3", load=weights_conv, train=train_conv)
 
-l5 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv)
+l3 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv4", load=weights_conv, train=train_conv)
 
-l5 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 128], num_classes=num_classes, init_filters=args.init, strides=[1, 3, 3, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv)
+l4 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 128], num_classes=num_classes, init_filters=args.init, strides=[1, 3, 3, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv5", load=weights_conv, train=train_conv)
 
-l8 = ConvToFullyConnected(shape=[5, 5, 128])
+l5 = ConvToFullyConnected(shape=[5, 5, 128])
 
-l9 = FullyConnected(size=[5*5*128, 2048], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="fc1", load=weights_fc, train=train_fc)
-l10 = Dropout(rate=dropout_rate)
+l6 = FullyConnected(size=[5*5*128, 2048], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="fc1", load=weights_fc, train=train_fc)
+l7 = Dropout(rate=dropout_rate)
 
-l11 = FullyConnected(size=[2048, 2048], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="fc2", load=weights_fc, train=train_fc)
-l12 = Dropout(rate=dropout_rate)
+l8 = FullyConnected(size=[2048, 2048], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="fc2", load=weights_fc, train=train_fc)
+l9 = Dropout(rate=dropout_rate)
 
-l13 = FullyConnected(size=[2048, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, name="fc3", load=weights_fc, train=train_fc)
+l10 = FullyConnected(size=[2048, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, name="fc3", load=weights_fc, train=train_fc)
 
 ###############################################################
 
 # model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18])
-model = Model(layers=[l0, l1, l3, l4, l6, l8, l10, l11, l13, l14, l15, l17, l18, l20])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10])
 
 predict = tf.nn.softmax(model.predict(X=features))
 
-if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt = "momentum":
+if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt == "momentum":
     if args.dfa:
         grads_and_vars = model.dfa_gvs(X=features, Y=labels)
     else:
@@ -348,6 +348,8 @@ for ii in range(0, epochs):
     else:
         lr = args.alpha
     '''
+
+    lr = args.alpha
 
     print (ii)
 

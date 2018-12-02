@@ -6,17 +6,17 @@ import sys
 ##############################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, default=10000)
+parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--eps', type=float, default=1.)
-parser.add_argument('--decay', type=float, default=0.99)
-parser.add_argument('--gpu', type=int, default=1)
+parser.add_argument('--decay', type=float, default=1.)
+parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="gd")
+parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="cifar10_conv_weights")
 parser.add_argument('--load', type=str, default=None)
@@ -85,22 +85,22 @@ tf.reset_default_graph()
 batch_size = tf.placeholder(tf.int32, shape=())
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
-X = tf.placeholder(tf.float32, [args.batch_size, 30, 30, 3])
+X = tf.placeholder(tf.float32, [args.batch_size, 32, 32, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
 Y = tf.placeholder(tf.float32, [args.batch_size, 10])
 
-l0 = BioConvolution(input_sizes=[batch_size, 30, 30, 3], filter_sizes=[3, 3, 3, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
-l1 = MaxPool(size=[batch_size, 30, 30, 32], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l0 = BioConvolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[4, 4, 3, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
+l1 = MaxPool(size=[batch_size, 32, 32, 32], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l2 = BioConvolution(input_sizes=[batch_size, 15, 15, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
-# l3 = MaxPool(size=[batch_size, 15, 15, 64], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l2 = BioConvolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[4, 4, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l3 = MaxPool(size=[batch_size, 16, 16, 64], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l4 = BioConvolution(input_sizes=[batch_size, 15, 15, 64], filter_sizes=[3, 3, 64, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
-l5 = MaxPool(size=[batch_size, 15, 15, 64], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l4 = BioConvolution(input_sizes=[batch_size, 8, 8, 64], filter_sizes=[4, 4, 64, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l5 = MaxPool(size=[batch_size, 8, 8, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l6 = ConvToFullyConnected(shape=[8, 8, 64])
+l6 = ConvToFullyConnected(shape=[4, 4, 128])
 
-l7 = FullyConnected(size=[8*8*64, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
+l7 = FullyConnected(size=[4 * 4 * 128, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
 l8 = Dropout(rate=dropout_rate)
 
 l9 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
@@ -110,7 +110,7 @@ l11 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, al
 
 ##############################################
 
-model = Model(layers=[l0, l1, l2, l4, l5, l6, l7, l8, l9, l10, l11])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11])
 
 predict = model.predict(X=X)
 # l1_forward = model.up_to(X, 1)
@@ -151,11 +151,11 @@ tf.local_variables_initializer().run()
 (x_train, y_train), (x_test, y_test) = cifar10
 
 x_train = x_train.reshape(TRAIN_EXAMPLES, 32, 32, 3)
-x_train = x_train[:, 1:31, 1:31, :]
+# x_train = x_train[:, 1:31, 1:31, :]
 y_train = keras.utils.to_categorical(y_train, 10)
 
 x_test = x_test.reshape(TEST_EXAMPLES, 32, 32, 3)
-x_test = x_test[:, 1:31, 1:31, :]
+# x_test = x_test[:, 1:31, 1:31, :]
 y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################

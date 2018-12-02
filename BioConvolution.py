@@ -82,7 +82,6 @@ def image_to_patches(image, kernel_size, kernel_stride):
         
         return patches
 
-    
 def patches_to_image(patches, img_height, img_width):
     shape = tf.shape(patches)
     N = shape[0]
@@ -98,12 +97,12 @@ def patches_to_image(patches, img_height, img_width):
     num_cols = width // patch_width
 
     img = tf.transpose(patches, [0, 1, 3, 2, 4])
-    img = tf.reshape(img, [N, num_rows, num_cols * patch_width, patch_height, -1])
+    img = tf.reshape(img, [N, num_rows, num_cols * patch_width, patch_height, channels])
     img = tf.transpose(img, [0, 1, 3, 2, 4])
-    img = tf.reshape(img, [N, num_rows * patch_height, width, -1])
+    img = tf.reshape(img, [N, num_rows * patch_height, width, channels])
     
     return img
-    
+   
 class BioConvolution(Layer):
 
     def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None, load=None, train=True):
@@ -177,6 +176,8 @@ class BioConvolution(Layer):
         Z = Z + tf.reshape(self.bias, (1, 1, self.fout))
         Z = tf.reshape(Z, (N, self.h // self.sh, self.w // self.sw, self.fout))
 
+        # Z = tf.Print(Z, [tf.shape(Z)], message='')
+
         # A
         A = self.activation.forward(Z)
         return A
@@ -200,8 +201,14 @@ class BioConvolution(Layer):
 
         # DI
         DI = tf.multiply(DO, filters)
-        DI = tf.reduce_sum(DI, axis=(2, 3, 5))
-        DI = tf.reshape(DI, (N, self.h // self.sh, self.w // self.sw, self.fin))
+        if (self.sh == self.fh):
+            DI = tf.reduce_sum(DI, axis=(5))
+            DI = patches_to_image(DI, self.h, self.w)
+        else:
+            DI = tf.reduce_sum(DI, axis=(2, 3, 5))
+            DI = tf.reshape(DI, (N, self.h // self.sh, self.w // self.sw, self.fin))
+
+        # assert(False)
 
         return DI
 
