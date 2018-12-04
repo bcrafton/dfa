@@ -74,7 +74,9 @@ class FeedbackConv(Layer):
         AO = tf.reshape(AO, (N, self.num_output))
         S = tf.matmul(AO, tf.transpose(self.B))
         # should be doing cross entropy here.
-        ES = tf.subtract(S, Y)
+        # is this right ?
+        # just adding softmax ?
+        ES = tf.subtract(tf.nn.softmax(S), Y)
         DO = tf.matmul(ES, self.B)
         DO = tf.reshape(DO, self.size)
         # (* activation.gradient) and (* AI) occur in the actual layer itself.

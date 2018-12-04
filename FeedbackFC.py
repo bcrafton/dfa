@@ -69,7 +69,9 @@ class FeedbackFC(Layer):
     def lel_backward(self, AI, AO, E, DO, Y):
         S = tf.matmul(AO, tf.transpose(self.B))
         # should be doing cross entropy here.
-        ES = tf.subtract(S, Y)
+        # is this right ?
+        # just adding softmax ?
+        ES = tf.subtract(tf.nn.softmax(S), Y)
         DO = tf.matmul(ES, self.B)
         # (* activation.gradient) and (* AI) occur in the actual layer itself.
         return DO
