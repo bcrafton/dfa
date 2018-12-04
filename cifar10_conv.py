@@ -143,8 +143,15 @@ else:
     else:
         train = model.train(X=X, Y=Y)
 
+# argmax axis = 1, want to argmax along the index, not batch
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
+
+# predictions: A Tensor of type float32. A batch_size x classes tensor.
+# targets: A Tensor. Must be one of the following types: int32, int64. A batch_size vector of class ids.
+# k: An int. Number of top elements to look at for computing precision.
+top5 = tf.nn.in_top_k(predictions=predict, targets=tf.argmax(Y,1), k=5)
+total_top5 = tf.reduce_sum(tf.cast(top5, tf.float32))
 
 ##############################################
 
@@ -173,6 +180,9 @@ f.close()
 train_accs = []
 test_accs = []
 
+train_accs_top5 = []
+test_accs_top5 = []
+
 for ii in range(EPOCHS):
     if args.opt == 'decay' or args.opt == 'gd':
         decay = np.power(args.decay, ii)
@@ -186,37 +196,48 @@ for ii in range(EPOCHS):
     
     _count = 0
     _total_correct = 0
+    _total_top5 = 0
     
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+        _correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
+        _total_top5 += _top5
         _count += BATCH_SIZE
 
     train_acc = 1.0 * _total_correct / _count
     train_accs.append(train_acc)
 
+    train_acc_top5 = 1.0 * _total_top5 / _count
+    train_accs_top5.append(train_acc_top5)
+
     #############################
 
     _count = 0
     _total_correct = 0
-
+    _total_top5 = 0
+    
     for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
         xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
+        _correct, _top5 = sess.run([total_correct, total_top5], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
         
         _total_correct += _correct
+        _total_top5 += _top5
         _count += BATCH_SIZE
         
     test_acc = 1.0 * _total_correct / _count
     test_accs.append(test_acc)
-    
+
+    test_acc_top5 = 1.0 * _total_top5 / _count
+    test_accs_top5.append(test_acc_top5)
+
     #############################
             
     print ("train acc: %f test acc: %f" % (train_acc, test_acc))
+    print ("train acc top 5: %f test acc top 5: %f" % (train_acc_top5, test_acc_top5))
     
     f = open(filename, "a")
     f.write(str(test_acc) + "\n")
