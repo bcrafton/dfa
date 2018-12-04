@@ -27,14 +27,6 @@ class FeedbackFC(Layer):
         else:
             b = FeedbackMatrix(size=(self.num_classes, self.output_size), sparse=self.sparse, rank=self.rank)
             self.B = tf.cast(tf.Variable(b), tf.float32) 
-  
-            '''
-            print("rank:", np.linalg.matrix_rank(b))
-            print("sparse: ", np.sum(b != 0, axis=0))
-            D, V = np.linalg.eig( np.dot(b, b.T) )
-            print(D)
-            print(np.max(b.T), np.min(b.T))
-            '''
 
     def get_weights(self):
         return [(self.name, self.B)]
@@ -74,7 +66,26 @@ class FeedbackFC(Layer):
         
     ###################################################################  
         
+    # > https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html
+    # > https://www.ics.uci.edu/~pjsadows/notes.pdf
+    # > https://deepnotes.io/softmax-crossentropy
+    def lel_backward(self, AI, AO, E, DO, Y):
+        S = tf.matmul(AO, tf.transpose(self.B))
+        # should be doing cross entropy here.
+        # is this right ?
+        # just adding softmax ?
+        ES = tf.subtract(tf.nn.softmax(S), Y)
+        DO = tf.matmul(ES, self.B)
+        # (* activation.gradient) and (* AI) occur in the actual layer itself.
+        return DO
         
+    def lel_gv(self, AI, AO, E, DO, Y):
+        return []
+        
+    def lel(self, AI, AO, E, DO, Y): 
+        return []
+        
+    ###################################################################  
         
         
         

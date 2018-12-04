@@ -43,3 +43,17 @@ class Dropout(Layer):
 
     def dfa(self, AI, AO, E, DO):
         return []
+
+    ###################################################################
+
+    def lel_backward(self, AI, AO, E, DO, Y):
+        return DO * self.dropout_mask
+        
+    def lel_gv(self, AI, AO, E, DO, Y):
+        return []
+        
+    def lel(self, AI, AO, E, DO, Y): 
+        return []
+        
+        
+

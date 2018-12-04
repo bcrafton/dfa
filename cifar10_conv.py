@@ -11,7 +11,7 @@ parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--decay', type=float, default=0.99)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--alg', type=str, default='bp')
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
@@ -73,10 +73,7 @@ else:
 weights_fc=None
 weights_conv=args.load
 
-if args.dfa:
-    bias = 0.0
-else:
-    bias = 0.0
+bias = 0.0
 
 ##############################################
 
@@ -123,10 +120,14 @@ predict = model.predict(X=X)
 weights = model.get_weights()
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
-    if args.dfa:
+    if args.alg == 'dfa':
         grads_and_vars = model.dfa_gvs(X=X, Y=Y)
-    else:
+    if args.alg == 'lel':
+        grads_and_vars = model.lel_gvs(X=X, Y=Y)
+    elif args.alg == 'bp':
         grads_and_vars = model.gvs(X=X, Y=Y)
+    else:
+        assert(False)
         
     if args.opt == "adam":
         train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
@@ -138,10 +139,14 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         assert(False)
 
 else:
-    if args.dfa:
+    if args.alg == 'dfa':
         train = model.dfa(X=X, Y=Y)
-    else:
+    if args.alg == 'lel':
+        train = model.lel(X=X, Y=Y)
+    elif args.alg == 'bp':
         train = model.train(X=X, Y=Y)
+    else:
+        assert(False)
 
 # argmax axis = 1, want to argmax along the index, not batch
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
@@ -199,6 +204,8 @@ for ii in range(EPOCHS):
     _total_top5 = 0
     
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
+        print (jj)
+        
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         _correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
