@@ -66,6 +66,9 @@ class FeedbackFC(Layer):
         
     ###################################################################  
         
+    # > https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html
+    # > https://www.ics.uci.edu/~pjsadows/notes.pdf
+    # > https://deepnotes.io/softmax-crossentropy
     def lel_backward(self, AI, AO, E, DO, Y):
         S = tf.matmul(AO, tf.transpose(self.B))
         # should be doing cross entropy here.

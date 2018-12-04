@@ -68,6 +68,9 @@ class FeedbackConv(Layer):
         
     ###################################################################   
         
+    # > https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html
+    # > https://www.ics.uci.edu/~pjsadows/notes.pdf
+    # > https://deepnotes.io/softmax-crossentropy
     def lel_backward(self, AI, AO, E, DO, Y):
         shape = tf.shape(AO)
         N = shape[0]
