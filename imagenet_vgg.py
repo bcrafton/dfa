@@ -9,7 +9,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--decay', type=float, default=0.99)
+parser.add_argument('--decay', type=float, default=1.)
+parser.add_argument('--eps', type=float, default=1.)
+parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -294,16 +296,16 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13
 
 predict = tf.nn.softmax(model.predict(X=features))
 
-if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt = "momentum":
+if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt == "momentum":
     if args.dfa:
         grads_and_vars = model.dfa_gvs(X=features, Y=labels)
     else:
         grads_and_vars = model.gvs(X=features, Y=labels)
         
     if args.opt == "adam":
-        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "rms":
-        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "decay":
         train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "momentum":
@@ -361,6 +363,8 @@ for ii in range(0, epochs):
         lr = args.alpha
     '''
 
+    lr = alpha
+
     print (ii)
 
     sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
@@ -370,7 +374,7 @@ for ii in range(0, epochs):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: 0.5, learning_rate: lr})
+        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
         train_correct += _total_correct
         train_total += batch_size
         train_acc = train_correct / train_total
@@ -406,15 +410,15 @@ for ii in range(0, epochs):
         phase = 1
         print ('phase 1')
     elif phase == 1:
-        dacc = test_accs[-1] - test_accs[-2]
-        if dacc <= 0.01:
+        dacc = train_accs[-1] - train_accs[-2]
+        if dacc <= 0.001:
             alpha = 0.001
             phase = 2
             print ('phase 2')
     elif phase == 2:
-        dacc = test_accs[-1] - test_accs[-2]
-        if dacc <= 0.001:
-            alpha = 0.0001
+        dacc = train_accs[-1] - train_accs[-2]
+        if dacc <= 0.0001:
+            alpha = 0.0005
             phase = 3
             print ('phase 3')
 

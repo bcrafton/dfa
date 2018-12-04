@@ -70,7 +70,11 @@ cifar100_conv_dfa = {'benchmark':'cifar100_conv.py', 'epochs':300, 'batch_size':
 imagenet_alexnet_bp = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[0.01], 'eps':[1.], 'dropout':[0.5], 'dfa':0, 'sparse':0, 'rank':0, 'init':['alexnet'], 'opt':'adam', 'load':None}
 imagenet_alexnet_dfa = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[0.01], 'eps':[1.], 'dropout':[0.5], 'dfa':1, 'sparse':0, 'rank':0, 'init':['zero'], 'opt':'adam', 'load':None}
 imagenet_alexnet_sparse = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[0.01], 'eps':[1.], 'dropout':[0.5], 'dfa':1, 'sparse':1, 'rank':0, 'init':['zero'], 'opt':'adam', 'load':None}
-# imagenet_vgg_bp = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32, 'alpha':[0.01], 'dfa':0, 'sparse':0, 'rank':0, 'init':['sqrt_fan_in'], 'opt':'gd', 'load':None}
+imagenet_vgg_bp_adam = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32, 'alpha':[0.001], 'eps':[0.25, 1.], 'dropout':0.5, 'dfa':0, 'sparse':0, 'rank':0, 'init':'alexnet', 'opt':'adam', 'load':None}
+imagenet_vgg_bp_momentum = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32, 'alpha':[0.001], 'eps':[1.], 'dropout':0.5, 'dfa':0, 'sparse':0, 'rank':0, 'init':'alexnet', 'opt':'momentum', 'load':None}
+
+imagenet_vgg_dfa = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32, 'alpha':[0.001], 'eps':[1.], 'dropout':[0.5], 'dfa':0, 'sparse':0, 'rank':0, 'init':['zero'], 'opt':'adam', 'load':None}
+imagenet_vgg_sparse = {'benchmark':'imagenet_vgg.py', 'epochs':100, 'batch_size':32, 'alpha':[0.001], 'eps':[1.], 'dropout':[0.5], 'dfa':1, 'sparse':1, 'rank':0, 'init':['zero'], 'opt':'adam', 'load':None}
 
 ################################################
 
@@ -108,7 +112,9 @@ params = [mnist_fc_bp,      \
 # params = [cifar10_bioconv_adam, cifar10_bioconv_gd]
 
 # params = [imagenet_alexnet_bp, imagenet_alexnet_dfa, imagenet_alexnet_sparse]
-params = [imagenet_alexnet_dfa, imagenet_alexnet_sparse]
+# params = [imagenet_alexnet_dfa, imagenet_alexnet_sparse]
+
+params = [imagenet_vgg_bp_adam, imagenet_vgg_bp_momentum]
 
 ################################################
 
