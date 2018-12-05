@@ -19,28 +19,33 @@ for ii in range(num_runs):
     param = runs[ii]
 
     # figure out the name of the param
-    name = '%s_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
+    name = '%s_%f_%f_%s_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['eps'], param['act'], param['dropout'], param['dfa'], param['sparse'], param['init'], param['opt'])
     if param['load']:
         name += '_transfer'
     name = name + '.npy'
 
     # load the results
-    res = np.load(name).item()
-    
-    if param['load']:
-        transfer = 1
-    else:
-        transfer = 0
-    
-    key = (param['benchmark'], param['dfa'], param['sparse'], transfer)
-    val = max(res['test_acc'])
-    
-    if key in results.keys():
-        # use an if instead of max because we gonna want to save the winner run information
-        if results[key][0] < val:
+    try:
+        res = np.load(name).item()
+        
+        if param['load']:
+            transfer = 1
+        else:
+            transfer = 0
+        
+        key = (param['benchmark'], param['dfa'], param['sparse'], transfer)
+        val = max(res['test_acc'])
+
+        print (name, val)
+        
+        if key in results.keys():
+            # use an if instead of max because we gonna want to save the winner run information
+            if results[key][0] < val:
+                results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
+        else:
             results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
-    else:
-        results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
+    except:
+        print ("Could not find: %s" % name)
             
 for key in sorted(results.keys()):   
     print (key, results[key])
@@ -50,3 +55,4 @@ for key in sorted(results.keys()):
 
 
         
+

@@ -13,7 +13,7 @@ np.set_printoptions(threshold=np.inf)
 
 class FeedbackFC(Layer):
     num = 0
-    def __init__(self, size : tuple, num_classes : int, sparse : int, rank : int, name=None, load=None):
+    def __init__(self, size : tuple, num_classes : int, sparse : int, rank : int, name=None, load=None, std=None):
         self.size = size
         self.num_classes = num_classes
         self.sparse = sparse
@@ -24,8 +24,14 @@ class FeedbackFC(Layer):
         if load:
             weight_dict = np.load(load).item()
             self.B = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
+        elif std:
+            # b = np.random.normal(loc=0., scale=std, size=(self.num_classes, self.output_size))
+            # b = np.random.exponential(scale=std, size=(self.num_classes, self.output_size))
+            b = np.random.uniform(low=-std, high=std, size=(self.num_classes, self.output_size))
+            self.B = tf.cast(tf.Variable(b), tf.float32)
         else:
             b = FeedbackMatrix(size=(self.num_classes, self.output_size), sparse=self.sparse, rank=self.rank)
+            # b = np.random.normal(loc=0., scale=1., size=(self.num_classes, self.output_size))
             self.B = tf.cast(tf.Variable(b), tf.float32) 
 
     def get_weights(self):
