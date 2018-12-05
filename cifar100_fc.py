@@ -14,7 +14,7 @@ parser.add_argument('--act', type=str, default='tanh')
 parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--alg', type=str, default='bp')
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
@@ -91,15 +91,15 @@ l0 = Dropout(rate=dropout_rate / 5.)
 
 l1 = FullyConnected(size=[3072, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=act, bias=bias, last_layer=False, name="fc1")
 l2 = Dropout(rate=dropout_rate)
-l3 = FeedbackFC(size=[3072, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc1_fb", std=None, load=weights)
+l3 = FeedbackFC(size=[3072, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
 l4 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=act, bias=bias, last_layer=False, name="fc2")
 l5 = Dropout(rate=dropout_rate)
-l6 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc2_fb", std=None, load=weights)
+l6 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
 l7 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=act, bias=bias, last_layer=False, name="fc3")
 l8 = Dropout(rate=dropout_rate)
-l9 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc3_fb", std=None, load=weights)
+l9 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc3_fb")
 
 l10 = FullyConnected(size=[1000, 100], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc4")
 
@@ -112,10 +112,14 @@ predict = model.predict(X=X)
 weights = model.get_weights()
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
-    if args.dfa:
+    if args.alg == 'dfa':
         grads_and_vars = model.dfa_gvs(X=X, Y=Y)
-    else:
+    elif args.alg == 'lel':
+        grads_and_vars = model.lel_gvs(X=X, Y=Y)
+    elif args.alg == 'bp':
         grads_and_vars = model.gvs(X=X, Y=Y)
+    else:
+        assert(False)
         
     if args.opt == "adam":
         train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
@@ -127,10 +131,14 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         assert(False)
 
 else:
-    if args.dfa:
+    if args.alg == 'dfa':
         train = model.dfa(X=X, Y=Y)
-    else:
+    elif args.alg == 'lel':
+        train = model.lel(X=X, Y=Y)
+    elif args.alg == 'bp':
         train = model.train(X=X, Y=Y)
+    else:
+        assert(False)
 
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
@@ -143,8 +151,10 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar100
 
-assert(np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3))
-assert(np.shape(x_test) == (TEST_EXAMPLES, 32, 32, 3))
+if (np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3)):
+    x_train = np.transpose(x_train, (0, 1, 2, 3))
+if (np.shape(x_test) == (TEST_EXAMPLES, 32, 32, 3)):
+    x_test = np.transpose(x_test, (0, 1, 2, 3))
 
 mean = np.mean(x_train, axis=(0, 1, 2), keepdims=True)
 std = np.std(x_train, axis=(0, 1, 2), keepdims=True)
