@@ -41,3 +41,14 @@ class Layer:
         pass
         
     ###################################################################   
+    
+    def lel_backward(self, AI, AO, E, DO, Y):
+        assert(False)
+        
+    def lel_gv(self, AI, AO, E, DO, Y):
+        assert(False)
+        
+    def lel(self, AI, AO, E, DO, Y): 
+        assert(False)
+        
+    ###################################################################   

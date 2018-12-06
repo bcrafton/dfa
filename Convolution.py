@@ -127,6 +127,30 @@ class Convolution(Layer):
         
     ###################################################################    
         
+    def lel_backward(self, AI, AO, E, DO, Y):
+        return tf.ones(shape=(tf.shape(AI)))
         
+    def lel_gv(self, AI, AO, E, DO, Y):
+        if not self._train:
+            return []
+    
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
+        DB = tf.reduce_sum(DO, axis=[0, 1, 2])
+        return [(DF, self.filters), (DB, self.bias)]
+        
+    def lel(self, AI, AO, E, DO, Y): 
+        if not self._train:
+            return []
+
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
+        DB = tf.reduce_sum(DO, axis=[0, 1, 2])
+
+        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        return [(DF, self.filters), (DB, self.bias)]
+        
+    ################################################################### 
         
         
