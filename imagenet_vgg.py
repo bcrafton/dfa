@@ -325,7 +325,9 @@ else:
 
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
-accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+
+top5 = tf.nn.in_top_k(predictions=predict, targets=tf.argmax(Y,1), k=5)
+total_top5 = tf.reduce_sum(tf.cast(top5, tf.float32))
 
 weights = model.get_weights()
 
@@ -352,7 +354,10 @@ f.close()
 ###############################################################
 
 train_accs = []
+train_accs_top5 = []
+
 val_accs = []
+val_accs_top5 = []
 
 alpha = args.alpha
 phase = 0
@@ -371,44 +376,61 @@ for ii in range(0, epochs):
 
     print (ii)
 
+    ##################################################################
+
     sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
-    train_correct = 0.0
+
     train_total = 0.0
-    # for j in range(0, 32 * 10, batch_size):
+    train_correct = 0.0
+    train_top5 = 0.0
+    
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _ = sess.run([total_correct, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
-        train_correct += _total_correct
-        train_total += batch_size
-        train_acc = train_correct / train_total
+        _total_correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
         
-        print ("train accuracy: " + str(train_acc))        
+        train_total += batch_size
+        train_correct += _total_correct
+        train_top5 += _top5
+        
+        train_acc = train_correct / train_total
+        train_acc_top5 = train_top5 / train_total
+        
+        print ("train accuracy: %f %f" % (train_acc, train_acc_top5))
         f = open(results_filename, "a")
-        f.write(str(train_acc) + "\n")
+        f.write("train accuracy: %f %f\n" % (train_acc, train_acc_top5))
         f.close()
 
     train_accs.append(train_acc)
+    train_accs_top5.append(train_acc_top5)
+    
+    ##################################################################
     
     sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
-    val_correct = 0.0
+    
     val_total = 0.0
-    lr = 0.0
-    # for j in range(0, 32 * 10, batch_size):
+    val_correct = 0.0
+    val_top5 = 0.0
+    
     for j in range(0, len(val_imgs), batch_size):
         print (j)
 
-        [_total_correct] = sess.run([total_correct], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: lr})
-        val_correct += _total_correct
-        val_total += batch_size
-        val_acc = val_correct / val_total
+        [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
         
-        print ("val accuracy: " + str(val_acc))
+        val_total += batch_size
+        val_correct += _total_correct
+        val_top5 += _top5
+        
+        val_acc = val_correct / val_total
+        val_acc_top5 = val_top5 / val_total
+        
+        print ("val accuracy: %f %f" % (val_acc, val_acc_top5))
         f = open(results_filename, "a")
-        f.write(str(val_acc) + "\n")
+        f.write("val accuracy: %f %f\n" % (val_acc, val_acc_top5))
         f.close()
 
     val_accs.append(val_acc)
+    val_accs_top5.append(val_acc_top5)
 
     if phase == 0:
         phase = 1
@@ -427,9 +449,11 @@ for ii in range(0, epochs):
             print ('phase 3')
 
     if args.save:
-        [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: lr})
+        [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
         w['train_acc'] = train_accs
+        w['train_acc_top5'] = train_accs_top5
         w['val_acc'] = val_accs
+        w['val_acc_top5'] = val_accs_top5
         np.save(args.name, w)
 
     print('epoch {}/{}'.format(ii, epochs))
