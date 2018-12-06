@@ -247,7 +247,7 @@ weights_conv='../vgg_weights/vgg_weights.npy'
 weights_fc=None # '../vgg_weights/vgg_weights.npy'
 
 if args.dfa:
-    bias = 0.0
+    bias = 0.1
 else:
     bias = 0.0
 
