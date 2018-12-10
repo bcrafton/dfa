@@ -19,7 +19,7 @@ for ii in range(num_runs):
     param = runs[ii]
 
     # figure out the name of the param
-    name = '%s_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'])
+    name = '%s_%f_%f_%s_%f_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['eps'], param['act'], param['bias'], param['dropout'], param['dfa'], param['sparse'], param['init'], param['opt'])
     if param['load']:
         name += '_transfer'
     name = name + '.npy'
@@ -33,7 +33,9 @@ for ii in range(num_runs):
         transfer = 0
     
     key = (param['benchmark'], param['dfa'], param['sparse'], transfer)
-    val = max(res['test_acc'])
+    val = max(res['val_acc'])
+
+    print (name, val)
     
     if key in results.keys():
         # use an if instead of max because we gonna want to save the winner run information

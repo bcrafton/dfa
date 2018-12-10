@@ -326,7 +326,7 @@ else:
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
-top5 = tf.nn.in_top_k(predictions=predict, targets=tf.argmax(Y,1), k=5)
+top5 = tf.nn.in_top_k(predictions=predict, targets=tf.argmax(labels,1), k=5)
 total_top5 = tf.reduce_sum(tf.cast(top5, tf.float32))
 
 weights = model.get_weights()
