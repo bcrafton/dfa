@@ -123,6 +123,31 @@ class FullyConnected(Layer):
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DW, self.weights), (DB, self.bias)]
         
+    ###################################################################
+        
+    def lel_backward(self, AI, AO, E, DO, Y):
+        return tf.ones(shape=(tf.shape(AI)))
+        
+    def lel_gv(self, AI, AO, E, DO, Y):
+        if not self._train:
+            return []
+
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DB = tf.reduce_sum(DO, axis=0)
+        return [(DW, self.weights), (DB, self.bias)]
+        
+    def lel(self, AI, AO, E, DO, Y):
+        if not self._train:
+            return []
+
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DB = tf.reduce_sum(DO, axis=0)
+
+        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        return [(DW, self.weights), (DB, self.bias)]
         
         
         

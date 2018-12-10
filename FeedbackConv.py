@@ -18,12 +18,13 @@ class FeedbackConv(Layer):
         self.rank = rank
         self.batch_size, self.h, self.w, self.f = self.size
         self.name = name
+        self.num_output = self.h * self.w * self.f
 
         if load:
             weight_dict = np.load(load).item()
             self.B = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
         else:
-            b = FeedbackMatrix(size=(self.num_classes, self.f * self.h * self.w), sparse=self.sparse, rank=self.rank)
+            b = FeedbackMatrix(size=(self.num_classes, self.num_output), sparse=self.sparse, rank=self.rank)
             self.B = tf.cast(tf.Variable(b), tf.float32) 
 
     ###################################################################
@@ -67,6 +68,31 @@ class FeedbackConv(Layer):
         
     ###################################################################   
         
+    # > https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html
+    # > https://www.ics.uci.edu/~pjsadows/notes.pdf
+    # > https://deepnotes.io/softmax-crossentropy
+    def lel_backward(self, AI, AO, E, DO, Y):
+        shape = tf.shape(AO)
+        N = shape[0]
+        AO = tf.reshape(AO, (N, self.num_output))
+        S = tf.matmul(AO, tf.transpose(self.B))
+        # should be doing cross entropy here.
+        # is this right ?
+        # just adding softmax ?
+        ES = tf.subtract(tf.nn.softmax(S), Y)
+        DO = tf.matmul(ES, self.B)
+        DO = tf.reshape(DO, self.size)
+        # (* activation.gradient) and (* AI) occur in the actual layer itself.
+        return DO
+        
+    def lel_gv(self, AI, AO, E, DO, Y):
+        return []
+        
+    def lel(self, AI, AO, E, DO, Y): 
+        return []
+        
+    ###################################################################
         
         
-        
+
+
