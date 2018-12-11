@@ -43,6 +43,7 @@ from MaxPool import MaxPool
 from Dropout import Dropout
 from FeedbackFC import FeedbackFC
 from FeedbackConv import FeedbackConv
+from SparseFC import SparseFC
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -79,15 +80,15 @@ X = tf.placeholder(tf.float32, [None, 3072])
 
 l0 = Dropout(rate=0.1)
 
-l1 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1")
+l1 = SparseFC(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1", rate=0.25)
 l2 = Dropout(rate=dropout_rate)
 l3 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2")
+l4 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2", rate=0.25)
 l5 = Dropout(rate=dropout_rate)
 l6 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l7 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3")
+l7 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3", rate=0.25)
 l8 = Dropout(rate=dropout_rate)
 l9 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc3_fb")
 
@@ -123,7 +124,7 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
 else:
     if args.alg == 'dfa':
         train = model.dfa(X=X, Y=Y)
-    if args.alg == 'lel':
+    elif args.alg == 'lel':
         train = model.lel(X=X, Y=Y)
     elif args.alg == 'bp':
         train = model.train(X=X, Y=Y)

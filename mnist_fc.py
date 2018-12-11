@@ -42,6 +42,7 @@ from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
 from FeedbackFC import FeedbackFC
+from SparseFC import SparseFC
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -62,7 +63,7 @@ TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
-bias = 0.0
+bias = 0.1
 
 ##############################################
 
@@ -76,11 +77,11 @@ learning_rate = tf.placeholder(tf.float32, shape=())
 X = tf.placeholder(tf.float32, [None, 784])
 Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = FullyConnected(size=[784, 400], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name="fc1")
+l0 = SparseFC(size=[784, 400], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1", rate=0.1)
 l1 = Dropout(rate=dropout_rate)
 l2 = FeedbackFC(size=[784, 400], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l3 = FullyConnected(size=[400, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc2")
+l3 = SparseFC(size=[400, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc2", rate=1.)
 
 model = Model(layers=[l0, l1, l2, l3])
 
@@ -112,7 +113,7 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
 else:
     if args.alg == 'dfa':
         train = model.dfa(X=X, Y=Y)
-    if args.alg == 'lel':
+    elif args.alg == 'lel':
         train = model.lel(X=X, Y=Y)
     elif args.alg == 'bp':
         train = model.train(X=X, Y=Y)
@@ -161,7 +162,7 @@ for ii in range(EPOCHS):
         lr = args.alpha
         
     print (ii)
-    
+
     #############################
     
     _count = 0
@@ -197,6 +198,9 @@ for ii in range(EPOCHS):
     #############################
             
     print ("train acc: %f test acc: %f" % (train_acc, test_acc))
+    
+    # [w] = sess.run([weights], feed_dict={})
+    # print ("non zero %f" % np.count_nonzero(w['fc1']))
     
     f = open(filename, "a")
     f.write(str(test_acc) + "\n")
