@@ -18,6 +18,7 @@ parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
+parser.add_argument('--rate', type=float, default=1.)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="gd")
 parser.add_argument('--save', type=int, default=0)
@@ -63,6 +64,7 @@ from MaxPool import MaxPool
 from Dropout import Dropout
 from FeedbackFC import FeedbackFC
 from FeedbackConv import FeedbackConv
+from SparseFC import SparseFC
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -284,15 +286,16 @@ l16 = Convolution(input_sizes=[batch_size, 14, 14, 512], filter_sizes=[3, 3, 512
 l17 = MaxPool(size=[batch_size, 14, 14, 512], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
 
 l18 = ConvToFullyConnected(shape=[7, 7, 512])
-l19 = FullyConnected(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc)
+
+l19 = SparseFC(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc, rate=args.rate)
 l20 = Dropout(rate=dropout_rate)
 l21 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l22 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
+l22 = SparseFC(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc, rate=args.rate)
 l23 = Dropout(rate=dropout_rate)
 l24 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l25 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
+l25 = SparseFC(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc, rate=args.rate)
 
 ###############################################################
 
