@@ -325,10 +325,13 @@ class Model:
                 
         return A[N-1]
         
-        
-        
-        
-        
-        
+    def SET(self, swap):
+        sets = []
+        for ii in range(self.num_layers):
+            l = self.layers[ii]
+            next = l.SET(swap)
+            sets.extend(next)
+            
+        return sets
         
         

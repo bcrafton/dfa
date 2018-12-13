@@ -74,11 +74,12 @@ tf.reset_default_graph()
 batch_size = tf.placeholder(tf.int32, shape=())
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
+swap = tf.placeholder(tf.float32, shape=())
 
 Y = tf.placeholder(tf.float32, [None, 10])
 X = tf.placeholder(tf.float32, [None, 3072])
 
-l0 = Dropout(rate=0.1)
+l0 = Dropout(rate=dropout_rate/5.)
 
 l1 = SparseFC(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1", rate=0.25)
 l2 = Dropout(rate=dropout_rate)
@@ -98,8 +99,8 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10])
 
 ##############################################
 
+SET = model.SET(swap)
 predict = model.predict(X=X)
-
 weights = model.get_weights()
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
@@ -168,6 +169,8 @@ train_accs = []
 test_accs = []
 
 for ii in range(EPOCHS):
+    
+
     if args.opt == 'decay' or args.opt == 'gd':
         decay = np.power(args.decay, ii)
         lr = args.alpha * decay
@@ -184,7 +187,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys, swap: 0.25})
         
         _total_correct += _correct
         _count += BATCH_SIZE
@@ -200,7 +203,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
         xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
+        _correct = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: 0.25})
         
         _total_correct += _correct
         _count += BATCH_SIZE
@@ -215,8 +218,12 @@ for ii in range(EPOCHS):
     f = open(filename, "a")
     f.write(str(test_acc) + "\n")
     f.close()
+    
+    #############################
+    
+    _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: 0.25})
 
-##############################################
+    #############################
 
 if args.save:
     [w] = sess.run([weights], feed_dict={})

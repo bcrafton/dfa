@@ -9,13 +9,15 @@ from Activation import Sigmoid
 
 class SparseFC(Layer):
 
-    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None, load=None, train=True, rate=1.):
+    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None, load=None, train=True, rate=1., swap=0.3):
         # input size
         self.size = size
         self.last_layer = last_layer
         self.input_size, self.output_size = size
         self.num_classes = num_classes
         self.rate = rate
+        self.swap = swap
+        self.nswap = int(self.rate * self.swap * self.input_size * self.output_size)
 
         self.bias = tf.Variable(tf.ones(shape=[self.output_size]) * bias)
 
@@ -51,7 +53,7 @@ class SparseFC(Layer):
         self.weights = tf.Variable(_weights, dtype=tf.float32)
         self.mask = tf.Variable(_mask, dtype=tf.float32)
         self.total_connects = tf.Variable(tf.count_nonzero(self.mask))
-        # self.total_connects = tf.Print(self.total_connects, [self.total_connects], message="")
+        self.total_connects_float = tf.Variable(tf.cast(tf.count_nonzero(self.mask), tf.float32))
 
     ###################################################################
         
@@ -158,5 +160,40 @@ class SparseFC(Layer):
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DW, self.weights), (DB, self.bias)]
         
+    ###################################################################
+    
+    def SET(self, swap):    
+        shape = tf.shape(self.weights)
+        
+        nswap = tf.multiply(self.total_connects_float, swap)
+        nswap = tf.cast(nswap, tf.int32)
+
+        abs_w = tf.abs(self.weights)
+
+        vld_i = tf.where(abs_w > 0)
+        vld_w = tf.gather_nd(abs_w, vld_i)
+
+        sorted_i = tf.contrib.framework.argsort(vld_w, axis=0)
+        small_i = tf.gather(vld_i, sorted_i, axis=0)
+        small_i = tf.cast(small_i, tf.int32)
+        small_i = tf.slice(small_i, [0, 0], [nswap, 2])
+        small_w = tf.zeros(shape=(nswap,))
+        
+        new_i = tf.where(abs_w <= 0)
+        new_i = tf.random_shuffle(new_i)
+        new_i = tf.slice(new_i, [0, 0], [nswap, 2])
+        new_i = tf.cast(new_i, tf.int32)
+        sqrt_fan_in = math.sqrt(self.input_size)
+        new_w = tf.random_uniform(minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in, shape=(nswap,))
+        
+        indices = tf.concat((small_i, new_i), axis=0)
+        updates = tf.concat((small_w, new_w), axis=0)
+        self.weights = tf.Variable(tf.scatter_nd(indices=indices, updates=updates, shape=shape))
+        
+        new_w = tf.ones(shape=(nswap,))
+        updates = tf.concat((small_w, new_w), axis=0)
+        self.mask = tf.Variable(tf.scatter_nd(indices=indices, updates=updates, shape=shape))
+
+        return [(self.mask, self.weights)]
         
         
