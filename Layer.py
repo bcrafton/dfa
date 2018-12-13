@@ -53,10 +53,11 @@ class Layer:
         
     ###################################################################   
     
-    def SET(self, swap):
+    def SET(self):
         return []
         
-        
+    def NSET(self):
+        return []
         
         
         

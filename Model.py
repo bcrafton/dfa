@@ -326,10 +326,25 @@ class Model:
         return A[N-1]
         
     def SET(self, swap):
+        return tf.cond(swap, lambda: self._SET(), lambda: self._NSET())
+        
+    def _SET(self):
         sets = []
         for ii in range(self.num_layers):
             l = self.layers[ii]
-            next = l.SET(swap)
+            next = l.SET()
+            for (mask, weights) in next:
+                _mask = l.mask.assign(mask)
+                _weights = l.weights.assign(weights)
+                sets.append((_mask, _weights))
+            
+        return sets
+        
+    def _NSET(self):
+        sets = []
+        for ii in range(self.num_layers):
+            l = self.layers[ii]
+            next = l.NSET()
             sets.extend(next)
             
         return sets

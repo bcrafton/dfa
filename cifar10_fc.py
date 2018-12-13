@@ -74,22 +74,22 @@ tf.reset_default_graph()
 batch_size = tf.placeholder(tf.int32, shape=())
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
-swap = tf.placeholder(tf.float32, shape=())
+swap = tf.placeholder(tf.bool, shape=())
 
 Y = tf.placeholder(tf.float32, [None, 10])
 X = tf.placeholder(tf.float32, [None, 3072])
 
 l0 = Dropout(rate=dropout_rate/5.)
 
-l1 = SparseFC(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1", rate=0.25)
+l1 = SparseFC(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1", rate=0.25, swap=0.1)
 l2 = Dropout(rate=dropout_rate)
 l3 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l4 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2", rate=0.25)
+l4 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2", rate=0.25, swap=0.1)
 l5 = Dropout(rate=dropout_rate)
 l6 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l7 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3", rate=0.25)
+l7 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3", rate=0.25, swap=0.1)
 l8 = Dropout(rate=dropout_rate)
 l9 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc3_fb")
 
@@ -187,7 +187,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys, swap: 0.25})
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys, swap: False})
         
         _total_correct += _correct
         _count += BATCH_SIZE
@@ -203,7 +203,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
         xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: 0.25})
+        _correct = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: False})
         
         _total_correct += _correct
         _count += BATCH_SIZE
@@ -221,7 +221,7 @@ for ii in range(EPOCHS):
     
     #############################
     
-    _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: 0.25})
+    _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
 
     #############################
 
