@@ -21,6 +21,7 @@ parser.add_argument('--init', type=str, default="alexnet")
 parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="imagenet_alexnet")
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -242,10 +243,14 @@ val_iterator = val_dataset.make_initializable_iterator()
 
 ###############################################################
 
-train_conv=True
 train_fc=True
-weights_conv=None
+if args.load:
+    train_conv=False
+else:
+    train_conv=True
+
 weights_fc=None
+weights_conv=args.load
 
 bias = 0.0
 if args.act == 'tanh':
