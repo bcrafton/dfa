@@ -38,6 +38,7 @@ imagenet_vgg_dfa = {'benchmark':'imagenet_vgg.py', 'epochs':50, 'batch_size':32,
 imagenet_vgg_sparse = {'benchmark':'imagenet_vgg.py', 'epochs':50, 'batch_size':32, 'alpha':[1e-2], 'eps':[1.], 'act':['tanh'], 'bias':[0.], 'dropout':[0.5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':['zero'], 'opt':'adam', 'load':None}
 
 imagenet_vgg_relu = {'benchmark':'imagenet_vgg.py', 'epochs':50, 'batch_size':32, 'alpha':[1e-2], 'eps':[1.], 'act':['relu'], 'bias':[0.], 'dropout':[0.5], 'dfa':0, 'sparse':[0], 'rank':0, 'init':['alexnet'], 'opt':'adam', 'load':None, 'rate':[0.5, 0.25, 0.1]}
+imagenet_vgg_relu = {'benchmark':'imagenet_vgg.py', 'epochs':50, 'batch_size':32, 'alpha':[1e-2], 'eps':[1.], 'act':['tanh'], 'bias':[0.], 'dropout':[0.5], 'dfa':1, 'sparse':[0, 5, 10], 'rank':0, 'init':['alexnet'], 'opt':'adam', 'load':None, 'rate':[0.5]}
 
 ###############################################
 
