@@ -41,6 +41,79 @@ colors = {1:  '#00FF00', \
           9:  '#008080', \
           10: '#FFA500'}
 
+'''
+markers = {1:  's', \
+           2:  'P', \
+           3:  '*', \
+           4:  '<', \
+          
+           5:  'o', \
+           6:  '+', \
+           7:  'X', \
+           8:  'D', \
+          
+           9:  'v', \
+           10: '^'}
+'''
+
+option = 2
+
+if option == 1:
+# option 1
+    markers = {1:  'D', \
+               2:  'o', \
+               3:  'o', \
+               4:  'o', \
+              
+               5:  'o', \
+               6:  'o', \
+               7:  'o', \
+               8:  'o', \
+              
+               9:  'o', \
+               10: '*'}
+               
+    sizes   = {1:  28, \
+               2:  10, \
+               3:  10, \
+               4:  10, \
+              
+               5:  10, \
+               6:  10, \
+               7:  10, \
+               8:  10, \
+              
+               9:  10, \
+               10: 28}
+
+else:
+    # option 2
+    markers = {1:  'o', \
+               2:  'o', \
+               3:  'o', \
+               4:  'o', \
+              
+               5:  'o', \
+               6:  'o', \
+               7:  'o', \
+               8:  'o', \
+              
+               9:  'o', \
+               10: 'o'}
+
+    sizes   = {1:  10, \
+               2:  10, \
+               3:  10, \
+               4:  10, \
+              
+               5:  10, \
+               6:  10, \
+               7:  10, \
+               8:  10, \
+              
+               9:  10, \
+               10: 10}
+
 #######################################
 
 def unit_vector(vector):
@@ -65,9 +138,9 @@ for ii in range(len(mnist)):
     key = (d['rank'], d['sparse'])
     
     if key in data_grouped.keys():
-        data_grouped[key].append(d['acc'])
+        data_grouped[key].append(d['acc'] * 100.)
     else:
-        data_grouped[key] = [d['acc']]
+        data_grouped[key] = [d['acc'] * 100.]
         
 points1 = []
 labels1 = [] 
@@ -103,9 +176,9 @@ for ii in range(len(cifar10)):
     key = (d['rank'], d['sparse'])
     
     if key in data_grouped.keys():
-        data_grouped[key].append(d['acc'])
+        data_grouped[key].append(d['acc'] * 100.)
     else:
-        data_grouped[key] = [d['acc']]
+        data_grouped[key] = [d['acc'] * 100.]
         
 points3 = []
 labels3 = [] 
@@ -142,19 +215,19 @@ f, [[ax1, ax3], [ax2, ax4]] = plt.subplots(2, 2, sharex=True, sharey=False)
 
 for ii in range(len(points1)):
     p = points1[ii]
-    ax1.scatter(labels1[ii][0], p, s=10, color=colors[labels1[ii][1]])
+    ax1.scatter(labels1[ii][0], p, s=sizes[labels1[ii][1]], color=colors[labels1[ii][1]], marker=markers[labels1[ii][1]])
 
 for ii in range(len(points2)):
     p = points2[ii]
-    ax2.scatter(labels2[ii][0], p, s=10, color=colors[labels2[ii][1]])
+    ax2.scatter(labels2[ii][0], p, s=sizes[labels1[ii][1]], color=colors[labels2[ii][1]], marker=markers[labels1[ii][1]])
 
 for ii in range(len(points3)):
     p = points3[ii]
-    ax3.scatter(labels3[ii][0], p, s=10, color=colors[labels3[ii][1]])
+    ax3.scatter(labels3[ii][0], p, s=sizes[labels1[ii][1]], color=colors[labels3[ii][1]], marker=markers[labels1[ii][1]])
 
 for ii in range(len(points4)):
     p = points4[ii]
-    ax4.scatter(labels4[ii][0], p, s=10, color=colors[labels4[ii][1]])
+    ax4.scatter(labels4[ii][0], p, s=sizes[labels1[ii][1]], color=colors[labels4[ii][1]], marker=markers[labels1[ii][1]])
 
 # ax2.set_xticks(range(1, 11))
 # ax4.set_xticks(range(1, 11))
@@ -171,7 +244,7 @@ ax4.set_xticks(range(1, 10+1, 1))
 ax2.set_xlabel(xlabel='Rank', fontsize=10)
 ax4.set_xlabel(xlabel='Rank', fontsize=10)
 
-ax1.set_ylabel(ylabel='Accuracy', fontsize=10)
+ax1.set_ylabel(ylabel='Accuracy (%)', fontsize=10)
 ax2.set_ylabel(ylabel='Angle', fontsize=10)
 # ax3.set_ylabel(ylabel='Accuracy')
 # ax4.set_ylabel(ylabel='Angle')
@@ -188,8 +261,7 @@ for ax in [ax1, ax2, ax3, ax4]:
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(10) 
 
-f.savefig('plot1.png', bbox_inches='tight', dpi=300)
-# plt.show()
+f.savefig('plot1-' + str(option) + '.png', bbox_inches='tight', dpi=1000)
 
 
 
