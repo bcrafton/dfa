@@ -18,7 +18,7 @@ parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
-parser.add_argument('--rate', type=float, default=1.)
+parser.add_argument('--rate', type=float, default=0.25)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="gd")
 parser.add_argument('--save', type=int, default=0)
@@ -261,6 +261,7 @@ else:
 
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
+swap = tf.placeholder(tf.bool, shape=())
 
 l0 = Convolution(input_sizes=[batch_size, 224, 224, 3], filter_sizes=[3, 3, 3, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0.0, last_layer=False, name="conv1", load=weights_conv, train=train_conv)
 l1 = Convolution(input_sizes=[batch_size, 224, 224, 64], filter_sizes=[3, 3, 64, 64], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0.0, last_layer=False, name="conv2", load=weights_conv, train=train_conv)
@@ -287,20 +288,21 @@ l17 = MaxPool(size=[batch_size, 14, 14, 512], ksize=[1, 2, 2, 1], strides=[1, 2,
 
 l18 = ConvToFullyConnected(shape=[7, 7, 512])
 
-l19 = SparseFC(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc, rate=args.rate)
+l19 = SparseFC(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc, rate=args.rate, swap=0.2)
 l20 = Dropout(rate=dropout_rate)
 l21 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l22 = SparseFC(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc, rate=args.rate)
+l22 = SparseFC(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc, rate=args.rate, swap=0.2)
 l23 = Dropout(rate=dropout_rate)
 l24 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l25 = SparseFC(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc, rate=args.rate)
+l25 = SparseFC(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc, rate=args.rate, swap=0.2)
 
 ###############################################################
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23, l24, l25])
 
+SET = model.SET(swap)
 predict = tf.nn.softmax(model.predict(X=features))
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt == "momentum":
@@ -383,14 +385,21 @@ for ii in range(0, epochs):
 
     sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
 
+    # _SET = sess.run(SET, feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: 0.0, swap: True})
+
     train_total = 0.0
     train_correct = 0.0
     train_top5 = 0.0
     
+    # for j in range(0, batch_size * 100, batch_size):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
-        
-        _total_correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
+
+        if ((j % (batch_size * 3000)) == 0): 
+            print ("calling set")
+            _SET = sess.run(SET, feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: 0.0, swap: True})       
+
+        _total_correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr, swap: False})
         
         train_total += batch_size
         train_correct += _total_correct
@@ -415,10 +424,11 @@ for ii in range(0, epochs):
     val_correct = 0.0
     val_top5 = 0.0
     
+    # for j in range(0, batch_size * 100, batch_size):
     for j in range(0, len(val_imgs), batch_size):
         print (j)
 
-        [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+        [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0, swap: False})
         
         val_total += batch_size
         val_correct += _total_correct
@@ -451,8 +461,11 @@ for ii in range(0, epochs):
             phase = 3
             print ('phase 3')
 
+    print ("calling set")
+    _SET = sess.run(SET, feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0, swap: True})
+
     if args.save:
-        [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+        [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0, swap: False})
         w['train_acc'] = train_accs
         w['train_acc_top5'] = train_accs_top5
         w['val_acc'] = val_accs
