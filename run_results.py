@@ -9,8 +9,8 @@ from results import get_runs
 
 ##############################################
 
-num_gpus = 3
-counter = 0
+num_gpus = 4
+counter = 1
 
 def run_command(param):
     global num_gpus, counter
