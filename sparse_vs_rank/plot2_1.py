@@ -51,8 +51,8 @@ def angle_between(v1, v2):
 
 #######################################
 
-cifar10 = np.load('cifar10_data.npy')
-mnist = np.load('mnist_data.npy')
+cifar10 = np.load('cifar10_data_sparse.npy')
+mnist = np.load('mnist_data_sparse.npy')
 
 #######################################
 
@@ -193,11 +193,18 @@ for ii in range(len(points)):
 # ax3.set_yticks([.45, .47, .49, .51])
 ax3.set_yticks([45., 47., 49., 51.])
 
-ax2.set_xticks(range(1, 10+1, 1))
-ax4.set_xticks(range(1, 10+1, 1))
+ax2.set_xticks(range(0, 100, 10))
+ax4.set_xticks(range(0, 100, 10))
 
-ax2.set_xlabel(xlabel='Sparsity', fontsize=10.)
-ax4.set_xlabel(xlabel='Sparsity', fontsize=10.)
+ax1.set_xlim(95, -5)
+ax1.invert_xaxis()
+
+ax2.invert_xaxis()
+ax3.invert_xaxis()
+ax4.invert_xaxis()
+
+ax2.set_xlabel(xlabel='Sparsity (%)', fontsize=10.)
+ax4.set_xlabel(xlabel='Sparsity (%)', fontsize=10.)
 
 ax1.set_ylabel(ylabel='Accuracy (%)', fontsize=10.)
 ax2.set_ylabel(ylabel='Angle', fontsize=10.)
@@ -216,6 +223,6 @@ for ax in [ax1, ax2, ax3, ax4]:
 
 f.subplots_adjust(hspace=0)
 # plt.show()
-f.savefig('plot2-2.png', dpi=1000)
+f.savefig('plot2.png', dpi=1000)
 
 

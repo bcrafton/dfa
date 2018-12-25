@@ -70,25 +70,22 @@ data_grouped = {}
 ii = 0
 for ii in range(len(data)):
     d = data[ii]
-    key = d['rank']
+    key = (d['rank'], d['sparse'])
     
     if key in data_grouped.keys():
-        data_grouped[key].append([d['sparse'], d['acc']])
+        data_grouped[key].append(d['acc'] * 100.)
     else:
-        data_grouped[key] = [[d['sparse'], d['acc']]]
+        data_grouped[key] = [d['acc'] * 100.]
         
 points = []
 labels = [] 
 for key in data_grouped:
-    points.append( data_grouped[key] )
+    points.append( (np.average(data_grouped[key]), np.std(data_grouped[key])) )
     labels.append( key )
 
 for ii in range(len(points)):
     p = points[ii]
-    p = np.transpose(p)
-    label = "%s %d" % ('Rank', labels[ii])
-    
-    ax1.scatter(p[0], p[1], s=10, label=label, color=colors[labels[ii]])
+    ax1.errorbar(x=labels[ii][1], y=p[0], yerr=p[1], fmt='o', color=colors[labels[ii][0]])
 
 #######################################
 
@@ -106,25 +103,23 @@ data_grouped = {}
 ii = 0
 for ii in range(len(data)):
     d = data[ii]
-    key = d['rank']
-
+    key = (d['rank'], d['sparse'])
+    
     if key in data_grouped.keys():
-        data_grouped[key].append([d['sparse'], d['angle']])
+        data_grouped[key].append(d['angle'])
     else:
-        data_grouped[key] = [[d['sparse'], d['angle']]]
-
+        data_grouped[key] = [d['angle']]
+        
 points = []
-labels = []
+labels = [] 
+
 for key in data_grouped:
-    points.append( data_grouped[key] )
+    points.append( (np.average(data_grouped[key]), np.std(data_grouped[key])) )
     labels.append( key )
 
 for ii in range(len(points)):
     p = points[ii]
-    p = np.transpose(p)
-    label = "%s %d" % ('Rank', labels[ii])
-
-    ax2.scatter(p[0], p[1], s=10, label=label, color=colors[labels[ii]])
+    ax2.errorbar(x=labels[ii][1], y=p[0], yerr=p[1], fmt='o', color=colors[labels[ii][0]])
 
 #######################################
 
@@ -142,25 +137,22 @@ data_grouped = {}
 ii = 0
 for ii in range(len(data)):
     d = data[ii]
-    key = d['rank']
+    key = (d['rank'], d['sparse'])
     
     if key in data_grouped.keys():
-        data_grouped[key].append([d['sparse'], d['acc']])
+        data_grouped[key].append(d['acc'] * 100.)
     else:
-        data_grouped[key] = [[d['sparse'], d['acc']]]
+        data_grouped[key] = [d['acc'] * 100.]
         
 points = []
 labels = [] 
-for key in data_grouped:
-    points.append( data_grouped[key] )
+for key in sorted(data_grouped):
+    points.append( (np.average(data_grouped[key]), np.std(data_grouped[key])) )
     labels.append( key )
 
 for ii in range(len(points)):
     p = points[ii]
-    p = np.transpose(p)
-    label = "%s %d" % ('Rank', labels[ii])
-    
-    ax3.scatter(p[0], p[1], s=10, label=label, color=colors[labels[ii]])
+    ax3.errorbar(x=labels[ii][1], y=p[0], yerr=p[1], fmt='o', color=colors[labels[ii][0]])
 
 #######################################
 
@@ -178,30 +170,28 @@ data_grouped = {}
 ii = 0
 for ii in range(len(data)):
     d = data[ii]
-    key = d['rank']
-
+    key = (d['rank'], d['sparse'])
+    
     if key in data_grouped.keys():
-        data_grouped[key].append([d['sparse'], d['angle']])
+        data_grouped[key].append(d['angle'])
     else:
-        data_grouped[key] = [[d['sparse'], d['angle']]]
-
+        data_grouped[key] = [d['angle']]
+        
 points = []
-labels = []
+labels = [] 
 for key in data_grouped:
-    points.append( data_grouped[key] )
+    points.append( (np.average(data_grouped[key]), np.std(data_grouped[key])) )
     labels.append( key )
 
 for ii in range(len(points)):
     p = points[ii]
-    p = np.transpose(p)
-    label = "%s %d" % ('Rank', labels[ii])
-
-    ax4.scatter(p[0], p[1], s=10, label=label, color=colors[labels[ii]])
+    ax4.errorbar(x=labels[ii][1], y=p[0], yerr=p[1], fmt='o', color=colors[labels[ii][0]])
 
 #######################################
 
 # ax1.set_yticks(np.linspace(.8, .98, 7))
-ax3.set_yticks([.45, .47, .49, .51])
+# ax3.set_yticks([.45, .47, .49, .51])
+ax3.set_yticks([45., 47., 49., 51.])
 
 ax2.set_xticks(range(1, 10+1, 1))
 ax4.set_xticks(range(1, 10+1, 1))
@@ -209,7 +199,7 @@ ax4.set_xticks(range(1, 10+1, 1))
 ax2.set_xlabel(xlabel='Sparsity', fontsize=10.)
 ax4.set_xlabel(xlabel='Sparsity', fontsize=10.)
 
-ax1.set_ylabel(ylabel='Accuracy', fontsize=10.)
+ax1.set_ylabel(ylabel='Accuracy (%)', fontsize=10.)
 ax2.set_ylabel(ylabel='Angle', fontsize=10.)
 # ax3.set_ylabel(ylabel='Accuracy')
 # ax4.set_ylabel(ylabel='Angle')
@@ -226,6 +216,6 @@ for ax in [ax1, ax2, ax3, ax4]:
 
 f.subplots_adjust(hspace=0)
 # plt.show()
-f.savefig('plot2-1.png', dpi=1000)
+f.savefig('plot2.png', dpi=1000)
 
 

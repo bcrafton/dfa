@@ -4,6 +4,13 @@ import math
 from scipy import stats
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmap
+import argparse
+
+#######################################
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--markers', type=int, default=0)
+args = parser.parse_args()
 
 #######################################
 
@@ -56,11 +63,8 @@ markers = {1:  's', \
            10: '^'}
 '''
 
-option = 2
-
-if option == 1:
-# option 1
-    markers = {1:  'D', \
+if args.markers:
+    markers = {1:  'x', \
                2:  'o', \
                3:  'o', \
                4:  'o', \
@@ -71,7 +75,7 @@ if option == 1:
                8:  'o', \
               
                9:  'o', \
-               10: '*'}
+               10: '+'}
                
     sizes   = {1:  28, \
                2:  10, \
@@ -87,7 +91,6 @@ if option == 1:
                10: 28}
 
 else:
-    # option 2
     markers = {1:  'o', \
                2:  'o', \
                3:  'o', \
@@ -238,6 +241,24 @@ plt.rcParams['font.sans-serif'] = "Arial"
 plt.rcParams['font.family'] = "sans-serif"
 plt.rcParams['font.size'] = 10.
 
+'''
+ax1.set_yticks(np.linspace(95, 98, 4))
+ax1.tick_params(
+    axis='x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    labelbottom=False) # labels along the bottom edge are off
+
+ax3.set_yticks(np.linspace(30, 50, 5))
+ax3.tick_params(
+    axis='x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,         # ticks along the top edge are off
+    labelbottom=False) # labels along the bottom edge are off
+'''
+
 ax2.set_xticks(range(1, 10+1, 1))
 ax4.set_xticks(range(1, 10+1, 1))
 
@@ -249,9 +270,13 @@ ax2.set_ylabel(ylabel='Angle', fontsize=10)
 # ax3.set_ylabel(ylabel='Accuracy')
 # ax4.set_ylabel(ylabel='Angle')
 
-f.subplots_adjust(hspace=0)
+# if we turn the ticks off
+# f.subplots_adjust(hspace=0.05)
+
+# otherwise no space
+f.subplots_adjust(hspace=0.0)
+
 f.set_size_inches(7., 5.)
-# f.set_size_inches(10, 10)
 
 # lgd = ax4.legend(loc='upper left', bbox_to_anchor=(1.02, 1.5), fontsize=10)
 
@@ -261,7 +286,7 @@ for ax in [ax1, ax2, ax3, ax4]:
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(10) 
 
-f.savefig('plot1-' + str(option) + '.png', bbox_inches='tight', dpi=1000)
+f.savefig('plot1-' + str(args.markers) + '.png', bbox_inches='tight', dpi=1000)
 
 
 
