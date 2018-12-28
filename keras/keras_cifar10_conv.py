@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=25)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--verbose', type=int, default=0)
+parser.add_argument('--verbose', type=int, default=1)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -27,7 +27,7 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 import tensorflow as tf
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 NUM_CLASSES = 10
 EPOCHS = args.epochs
 TRAINING_EXAMPLES = 50000

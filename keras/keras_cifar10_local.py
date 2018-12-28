@@ -29,7 +29,7 @@ from keras.layers.local import LocallyConnected2D
 from keras import backend as K
 import tensorflow as tf
 
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 NUM_CLASSES = 10
 EPOCHS = args.epochs
 TRAINING_EXAMPLES = 50000
@@ -64,13 +64,13 @@ x_test = x_test / 255.
 y_test = keras.utils.to_categorical(y_test, 10)
 
 model = Sequential()
-model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal', input_shape=(32, 32, 3)))
+model.add(Conv2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal', input_shape=(32, 32, 3)))
 model.add(MaxPooling2D(pool_size=(3, 3), padding="same", strides=[2, 2]))
 
-model.add(LocallyConnected2D(128, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+model.add(Conv2D(128, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 model.add(MaxPooling2D(pool_size=(3, 3), padding="same", strides=[2, 2]))
 
-model.add(LocallyConnected2D(256, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+model.add(Conv2D(256, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 model.add(MaxPooling2D(pool_size=(3, 3), padding="same", strides=[2, 2]))
 
 model.add(Flatten())
@@ -78,7 +78,7 @@ model.add(Dense(2048, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(2048, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(NUM_CLASSES, activation='softmax'))
+model.add(Dense(NUM_CLASSES))
 
 model.compile(loss=keras.losses.categorical_crossentropy,
               optimizer=keras.optimizers.Adam(),
