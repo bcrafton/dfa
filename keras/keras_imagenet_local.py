@@ -39,49 +39,12 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers.local import LocallyConnected2D
+from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
+# from keras.preprocessing import image
+# from imagenet_utils import preprocess_input, decode_predictions
 from keras import backend as K
 import tensorflow as tf
 
-##############################################
-'''
-# https://gist.githubusercontent.com/omoindrot/dedc857cdc0e680dfb1be99762990c9c/raw/e560edd240f8b97e1f0483843dc4d64729ce025c/tensorflow_finetune.py
-
-# Preprocessing (for both training and validation):
-# (1) Decode the image from jpg format
-# (2) Resize the image so its smaller side is 256 pixels long
-def parse_function(filename, label):
-    image_string = tf.read_file(filename)
-    image_decoded = tf.image.decode_jpeg(image_string, channels=3)          # (1)
-    image = tf.cast(image_decoded, tf.float32)
-
-    smallest_side = 256.0
-    height, width = tf.shape(image)[0], tf.shape(image)[1]
-    height = tf.to_float(height)
-    width = tf.to_float(width)
-
-    scale = tf.cond(tf.greater(height, width),
-                    lambda: smallest_side / width,
-                    lambda: smallest_side / height)
-    new_height = tf.to_int32(height * scale)
-    new_width = tf.to_int32(width * scale)
-
-    resized_image = tf.image.resize_images(image, [new_height, new_width])  # (2)
-    return resized_image, label
-
-# Preprocessing (for training)
-# (3) Take a random 224x224 crop to the scaled image
-# (4) Horizontally flip the image with probability 1/2
-# (5) Substract the per color mean `IMAGENET_MEAN`
-# Note: we don't normalize the data here, as VGG was trained without normalization
-def train_preprocess(image, label):
-    crop_image = tf.random_crop(image, [224, 224, 3])                       # (3)
-    flip_image = tf.image.random_flip_left_right(crop_image)                # (4)
-
-    means = tf.reshape(tf.constant(IMAGENET_MEAN), [1, 1, 3])
-    centered_image = flip_image - means                                     # (5)
-
-    return centered_image, label
-'''
 ##############################################
     
 def get_train_dataset():
@@ -112,7 +75,7 @@ def get_train_dataset():
                     training_images.append(os.path.join(folder_subdir, file))
                     training_labels.append(labels[folder])
 
-    remainder = len(training_labels) % batch_size
+    remainder = len(training_labels) % args.batch_size
     training_images = training_images[:(-remainder)]
     training_labels = training_labels[:(-remainder)]
 
@@ -148,12 +111,12 @@ model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimi
 
 ###############################################################
 
-for ii in range(0, epochs):
+for ii in range(0, args.epochs):
     for jj in range(0, len(train_imgs), args.batch_size):
         start = jj
         end = jj + args.batch_size
-        x_train = image.load_img(train_imgs[start:end], target_size=(224, 224))
-        y_train = train_labs[start:end]
+        x_train = load_img(train_imgs[start], target_size=(224, 224))
+        y_train = train_labs[start]
         model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs, verbose=args.verbose)
 
 
