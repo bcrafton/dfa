@@ -7,7 +7,7 @@ import sys
 ##############################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, default=25)
+parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--verbose', type=int, default=1)
@@ -19,6 +19,7 @@ if args.gpu >= 0:
 
 ##############################################
 
+import numpy as np
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -39,11 +40,13 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 (x_train, y_train), (x_test, y_test) = cifar10
 
 x_train = x_train.reshape(TRAINING_EXAMPLES, 32, 32, 3)
-x_train = x_train / 255.
+x_train = x_train - np.average(x_train) 
+x_train = x_train / np.std(x_train)
 y_train = keras.utils.to_categorical(y_train, 10)
 
 x_test = x_test.reshape(TESTING_EXAMPLES, 32, 32, 3)
-x_test = x_test / 255.
+x_test = x_test - np.average(x_test)
+x_test = x_test / np.std(x_test)
 y_test = keras.utils.to_categorical(y_test, 10)
 
 model = Sequential()
@@ -58,7 +61,9 @@ model.add(MaxPooling2D(pool_size=(3, 3), padding="same", strides=[2, 2]))
 
 model.add(Flatten())
 model.add(Dense(2048, activation='relu'))
+model.add(Dropout(0.5))
 model.add(Dense(2048, activation='relu'))
+model.add(Dropout(0.5))
 model.add(Dense(NUM_CLASSES, activation='softmax'))
 
 model.compile(loss=keras.losses.categorical_crossentropy,
@@ -71,6 +76,8 @@ model.fit(x_train,
           epochs=EPOCHS,
           verbose=args.verbose,
           validation_data=(x_test, y_test))
+
 score = model.evaluate(x_test, y_test, verbose=0)
+
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])

@@ -396,10 +396,18 @@ for ii in range(0, epochs):
         train_acc = train_correct / train_total
         train_acc_top5 = train_top5 / train_total
         
-        print ("train accuracy: %f %f" % (train_acc, train_acc_top5))
-        f = open(results_filename, "a")
-        f.write("train accuracy: %f %f\n" % (train_acc, train_acc_top5))
-        f.close()
+        if (j % (100 * batch_size) == 0):
+            p = "train accuracy: %f %f" % (train_acc, train_acc_top5)
+            print (p)
+            f = open(results_filename, "a")
+            f.write(p + "\n")
+            f.close()
+
+    p = "train accuracy: %f %f" % (train_acc, train_acc_top5)
+    print (p)
+    f = open(results_filename, "a")
+    f.write(p + "\n")
+    f.close()
 
     train_accs.append(train_acc)
     train_accs_top5.append(train_acc_top5)
@@ -424,14 +432,23 @@ for ii in range(0, epochs):
         val_acc = val_correct / val_total
         val_acc_top5 = val_top5 / val_total
         
-        print ("val accuracy: %f %f" % (val_acc, val_acc_top5))
-        f = open(results_filename, "a")
-        f.write("val accuracy: %f %f\n" % (val_acc, val_acc_top5))
-        f.close()
+        if (j % (100 * batch_size) == 0):
+            p = "val accuracy: %f %f" % (val_acc, val_acc_top5)
+            print (p)
+            f = open(results_filename, "a")
+            f.write(p + "\n")
+            f.close()
+
+    p = "val accuracy: %f %f" % (val_acc, val_acc_top5)
+    print (p)
+    f = open(results_filename, "a")
+    f.write(p + "\n")
+    f.close()
 
     val_accs.append(val_acc)
     val_accs_top5.append(val_acc_top5)
 
+    '''
     if phase == 0:
         phase = 1
         print ('phase 1')
@@ -447,6 +464,7 @@ for ii in range(0, epochs):
             alpha = 0.0005
             phase = 3
             print ('phase 3')
+    '''
 
     if args.save:
         [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
