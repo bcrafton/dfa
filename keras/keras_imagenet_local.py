@@ -6,14 +6,23 @@ import sys
 
 ##############################################
 
+# https://github.com/fchollet/deep-learning-models
+# https://github.com/keras-team/keras/issues/6486
+# https://github.com/wichtounet/frameworks/blob/master/keras/experiment6.py
+# https://medium.com/@vijayabhaskar96/tutorial-image-classification-with-keras-flow-from-directory-and-generators-95f75ebe5720
+# https://keras.io/preprocessing/image/
+# flow_from_directory
+
+##############################################
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=16)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--eps', type=float, default=1.)
 parser.add_argument('--dropout', type=float, default=0.5)
-parser.add_argument('--act', type=str, default='tanh')
+parser.add_argument('--act', type=str, default='relu')
 parser.add_argument('--bias', type=float, default=0.)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
@@ -45,47 +54,33 @@ from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_a
 from keras import backend as K
 import tensorflow as tf
 
-##############################################
-    
-def get_train_dataset():
+###############################################################
 
-    label_counter = 0
-    training_images = []
-    training_labels = []
+train_datagen = ImageDataGenerator()
 
-    print ("making labels dict")
-
-    f = open('/home/bcrafton3/dfa/imagenet_labels/train_labels.txt', 'r')
-    lines = f.readlines()
-
-    labels = {}
-    for line in lines:
-        line = line.split(' ')
-        labels[line[0]] = label_counter
-        label_counter += 1
-
-    f.close()
-
-    print ("building dataset")
-
-    for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/train/'):
-        for folder in dirs:
-            for folder_subdir, folder_dirs, folder_files in os.walk(os.path.join(subdir, folder)):
-                for file in folder_files:
-                    training_images.append(os.path.join(folder_subdir, file))
-                    training_labels.append(labels[folder])
-
-    remainder = len(training_labels) % args.batch_size
-    training_images = training_images[:(-remainder)]
-    training_labels = training_labels[:(-remainder)]
-
-    print("Data is ready...")
-
-    return training_images, training_labels
+train_generator = train_datagen.flow_from_directory(
+    directory='/home/bcrafton3/keras_imagenet/keras_imagenet_train/',
+    target_size=(224, 224),
+    color_mode="rgb",
+    batch_size=args.batch_size,
+    class_mode="categorical",
+    shuffle=True,
+    seed=42
+)
 
 ###############################################################
 
-train_imgs, train_labs = get_train_dataset()
+val_datagen = ImageDataGenerator()
+
+val_generator = val_datagen.flow_from_directory(
+    directory='/home/bcrafton3/keras_imagenet/keras_imagenet_val/',
+    target_size=(224, 224),
+    color_mode="rgb",
+    batch_size=args.batch_size,
+    class_mode="categorical",
+    shuffle=True,
+    seed=42
+)
 
 ###############################################################
 
@@ -93,10 +88,10 @@ model = Sequential()
 model.add(LocallyConnected2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal', input_shape=(224, 224, 3)))
 model.add(LocallyConnected2D(48, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 
-model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+# model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 model.add(LocallyConnected2D(96, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 
-model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+# model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 
 model.add(LocallyConnected2D(384, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
@@ -111,16 +106,14 @@ model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimi
 
 ###############################################################
 
-for ii in range(0, args.epochs):
-    for jj in range(0, len(train_imgs), args.batch_size):
-        start = jj
-        end = jj + args.batch_size
-        x_train = load_img(train_imgs[start], target_size=(224, 224))
-        y_train = train_labs[start]
-        model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs, verbose=args.verbose)
-
-
-
+STEP_SIZE_TRAIN=train_generator.n//train_generator.batch_size
+STEP_SIZE_VAL=val_generator.n//val_generator.batch_size
+model.fit_generator(generator=train_generator,
+                    steps_per_epoch=STEP_SIZE_TRAIN,
+                    validation_data=val_generator,
+                    validation_steps=STEP_SIZE_VAL,
+                    epochs=10
+)
 
 
 
