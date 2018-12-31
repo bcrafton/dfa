@@ -34,7 +34,15 @@ parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="imagenet_alexnet")
 parser.add_argument('--load', type=str, default=None)
 parser.add_argument('--verbose', type=int, default=1)
+parser.add_argument('--network', type=str, default="local")
 args = parser.parse_args()
+
+if args.network == 'local':
+    target_size = 224
+elif args.network == 'alexnet':
+    target_size = 227
+else:
+    assert(False)
 
 if args.gpu >= 0:
     os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
@@ -47,7 +55,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
-from keras.layers.local import LocallyConnected2D
+from keras.layers.local import Conv2D
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 # from keras.preprocessing import image
 # from imagenet_utils import preprocess_input, decode_predictions
@@ -67,8 +75,8 @@ def random_crop(image):
     # print (image.shape)
     height = image.shape[0]
     width = image.shape[1]
-    dy = 224
-    dx = 224
+    dy = target_size
+    dx = target_size
     # if the image is too small we just return original image ? 
     if width < dx or height < dy:
         return image
@@ -86,7 +94,7 @@ def preprocess(image):
 ###############################################################
 
 # preprocessor function must return same sized image ... cropping here does not work :(
-# need to resize and crop or something ... let it resize to 224x224 ... then we need to crop it and resize it back to 224.
+# need to resize and crop or something ... let it resize to 22?x22? ... then we need to crop it and resize it back to 22?.
 # do feature wise center manually bc dont want to recalculate each time
 # this dude did the random crops after getting the batches from keras: https://jkjung-avt.github.io/keras-image-cropping/
 # other useful link: https://github.com/keras-team/keras/issues/3338
@@ -99,7 +107,7 @@ train_datagen = ImageDataGenerator(featurewise_center=False, preprocessing_funct
 
 train_generator = train_datagen.flow_from_directory(
     directory='/home/bcrafton3/keras_imagenet/keras_imagenet_train/',
-    target_size=(227, 227),
+    target_size=(target_size, target_size),
     color_mode="rgb",
     batch_size=args.batch_size,
     class_mode="categorical",
@@ -113,7 +121,7 @@ val_datagen = ImageDataGenerator(featurewise_center=False, preprocessing_functio
 
 val_generator = val_datagen.flow_from_directory(
     directory='/home/bcrafton3/keras_imagenet/keras_imagenet_val/',
-    target_size=(227, 227),
+    target_size=(target_size, target_size),
     color_mode="rgb",
     batch_size=args.batch_size,
     class_mode="categorical",
@@ -123,43 +131,46 @@ val_generator = val_datagen.flow_from_directory(
 
 ###############################################################
 
-'''
-model = Sequential()
-model.add(Conv2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), input_shape=(224, 224, 3)))
-model.add(Conv2D(48, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01)))
+if args.network == 'local':
+    model = Sequential()
+    model.add(Conv2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros(), input_shape=(224, 224, 3)))
+    model.add(Conv2D(48, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model.add(Conv2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01)))
-model.add(Conv2D(96, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01)))
+    model.add(Conv2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
+    model.add(Conv2D(96, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model.add(Conv2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01)))
-model.add(Conv2D(192, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01)))
+    model.add(Conv2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
+    model.add(Conv2D(192, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model.add(Conv2D(384, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01)))
+    model.add(Conv2D(384, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model.add(Flatten())
+    model.add(Flatten())
 
-model.add(Dense(1000, activation='softmax'))
-'''
+    model.add(Dense(1000, activation='softmax', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model = Sequential()
-model.add(Conv2D(96, kernel_size=(11, 11), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros(), input_shape=(227, 227, 3)))
-model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
+elif args.network == 'alexnet':
+    model = Sequential()
+    model.add(Conv2D(96, kernel_size=(11, 11), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros(), input_shape=(227, 227, 3)))
+    model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
 
-model.add(Conv2D(256, kernel_size=(5, 5), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
-model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
+    model.add(Conv2D(256, kernel_size=(5, 5), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
 
-model.add(Conv2D(384, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
+    model.add(Conv2D(384, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model.add(Conv2D(384, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    model.add(Conv2D(384, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
 
-model.add(Conv2D(256, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
-model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
+    model.add(Conv2D(256, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
 
-model.add(Flatten())
+    model.add(Flatten())
 
-model.add(Dense(4096, activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
-model.add(Dense(4096, activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
-model.add(Dense(1000, activation='softmax', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    model.add(Dense(4096, activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    model.add(Dense(4096, activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    model.add(Dense(1000, activation='softmax', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+
+else:
+    assert(False)
 
 ###############################################################
 
