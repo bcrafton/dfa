@@ -17,7 +17,7 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--batch_size', type=int, default=16)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--eps', type=float, default=1.)
@@ -99,7 +99,7 @@ train_datagen = ImageDataGenerator(featurewise_center=False, preprocessing_funct
 
 train_generator = train_datagen.flow_from_directory(
     directory='/home/bcrafton3/keras_imagenet/keras_imagenet_train/',
-    target_size=(227, 227),
+    target_size=(224, 224),
     color_mode="rgb",
     batch_size=args.batch_size,
     class_mode="categorical",
@@ -113,7 +113,7 @@ val_datagen = ImageDataGenerator(featurewise_center=False, preprocessing_functio
 
 val_generator = val_datagen.flow_from_directory(
     directory='/home/bcrafton3/keras_imagenet/keras_imagenet_val/',
-    target_size=(227, 227),
+    target_size=(224, 224),
     color_mode="rgb",
     batch_size=args.batch_size,
     class_mode="categorical",
@@ -124,20 +124,20 @@ val_generator = val_datagen.flow_from_directory(
 ###############################################################
 
 model = Sequential()
-model.add(LocallyConnected2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal', input_shape=(224, 224, 3)))
-model.add(LocallyConnected2D(48, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+model.add(LocallyConnected2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros(), input_shape=(224, 224, 3)))
+model.add(LocallyConnected2D(48, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
-model.add(LocallyConnected2D(96, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
+model.add(LocallyConnected2D(96, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
-model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
+model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-model.add(LocallyConnected2D(384, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+model.add(LocallyConnected2D(384, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
 model.add(Flatten())
 
-model.add(Dense(1000, activation='softmax'))
+model.add(Dense(1000, activation='softmax', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
 ###############################################################
 
@@ -150,7 +150,7 @@ STEP_SIZE_VAL=val_generator.n//val_generator.batch_size
 model.fit_generator(generator=train_generator,
                     steps_per_epoch=STEP_SIZE_TRAIN,
                     epochs=args.epochs,
-                    verbose=1,
+                    verbose=args.verbose,
                     validation_data=val_generator,
                     validation_steps=STEP_SIZE_VAL,
                     workers=8,
