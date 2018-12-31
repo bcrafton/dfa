@@ -17,7 +17,7 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=16)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--eps', type=float, default=1.)
@@ -56,30 +56,69 @@ import tensorflow as tf
 
 ###############################################################
 
-train_datagen = ImageDataGenerator()
+means = [123.68, 116.78, 103.94]
+means = np.array(means)
+means = np.reshape(means, (1, 1, 3))
+
+# we copied this code from a link below.
+# either they had originally used the first index in the image.shape as N or C
+# either they expected more than 1 HxWxC image ... or they expected CxHxW
+def random_crop(image):
+    # print (image.shape)
+    height = image.shape[0]
+    width = image.shape[1]
+    dy = 224
+    dx = 224
+    # if the image is too small we just return original image ? 
+    if width < dx or height < dy:
+        return image
+    x = np.random.randint(0, width - dx + 1)
+    y = np.random.randint(0, height - dy + 1)
+    crop = image[y:(y+dy), x:(x+dx), :]
+    # print (np.shape(crop))
+    return crop
+
+def preprocess(image):
+    # image = random_crop(image)
+    image = image - means
+    return image
+
+###############################################################
+
+# preprocessor function must return same sized image ... cropping here does not work :(
+# need to resize and crop or something ... let it resize to 224x224 ... then we need to crop it and resize it back to 224.
+# do feature wise center manually bc dont want to recalculate each time
+# this dude did the random crops after getting the batches from keras: https://jkjung-avt.github.io/keras-image-cropping/
+# other useful link: https://github.com/keras-team/keras/issues/3338
+# search: ImageDataGenerator random crop
+
+# the datagen is so slow
+# train_datagen = ImageDataGenerator(featurewise_center=False, horizontal_flip=True, vertical_flip=True, preprocessing_function=preprocess)
+
+train_datagen = ImageDataGenerator(featurewise_center=False, preprocessing_function=preprocess)
 
 train_generator = train_datagen.flow_from_directory(
     directory='/home/bcrafton3/keras_imagenet/keras_imagenet_train/',
-    target_size=(224, 224),
+    target_size=(227, 227),
     color_mode="rgb",
     batch_size=args.batch_size,
     class_mode="categorical",
-    shuffle=True,
-    seed=42
+    shuffle=True
+    # seed=42
 )
 
 ###############################################################
 
-val_datagen = ImageDataGenerator()
+val_datagen = ImageDataGenerator(featurewise_center=False, preprocessing_function=preprocess)
 
 val_generator = val_datagen.flow_from_directory(
     directory='/home/bcrafton3/keras_imagenet/keras_imagenet_val/',
-    target_size=(224, 224),
+    target_size=(227, 227),
     color_mode="rgb",
     batch_size=args.batch_size,
     class_mode="categorical",
-    shuffle=True,
-    seed=42
+    shuffle=True
+    # seed=42
 )
 
 ###############################################################
@@ -88,10 +127,10 @@ model = Sequential()
 model.add(LocallyConnected2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal', input_shape=(224, 224, 3)))
 model.add(LocallyConnected2D(48, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 
-# model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 model.add(LocallyConnected2D(96, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 
-# model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
+model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
 
 model.add(LocallyConnected2D(384, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer='glorot_normal'))
@@ -102,7 +141,7 @@ model.add(Dense(1000, activation='softmax'))
 
 ###############################################################
 
-model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(), metrics=['accuracy'])
+model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1.0), metrics=['accuracy'])
 
 ###############################################################
 
@@ -110,9 +149,12 @@ STEP_SIZE_TRAIN=train_generator.n//train_generator.batch_size
 STEP_SIZE_VAL=val_generator.n//val_generator.batch_size
 model.fit_generator(generator=train_generator,
                     steps_per_epoch=STEP_SIZE_TRAIN,
+                    epochs=args.epochs,
+                    verbose=1,
                     validation_data=val_generator,
                     validation_steps=STEP_SIZE_VAL,
-                    epochs=10
+                    workers=8,
+                    use_multiprocessing=True
 )
 
 
