@@ -1,0 +1,5 @@
+
+# python keras_imagenet_local1.py --gpu 0 --batch_size 16  --verbose 1 --network local   > local_results1 &
+# python keras_imagenet_local1.py --gpu 1 --batch_size 16  --verbose 1 --network alexnet > local_results2 &
+python keras_imagenet_conv1.py  --gpu 2 --batch_size 128 --verbose 1 --network local   > conv_results1  &
+python keras_imagenet_conv1.py  --gpu 3 --batch_size 128 --verbose 1 --network alexnet > conv_results2  &

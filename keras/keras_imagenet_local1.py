@@ -40,7 +40,8 @@ args = parser.parse_args()
 if args.network == 'local':
     target_size = 224
 elif args.network == 'alexnet':
-    target_size = 227
+    # target_size = 227
+    target_size = 224
 else:
     assert(False)
 
@@ -133,11 +134,11 @@ val_generator = val_datagen.flow_from_directory(
 
 if args.network == 'local':
     model = Sequential()
-    model.add(LocallyConnected2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros(), input_shape=(224, 224, 3)))
+    model.add(LocallyConnected2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros(), input_shape=(target_size, target_size, 3)))
     model.add(LocallyConnected2D(48, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
     model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
-    model.add(LocallyConnected2D(96, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
+    model.add(LocallyConnected2D(96, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
     model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
     model.add(LocallyConnected2D(192, kernel_size=(3, 3), strides=[2, 2], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
@@ -149,18 +150,22 @@ if args.network == 'local':
     model.add(Dense(1000, activation='softmax', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
 elif args.network == 'alexnet':
+
+    # we changed all layers to use 'valid' bc that is all locally connected supports.
+    # kinda want to just use 224x224 for everything AND do the same in the conv file 
+
     model = Sequential()
-    model.add(LocallyConnected2D(96, kernel_size=(11, 11), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros(), input_shape=(227, 227, 3)))
+    model.add(LocallyConnected2D(48, kernel_size=(9, 9), strides=[4, 4], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros(), input_shape=(target_size, target_size, 3)))
     model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
 
-    model.add(LocallyConnected2D(256, kernel_size=(5, 5), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
-    model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
+    model.add(LocallyConnected2D(96, kernel_size=(5, 5), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    # model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
 
-    model.add(LocallyConnected2D(384, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
+    model.add(LocallyConnected2D(128, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Zeros()))
 
-    model.add(LocallyConnected2D(384, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    model.add(LocallyConnected2D(128, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
 
-    model.add(LocallyConnected2D(256, kernel_size=(3, 3), strides=[1, 1], padding="same", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
+    model.add(LocallyConnected2D(256, kernel_size=(3, 3), strides=[1, 1], padding="valid", data_format='channels_last', activation='relu', use_bias=True, kernel_initializer=keras.initializers.RandomNormal(mean=0.0, stddev=0.01), bias_initializer=keras.initializers.Ones()))
     model.add(MaxPooling2D(pool_size=(3, 3), padding="valid", strides=[2, 2]))
 
     model.add(Flatten())
@@ -171,6 +176,8 @@ elif args.network == 'alexnet':
 
 else:
     assert(False)
+
+print (model.summary())
 
 ###############################################################
 
@@ -186,7 +193,7 @@ model.fit_generator(generator=train_generator,
                     verbose=args.verbose,
                     validation_data=val_generator,
                     validation_steps=STEP_SIZE_VAL,
-                    workers=8,
+                    workers=4,
                     use_multiprocessing=True
 )
 
