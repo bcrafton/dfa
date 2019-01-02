@@ -85,6 +85,8 @@ class FullyConnected(Layer):
         return DI
         
     def gv(self, AI, AO, DO):
+        assert(False)
+    
         if not self._train:
             return []
 
@@ -115,6 +117,8 @@ class FullyConnected(Layer):
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
+        assert(False)
+    
         if not self._train:
             return []
 

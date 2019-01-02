@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class Convolution(Layer):
 
-    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None, load=None, train=True):
+    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None, load=None, train=True, sign=None):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
         self.num_classes = num_classes
@@ -41,13 +41,23 @@ class Convolution(Layer):
                 self.filters = tf.Variable(tf.zeros(shape=self.filter_sizes))
             elif init_filters == "sqrt_fan_in":
                 sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
-                self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+                self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=0., maxval=1.0/sqrt_fan_in))
             elif init_filters == "alexnet":
                 # self.filters = tf.random_normal(shape=self.filter_sizes, mean=0.0, stddev=0.01)
                 _filters = np.random.normal(loc=0.0, scale=0.01, size=self.filter_sizes)
                 self.filters = tf.Variable(_filters, dtype=tf.float32)
             else:
                 self.filters = tf.get_variable(name=self.name, shape=self.filter_sizes)
+
+        if sign is not None:
+            self.sign = tf.Variable(sign, dtype=tf.float32)
+        else:
+            if self.last_layer:
+                sign = np.random.choice([1.], size=[1, self.output_size], replace=True, p=[1.])
+                self.sign = tf.Variable(sign, dtype=tf.float32)
+            else:
+                sign = np.random.choice([-1., 1.], size=[1, self.output_size], replace=True, p=[0.25, 0.75])
+                self.sign = tf.Variable(sign, dtype=tf.float32)
 
     ###################################################################
 
@@ -63,16 +73,20 @@ class Convolution(Layer):
         Z = tf.add(tf.nn.conv2d(X, self.filters, self.strides, self.padding), tf.reshape(self.bias, [1, 1, self.fout]))
         # Z = tf.Print(Z, [tf.shape(Z)], message=self.name, summarize=25)
         A = self.activation.forward(Z)
+        A = tf.multiply(A, self.sign)
         return A
         
     ###################################################################           
         
     def backward(self, AI, AO, DO):    
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.multiply(DO, self.sign)
         DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.filters, out_backprop=DO, strides=self.strides, padding=self.padding)
         return DI
 
-    def gv(self, AI, AO, DO):    
+    def gv(self, AI, AO, DO):
+        assert(False)
+    
         if not self._train:
             return []
     
@@ -86,6 +100,7 @@ class Convolution(Layer):
             return []
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.multiply(DO, self.sign)
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])
 
@@ -99,9 +114,12 @@ class Convolution(Layer):
     ###################################################################
 
     def dfa_backward(self, AI, AO, E, DO):
+        # DO = tf.multiply(DO, self.sign)
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
+        assert(False)
+    
         if not self._train:
             return []
     
@@ -115,6 +133,7 @@ class Convolution(Layer):
             return []
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.multiply(DO, self.sign)
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])
 

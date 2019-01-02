@@ -25,6 +25,7 @@ class FeedbackConv(Layer):
             self.B = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
         else:
             b = FeedbackMatrix(size=(self.num_classes, self.num_output), sparse=self.sparse, rank=self.rank)
+            b = np.absolute(b)
             self.B = tf.cast(tf.Variable(b), tf.float32) 
 
     ###################################################################
