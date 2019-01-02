@@ -13,7 +13,7 @@ runs = get_runs()
 
 ##############################################
 
-results = {}
+
 
 num_runs = len(runs)
 for ii in range(num_runs):
@@ -36,7 +36,15 @@ for ii in range(num_runs):
     
     dfc3 = res['dfc3']
     dfc3_bias = res['dfc3_bias']
+    
+    results = {}
+    
+    results['dfc1'] =      dfc1
+    results['dfc1_bias'] = dfc1_bias
+    results['dfc2'] =      dfc2
+    results['dfc2_bias'] = dfc2_bias
+    results['dfc3'] =      dfc3
+    results['dfc3_bias'] = dfc3_bias
 
-    plt.plot(dfc1)
-
-plt.savefig('plot_gradients.png')
+    name = 'gradients_' + name
+    np.save(name, results)
