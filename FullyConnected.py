@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class FullyConnected(Layer):
 
-    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None, load=None, train=True):
+    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None, load=None, train=True, sign=None):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -42,13 +42,23 @@ class FullyConnected(Layer):
                 self.weights = tf.Variable(tf.zeros(shape=self.size))
             elif init_weights == "sqrt_fan_in":
                 sqrt_fan_in = math.sqrt(self.input_size)
-                self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+                self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=0., maxval=1.0/sqrt_fan_in))
             elif init_weights == "alexnet":
                 # self.weights = tf.random_normal(shape=self.size, mean=0.0, stddev=0.01)
                 _weights = np.random.normal(loc=0.0, scale=0.01, size=self.size)
                 self.weights = tf.Variable(_weights, dtype=tf.float32)
             else:
                 self.weights = tf.get_variable(name=self.name, shape=self.size)
+
+        if sign is not None:
+            self.sign = tf.Variable(sign, dtype=tf.float32)
+        else:
+            if self.last_layer:
+                sign = np.random.choice([1.], size=[1, self.output_size], replace=True, p=[1.])
+                self.sign = tf.Variable(sign, dtype=tf.float32)
+            else:
+                sign = np.random.choice([-1., 1.], size=[1, self.output_size], replace=True, p=[0.25, 0.75])
+                self.sign = tf.Variable(sign, dtype=tf.float32)
 
     ###################################################################
         
@@ -63,12 +73,14 @@ class FullyConnected(Layer):
     def forward(self, X):
         Z = tf.matmul(X, self.weights) + self.bias
         A = self.activation.forward(Z)
+        A = tf.multiply(A, self.sign)
         return A
 
     ###################################################################
             
     def backward(self, AI, AO, DO):
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.multiply(DO, self.sign)
         DI = tf.matmul(DO, tf.transpose(self.weights))
         return DI
         
@@ -86,18 +98,20 @@ class FullyConnected(Layer):
             return []
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.multiply(DO, self.sign)
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
 
-        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.weights = self.weights.assign(tf.clip_by_value(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)), 0., 1e6)) # just guessing nothing shud ever be larger than 1e6.
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DW, self.weights), (DB, self.bias)]
         
     ###################################################################
     
     def dfa_backward(self, AI, AO, E, DO):
+        # DO = tf.multiply(DO, self.sign)
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
@@ -114,12 +128,13 @@ class FullyConnected(Layer):
             return []
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.multiply(DO, self.sign)
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
 
-        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.weights = self.weights.assign(tf.clip_by_value(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)), 0., 1e6)) # just guessing nothing shud ever be larger than 1e6.
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DW, self.weights), (DB, self.bias)]
         
