@@ -448,7 +448,6 @@ for ii in range(0, epochs):
     val_accs.append(val_acc)
     val_accs_top5.append(val_acc_top5)
 
-    '''
     if phase == 0:
         phase = 1
         print ('phase 1')
@@ -464,7 +463,6 @@ for ii in range(0, epochs):
             alpha = 0.0005
             phase = 3
             print ('phase 3')
-    '''
 
     if args.save:
         [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
