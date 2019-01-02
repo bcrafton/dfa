@@ -258,7 +258,8 @@ if args.act == 'tanh':
     act = Tanh()
 elif args.act == 'relu':
     act = Relu()
-    bias = 0.1
+    if args.dfa:
+        bias = 0.1
 else:
     assert(False)
 
@@ -287,15 +288,15 @@ l12 = FeedbackConv(size=[batch_size, 6, 6, 256], num_classes=num_classes, sparse
 
 l13 = ConvToFullyConnected(shape=[6, 6, 256])
 
-l14 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, name="fc1", load=weights_fc, train=train_fc)
+l14 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc)
 l15 = Dropout(rate=dropout_rate)
 l16 = FeedbackFC(size=[6*6*256, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l17 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, name="fc2", load=weights_fc, train=train_fc)
+l17 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
 l18 = Dropout(rate=dropout_rate)
 l19 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l20 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, name="fc3", load=weights_fc, train=train_fc)
+l20 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
 
 ###############################################################
 
