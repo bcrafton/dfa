@@ -4,6 +4,7 @@ import os
 import copy
 import threading
 import argparse
+import matplotlib.pyplot as plt
 from results import get_runs
 
 ##############################################
@@ -26,29 +27,16 @@ for ii in range(num_runs):
 
     # load the results
     res = np.load(name).item()
+
+    dfc1 = res['dfc1']
+    dfc1_bias = res['dfc1_bias']
     
-    if param['load']:
-        transfer = 1
-    else:
-        transfer = 0
+    dfc2 = res['dfc2']
+    dfc2_bias = res['dfc2_bias']
     
-    key = (param['benchmark'], param['dfa'], param['sparse'], transfer)
-    val = max(res['val_acc'])
+    dfc3 = res['dfc3']
+    dfc3_bias = res['dfc3_bias']
 
-    print (name, val)
-    
-    if key in results.keys():
-        # use an if instead of max because we gonna want to save the winner run information
-        if results[key][0] < val:
-            results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
-    else:
-        results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
-            
-for key in sorted(results.keys()):   
-    print (key, results[key])
+    plt.plot(dfc1)
 
-
-
-
-
-        
+plt.savefig('plot_gradients.png')
