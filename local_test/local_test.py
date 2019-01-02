@@ -10,6 +10,7 @@ np.set_printoptions(threshold=np.inf)
 
 image = tf.placeholder(tf.float32, [1, 225, 225, 3])
 kernel = tf.Variable(tf.random_uniform(shape=[75*75, 3*3*3, 32], minval=1., maxval=1.))
+error = tf.Variable(tf.random_uniform(shape=[1, 75, 75, 32], minval=1., maxval=1.))
 
 #########################################################
 
@@ -37,9 +38,15 @@ def local_conv2d(inputs, kernel, kernel_size, strides, output_shape):
   output = tf.reshape(output, (output_row, output_col, -1, filters))
   output = tf.transpose(output, (2, 0, 1, 3))
   
-  return output
+  return x_aggregate, output
 
-output = local_conv2d(image, kernel, [3, 3], strides=[3, 3], output_shape=[75, 75])
+x_aggregate, output = local_conv2d(image, kernel, [3, 3], strides=[3, 3], output_shape=[75, 75])
+
+AI = tf.reshape(x_aggregate, (1, 75*75, 1, 27, 1))
+DO = tf.reshape(error,       (1, 75*75, 1, 1, 32))
+# this should probably use that 'batch_dot'
+# think about similarities in compute.  
+DW = tf.multiply(AI, DO)
 
 #########################################################
 
@@ -56,9 +63,9 @@ _image = _image[0:225, 0:225, 0:3]
 _shape = np.shape(_image)
 _image = np.reshape(_image, (1, _shape[0], _shape[1], _shape[2]))
 
-[_output] = sess.run([output], feed_dict={image: _image})
+[_x_aggregate, _kernel, _output] = sess.run([x_aggregate, kernel, output], feed_dict={image: _image})
 
-print (np.shape(_output))
+print (np.shape(_x_aggregate), np.shape(kernel), np.shape(_output))
 
 img = _output[0, :, :, 0] / np.max(_output[0, :, :, 0])
 plt.imshow(img)
