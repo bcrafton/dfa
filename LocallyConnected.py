@@ -3,85 +3,32 @@ import tensorflow as tf
 import numpy as np
 import math
 
-from Layer import Layer 
-from Activation import Activation
-from Activation import Sigmoid
-from Activation import Linear
+import conv_utils
 
-def image_to_patches(image, kernel_size, kernel_stride):
-    shape = tf.shape(image)
-    N = shape[0]
-    height = shape[1]
-    width = shape[2]
-    channels = shape[3]
-    kh, kw = kernel_size
-    sh, sw = kernel_stride
-    
-    # assert stride height = stride width
-    assert(sh == sw)
-    # assert stride height = kernel height or 1
-    assert(sh == kh or sh == 1)
-    # assert stride width = kernel width or 1
-    assert(sw == kw or sw == 1)
-    # assert kernel width = kernel height
-    assert(kh == kw)
-    # assert kh and divides height
-    # assert((height % kh) == 0)
-    # assert kw and divides width
-    # assert((width % kw) == 0)
-    
-    rows = height // kh
-    cols = width // kw
+from Layer import Layer
    
-    if (sh == 1):
-        sh, sw = kh, kw # stride = slice now.
-        num_slices = sh * sw
-    
-        pad = tf.pad(tensor=image, paddings=[[0, 0], [kh // 2, kh // 2], [kw // 2, kw // 2], [0,0]], mode='CONSTANT')
-    
-        slices = []
-        for ii in range(sh):
-            for jj in range(sw):
-                slic = tf.reshape(tf.slice(pad, begin=[0, ii, jj, 0], size=[N, height, width, channels]), (N, 1, height, width, channels))
-                slices.append(slic)
-                
-        slices = tf.concat(slices, axis=1)
-        
-        # [1, 9, 9, 9, 3]
-        slices = tf.reshape(slices, [N, num_slices, rows, kh, width, channels])
-        # [1, 9, 3, 3, 9, 3]
-        slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
-        # [1, 9, 3, 9, 3, 3]
-        slices = tf.reshape(slices, [N, num_slices, rows * cols, kw, kh, channels])
-        # [1, 9, 9, 3, 3, 3]
-        slices = tf.transpose(slices, [0, 1, 2, 4, 3, 5])
-        # [1, 9, 9, 3, 3, 3]
-        
-        # [1, 9, 9, 3, 3, 3]
-        slices = tf.reshape(slices, [N, sh, sw, rows * cols, kh, kw, channels])
-        # [1, 3, 3, 9, 3, 3, 3]
-        slices = tf.transpose(slices, [0, 1, 3, 2, 4, 5, 6])
-        # [1, 3, 9, 3, 3, 3, 3]
-        slices = tf.reshape(slices, [N, sh, rows, cols * sw, kh, kw, channels])
-        # [1, 3, 3, 9, 3, 3, 3]
-        slices = tf.transpose(slices, [0, 2, 1, 3, 4, 5, 6])
-        # [1, 3, 3, 3, 27, 3]
-        slices = tf.reshape(slices, [N, rows * sh * cols * sw, kh, kw, channels])
+def local_conv2d(inputs, kernel, kernel_size, strides, output_shape):
+    N = tf.shape(inputs)[0]
 
-        return slices
+    stride_row, stride_col = strides
+    output_row, output_col = output_shape
+    kernel_shape = tf.shape(kernel)
+    feature_dim = kernel_shape[1]
+    filters = kernel_shape[2]
 
-    else:
-        # [1, 9, 9, 3]
-        patches = tf.reshape(image, [N, rows, kh, width, channels])
-        # [1, 3, 3, 9, 3]
-        patches = tf.transpose(patches, [0, 1, 3, 2, 4])
-        # [1, 3, 9, 3, 3]
-        patches = tf.reshape(patches, [N, rows * cols, kw, kh, channels])
-        # [1, 9, 3, 3, 3]
-        patches = tf.transpose(patches, [0, 1, 3, 2, 4])
-        
-        return patches
+    xs = []
+    for i in range(output_row):
+        for j in range(output_col):
+            slice_row = slice(i * stride_row, i * stride_row + kernel_size[0])
+            slice_col = slice(j * stride_col, j * stride_col + kernel_size[1])
+            xs.append(tf.reshape(inputs[:, slice_row, slice_col, :], (1, N, feature_dim)))
 
+    x_aggregate = tf.concat(xs, axis=0)
+    output = tf.keras.backend.batch_dot(x_aggregate, kernel)
+    output = tf.reshape(output, (output_row, output_col, N, filters))
+    output = tf.transpose(output, (2, 0, 1, 3))
+    return output
+  
 def patches_to_image(patches, img_height, img_width):
     shape = tf.shape(patches)
     N = shape[0]
@@ -102,45 +49,41 @@ def patches_to_image(patches, img_height, img_width):
     img = tf.reshape(img, [N, num_rows * patch_height, width, channels])
     
     return img
-   
-class BioConvolution(Layer):
+  
+class LocallyConnected(Layer):
 
-    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation: Activation, bias, last_layer, name=None, load=None, train=True):
-        self.input_sizes = input_sizes
-        self.filter_sizes = filter_sizes
+    def __init__(self, input_size, filter_size, num_classes, init, strides, padding, activation, bias, last_layer, name=None, load=None, train=True):
+        self.input_size = input_size
+        self.filter_size = filter_size
         self.num_classes = num_classes
-        
-        # self.h and self.w only equal this for input sizes when padding = "SAME"...
-        self.batch_size, self.h, self.w, self.fin = self.input_sizes
-        self.fh, self.fw, self.fin, self.fout = self.filter_sizes
-
+        self.batch_size, self.h, self.w, self.fin = self.input_size
+        self.fh, self.fw, self.fin, self.fout = self.filter_size
         self.bias = tf.Variable(tf.ones(shape=self.fout) * bias)
-
         self.strides = strides
-        _, self.sh, self.sw, _ = self.strides
+        self.stride_row, self.stride_col = self.strides
         self.padding = padding
-
-        self.alpha = alpha
-
         self.activation = activation
         self.last_layer = last_layer
-
         self.name = name
         self._train = train
         
-        assert(self.fh == self.fw)
-        assert(self.sh == self.sw)
-        assert(self.sh == 1 or self.sh == self.fh)
-        
-        self.filter_shape = (self.h // self.sh * self.w // self.sw, self.fh, self.fw, self.fin, self.fout)
-        self.filter_reshape = (1, self.h // self.sh * self.w // self.sw, self.fh, self.fw, self.fin, self.fout)
+        self.alpha = 0.01
 
-        if init_filters == "zero":
-            self.filters = tf.Variable(tf.zeros(shape=self.filter_shape))
-        elif init_filters == "sqrt_fan_in":
+        self.output_row = conv_utils.conv_output_length(self.h, self.fh, self.padding, self.strides[0])
+        self.output_col = conv_utils.conv_output_length(self.w, self.fw, self.padding, self.strides[1])
+        self.output_shape = (self.output_row, self.output_col)
+        self.filter_shape = (self.output_row * self.output_col, self.fh * self.fw * self.fin, self.fout)
+        
+        print (self.name + ' input shape: ' + str(self.input_size))
+        print (self.name + ' filter shape: ' + str(self.filter_shape))
+        print (self.name + ' output shape: ' + str(self.output_shape))
+        
+        if init == "zero":
+            self.filters = tf.Variable(tf.zeros(shape=self.filter_shape), dtype=tf.float32)
+        elif init == "sqrt_fan_in":
             sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
-            self.filters = tf.Variable(tf.random_uniform(shape=self.filter_shape, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-        elif init_filters == "alexnet":
+            self.filters = tf.Variable(tf.random_uniform(shape=self.filter_shape, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in), dtype=tf.float32)
+        elif init == "alexnet":
             self.filters = tf.Variable(np.random.normal(loc=0.0, scale=0.01, size=self.filter_shape), dtype=tf.float32)
         else:
             self.filters = tf.get_variable(name=self.name, shape=self.filter_shape)
@@ -151,115 +94,53 @@ class BioConvolution(Layer):
         return [(self.name, self.filters), (self.name + "_bias", self.bias)]
 
     def num_params(self):
-        filter_weights_size = (self.h // self.sh * self.w // self.sw) * self.fh * self.fw * self.fin * self.fout
+        filter_weights_size = np.prod(self.filter_shape)
         bias_weights_size = self.fout
         return filter_weights_size + bias_weights_size
                 
     def forward(self, X):
-        shape = tf.shape(X)
-        N = shape[0]
-        height = shape[1]
-        width = shape[2]
-        channels = shape[3]
+        # return local_conv2d(X, self.filters, (self.fh, self.fw), self.strides, (self.output_row, self.output_col))
+        
+        N = tf.shape(X)[0]
+    
+        xs = []
+        for i in range(self.output_row):
+            for j in range(self.output_col):
+                slice_row = slice(i * self.stride_row, i * self.stride_row + self.fh)
+                slice_col = slice(j * self.stride_col, j * self.stride_col + self.fw)
+                xs.append(tf.reshape(X[:, slice_row, slice_col, :], (1, N, self.fh * self.fw * self.fin)))
 
-        # X
-        _X = image_to_patches(X, (self.fh, self.fw), (self.sh, self.sw))
-        shape = tf.shape(_X)
-        _X = tf.reshape(_X, (shape[0], shape[1], shape[2], shape[3], shape[4], 1))
-
-        # F 
-        filters = tf.reshape(self.filters, self.filter_reshape)
-
-        # Z
-        Z = tf.multiply(_X, filters)
-        Z = tf.reduce_sum(Z, axis=(2, 3, 4))
-        Z = Z + tf.reshape(self.bias, (1, 1, self.fout))
-        Z = tf.reshape(Z, (N, self.h // self.sh, self.w // self.sw, self.fout))
-
-        # Z = tf.Print(Z, [tf.shape(Z)], message='')
-
-        # A
-        A = self.activation.forward(Z)
-        return A
+        x_aggregate = tf.concat(xs, axis=0) 
+        output = tf.keras.backend.batch_dot(x_aggregate, self.filters)
+        output = tf.reshape(output, (self.output_row, self.output_col, N, self.fout))
+        output = tf.transpose(output, (2, 0, 1, 3))
+        return output
         
     ###################################################################           
-        
+
     def backward(self, AI, AO, DO):
-        shape = tf.shape(AI)
-        N = shape[0]
-        height = shape[1]
-        width = shape[2]
-        channels = shape[3]
-
-        # E
-        # shape = (N, self.h // self.fh * self.w // self.fw, 1, 1, 1, self.fout)
-        DO = tf.multiply(DO, self.activation.gradient(AO))
-        DO = tf.reshape(DO, (N, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
+    
+        # x_aggregate (5625, 4, 27)
+        # output      (4, 75, 75, 32)
+        # filters     (5625, 27, 32)
         
-        # F
-        filters = tf.reshape(self.filters, self.filter_reshape)
-
-        # DI
-        DI = tf.multiply(DO, filters)
-        if (self.sh == self.fh):
-            DI = tf.reduce_sum(DI, axis=(5))
-            DI = patches_to_image(DI, self.h, self.w)
-        else:
-            DI = tf.reduce_sum(DI, axis=(2, 3, 5))
-            DI = tf.reshape(DI, (N, self.h // self.sh, self.w // self.sw, self.fin))
-
-        # assert(False)
+        N = tf.shape(AI)[0]
+        
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DO = tf.reshape(DO, (N, self.output_row * self.output_col, 1, 1, 1, self.fout))                                   # (N, 5625, 1, 1, 1, 32)
+        filters = tf.reshape(self.filters, (1, self.output_row * self.output_col, self.fh, self.fw, self.fin, self.fout)) # (1, 5625, 3, 3, 3, 32)
+        DI = tf.multiply(filters, DO)
+        DI = tf.reduce_sum(DI, axis=(2, 3, 5)) # (N, 5625, 3)
+        DI = tf.reshape(DI, (N, self.h, self.w, self.fin))
 
         return DI
 
-    def gv(self, AI, AO, DO):  
-        if not self._train:
-            return []
+    def gv(self, AI, AO, DO): 
+        assert(False)
 
-        shape = tf.shape(AI)
-        N = shape[0]
-        height = shape[1]
-        width = shape[2]
-        channels = shape[3]
-
-        DO = tf.multiply(DO, self.activation.gradient(AO))
-        DO = tf.reshape(DO, (N, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
-        
-        _AI = image_to_patches(AI, (self.fh, self.fw), (self.sh, self.sw))
-        shape = tf.shape(_AI)
-        _AI = tf.reshape(_AI, (shape[0], shape[1], shape[2], shape[3], shape[4], 1))
-        
-        DF = tf.multiply(DO, _AI)
-        DF = tf.reduce_sum(DF, axis=0)
-        DB = tf.reduce_sum(DO, axis=[0, 1, 2, 3, 4])
-
-        return [(DF, self.filters), (DB, self.bias)]
-        
     def train(self, AI, AO, DO): 
-        if not self._train:
-            return []
+        return []
 
-        shape = tf.shape(AI)
-        N = shape[0]
-        height = shape[1]
-        width = shape[2]
-        channels = shape[3]
-
-        DO = tf.multiply(DO, self.activation.gradient(AO))
-        DO = tf.reshape(DO, (N, self.h // self.sh * self.w // self.sw, 1, 1, 1, self.fout))
-        
-        _AI = image_to_patches(AI, (self.fh, self.fw), (self.sh, self.sw))
-        shape = tf.shape(_AI)
-        _AI = tf.reshape(_AI, (shape[0], shape[1], shape[2], shape[3], shape[4], 1))
-        
-        DF = tf.multiply(DO, _AI)
-        DF = tf.reduce_sum(DF, axis=0)
-        DB = tf.reduce_sum(DO, axis=[0, 1, 2, 3, 4])
-
-        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
-        return [(DF, self.filters), (DB, self.bias)]
-        
     ###################################################################
 
     def dfa_backward(self, AI, AO, E, DO):
