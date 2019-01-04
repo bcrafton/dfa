@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class FullyConnected(Layer):
 
-    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None, load=None, train=True):
+    def __init__(self, size, num_classes, init_weights, alpha, activation, bias, last_layer, l2=0., name=None, load=None, train=True):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -25,6 +25,9 @@ class FullyConnected(Layer):
 
         # lr
         self.alpha = alpha
+
+        # l2 loss lambda
+        self.l2 = l2
 
         # activation function
         self.activation = activation
@@ -75,18 +78,29 @@ class FullyConnected(Layer):
     def gv(self, AI, AO, DO):
         if not self._train:
             return []
-
+            
+        N = tf.shape(AI)[0]
+        N = tf.cast(N, dtype=tf.float32)
+        
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
+        # sorta makes sense that we add regularization term even if weights are negative. want them to go back to zero
+        # kinda weird its just weights ... not weights squared or something
+        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
         DB = tf.reduce_sum(DO, axis=0)
+
+        # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
+
         return [(DW, self.weights), (DB, self.bias)]
 
     def train(self, AI, AO, DO):
         if not self._train:
             return []
 
+        N = tf.shape(AI)[0]
+        N = tf.cast(N, dtype=tf.float32)
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
@@ -104,17 +118,26 @@ class FullyConnected(Layer):
         if not self._train:
             return []
 
+        N = tf.shape(AI)[0]
+        N = tf.cast(N, dtype=tf.float32)
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
         DB = tf.reduce_sum(DO, axis=0)
+        
+        # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
+        
         return [(DW, self.weights), (DB, self.bias)]
         
     def dfa(self, AI, AO, E, DO):
         if not self._train:
             return []
 
+        N = tf.shape(AI)[0]
+        N = tf.cast(N, dtype=tf.float32)
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
@@ -132,21 +155,33 @@ class FullyConnected(Layer):
         if not self._train:
             return []
 
+        N = tf.shape(AI)[0]
+        N = tf.cast(N, dtype=tf.float32)
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
         DB = tf.reduce_sum(DO, axis=0)
+        
+        # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
+        
         return [(DW, self.weights), (DB, self.bias)]
         
     def lel(self, AI, AO, E, DO, Y):
         if not self._train:
             return []
 
+        N = tf.shape(AI)[0]
+        N = tf.cast(N, dtype=tf.float32)
+
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
         DB = tf.reduce_sum(DO, axis=0)
+
+        # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
 
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        
         return [(DW, self.weights), (DB, self.bias)]
         
         
