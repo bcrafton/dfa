@@ -83,8 +83,6 @@ class FullyConnected(Layer):
         N = tf.cast(N, dtype=tf.float32)
         
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        # sorta makes sense that we add regularization term even if weights are negative. want them to go back to zero
-        # kinda weird its just weights ... not weights squared or something
         DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
         DB = tf.reduce_sum(DO, axis=0)
 
@@ -100,7 +98,7 @@ class FullyConnected(Layer):
         N = tf.cast(N, dtype=tf.float32)
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights # add weights bc want large neg weights to go to zero.
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)

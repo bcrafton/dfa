@@ -314,16 +314,16 @@ class Model:
         return weights
         
     def up_to(self, X, N):
-        A = [None] * N
+        A = [None] * (N + 1)
         
-        for ii in range(N):
+        for ii in range(N + 1):
             l = self.layers[ii]
             if ii == 0:
                 A[ii] = l.forward(X)
             else:
                 A[ii] = l.forward(A[ii-1])
                 
-        return A[N-1]
+        return A[N]
         
         
         

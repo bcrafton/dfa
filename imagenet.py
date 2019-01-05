@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--eps', type=float, default=1.)
 parser.add_argument('--dropout', type=float, default=0.5)
@@ -288,20 +289,24 @@ l12 = FeedbackConv(size=[batch_size, 6, 6, 256], num_classes=num_classes, sparse
 
 l13 = ConvToFullyConnected(shape=[6, 6, 256])
 
-l14 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc)
+l14 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc)
 l15 = Dropout(rate=dropout_rate)
-l16 = FeedbackFC(size=[6*6*256, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc1_fb")
+l16 = FeedbackFC(size=[6*6*256, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc1_fb", std=0.01)
 
-l17 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
+l17 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc)
 l18 = Dropout(rate=dropout_rate)
-l19 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc2_fb")
+l19 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc2_fb", std=0.01)
 
-l20 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
+l20 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc)
 
 ###############################################################
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20])
 # model = Model(layers=[l0, l1, l3, l4, l6, l8, l10, l11, l13, l14, l15, l17, l18, l20])
+
+A1 = model.up_to(X=features, N=14)
+A2 = model.up_to(X=features, N=17)
+A3 = model.up_to(X=features, N=20)
 
 predict = tf.nn.softmax(model.predict(X=features))
 
@@ -367,6 +372,21 @@ val_accs_top5 = []
 alpha = args.alpha
 phase = 0
 
+fc1 = []
+dfc1 = []
+dfc1_bias = []
+a1 = []
+
+fc2 = []
+dfc2 = []
+dfc2_bias = []
+a2 = []
+
+fc3 = []
+dfc3 = []
+dfc3_bias = []
+a3 = []
+
 for ii in range(0, epochs):
 
     '''
@@ -392,7 +412,7 @@ for ii in range(0, epochs):
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
-        _total_correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
+        _total_correct, _top5, _gvs, _A1, _A2, _A3, _ = sess.run([total_correct, total_top5, grads_and_vars, A1, A2, A3, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
         
         train_total += batch_size
         train_correct += _total_correct
@@ -407,6 +427,23 @@ for ii in range(0, epochs):
             f = open(results_filename, "a")
             f.write(p + "\n")
             f.close()
+
+        # for ii in range(len(_gvs)):
+            # list of all trainable weights (weights and biases), where each index is a tuple -> (dX, X)
+            # so we want to look at 0 index of each tuple
+            # print (np.shape(_gvs[ii][0]), np.std(_gvs[ii][0]))
+
+        dfc3.append(      np.std(_gvs[0][0]) )
+        dfc3_bias.append( np.std(_gvs[1][0]) )
+        a3.append(        np.max(_A3)        )
+
+        dfc2.append(      np.std(_gvs[2][0]) )
+        dfc2_bias.append( np.std(_gvs[3][0]) )
+        a2.append(        np.max(_A2)        )
+
+        dfc1.append(      np.std(_gvs[4][0]) )
+        dfc1_bias.append( np.std(_gvs[5][0]) )
+        a1.append(        np.max(_A1)        )
 
     p = "train accuracy: %f %f" % (train_acc, train_acc_top5)
     print (p)
@@ -471,10 +508,31 @@ for ii in range(0, epochs):
 
     if args.save:
         [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+
+        fc1.append( np.std(w['fc1']) )
+        fc2.append( np.std(w['fc2']) )
+        fc3.append( np.std(w['fc3']) )
+
         w['train_acc'] = train_accs
         w['train_acc_top5'] = train_accs_top5
         w['val_acc'] = val_accs
         w['val_acc_top5'] = val_accs_top5
+
+        w['fc1_std']   = fc1
+        w['dfc1']      = dfc1
+        w['dfc1_bias'] = dfc1_bias
+        w['A1']        = a1
+
+        w['fc2_std']   = fc2
+        w['dfc2']      = dfc2
+        w['dfc2_bias'] = dfc2_bias
+        w['A2']        = a2
+
+        w['fc3_std']   = fc3
+        w['dfc3']      = dfc3 
+        w['dfc3_bias'] = dfc3_bias
+        w['A3']        = a3
+
         np.save(args.name, w)
 
     print('epoch {}/{}'.format(ii, epochs))
