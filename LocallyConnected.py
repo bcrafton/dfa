@@ -68,7 +68,7 @@ def get_pad(padding, filter_size):
   
 class LocallyConnected(Layer):
 
-    def __init__(self, input_size, filter_size, num_classes, init, strides, padding, activation, bias, last_layer, name=None, load=None, train=True):
+    def __init__(self, input_size, filter_size, num_classes, init, strides, padding, alpha, activation, bias, last_layer, name=None, load=None, train=True):
         self.input_size = input_size
         self.filter_size = filter_size
         self.num_classes = num_classes
@@ -82,12 +82,11 @@ class LocallyConnected(Layer):
         self.last_layer = last_layer
         self.name = name
         self._train = train
-        
-        self.alpha = 0.01
+        self.alpha = alpha
 
         self.output_row = conv_utils.conv_output_length(self.h, self.fh, self.padding, self.strides[0])
         self.output_col = conv_utils.conv_output_length(self.w, self.fw, self.padding, self.strides[1])
-        self.output_shape = (self.output_row, self.output_col)
+        self.output_shape = (self.output_row, self.output_col, self.fout)
         self.filter_shape = (self.output_row * self.output_col, self.fh * self.fw * self.fin, self.fout)
         
         print (self.name + ' input shape: ' + str(self.input_size))
@@ -154,9 +153,9 @@ class LocallyConnected(Layer):
                 slice_col = slice(j, j + self.fw)
                 es.append(tf.reshape(DO[:, slice_row, slice_col, :], (1, N, self.fh * self.fw * self.fout)))
         
-        DI = tf.concat(es, axis=0)
+        DO = tf.concat(es, axis=0)
         
-        # DI =      [900, 4, 288]
+        # DO =      [900, 4, 288]
         # filters = [900, 27, 32]
         # filters = [900, 288, 3]
         # we change filters bc think batch_dot needs to be done (DI, F).
@@ -166,15 +165,65 @@ class LocallyConnected(Layer):
         filters = tf.transpose(filters, (0, 1, 3, 2))
         filters = tf.reshape(filters, (self.output_row * self.output_col, self.fh * self.fw * self.fout, self.fin))
         
-        DI = tf.keras.backend.batch_dot(DI, filters)
+        DI = tf.keras.backend.batch_dot(DO, filters)
+        # DI = [900, 4, 3]
+        DI = tf.reshape(DI, (self.output_row, self.output_col, N, self.fin))
+        DI = tf.transpose(DI, (2, 0, 1, 3))
         
         return DI
 
     def gv(self, AI, AO, DO): 
-        assert(False)
+        N = tf.shape(AI)[0]
+    
+        xs = []
+        for i in range(self.output_row):
+            for j in range(self.output_col):
+                slice_row = slice(i * self.stride_row, i * self.stride_row + self.fh)
+                slice_col = slice(j * self.stride_col, j * self.stride_col + self.fw)
+                xs.append(tf.reshape(AI[:, slice_row, slice_col, :], (1, N, self.fh * self.fw * self.fin)))
+        AI = tf.concat(xs, axis=0)
+        # AI = [900, 4, 27]
+        AI = tf.transpose(AI, (0, 2, 1))
+        
+        # [pad_w, pad_h] = get_pad('full', np.array([self.fh, self.fw]))
+        # DO = tf.pad(DO, [[0, 0], [pad_w, pad_w], [pad_h, pad_h], [0, 0]])
+        # DO = [4, 30, 30, 32]
+        DO = tf.transpose(DO, (1, 2, 0, 3))
+        DO = tf.reshape(DO, (self.output_row * self.output_col, N, self.fout))
+        # DO = [900, 4, 32]
+        
+        DF = tf.keras.backend.batch_dot(AI, DO)
+        DB = tf.reduce_sum(DO, axis=[0, 1])
+
+        return [(DF, self.filters), (DB, self.bias)]
 
     def train(self, AI, AO, DO): 
-        return []
+        N = tf.shape(AI)[0]
+    
+        xs = []
+        for i in range(self.output_row):
+            for j in range(self.output_col):
+                slice_row = slice(i * self.stride_row, i * self.stride_row + self.fh)
+                slice_col = slice(j * self.stride_col, j * self.stride_col + self.fw)
+                xs.append(tf.reshape(AI[:, slice_row, slice_col, :], (1, N, self.fh * self.fw * self.fin)))
+        AI = tf.concat(xs, axis=0)
+        # AI = [900, 4, 27]
+        AI = tf.transpose(AI, (0, 2, 1))
+        
+        # [pad_w, pad_h] = get_pad('full', np.array([self.fh, self.fw]))
+        # DO = tf.pad(DO, [[0, 0], [pad_w, pad_w], [pad_h, pad_h], [0, 0]])
+        # DO = [4, 30, 30, 32]
+        DO = tf.transpose(DO, (1, 2, 0, 3))
+        DO = tf.reshape(DO, (self.output_row * self.output_col, N, self.fout))
+        # DO = [900, 4, 32]
+        
+        DF = tf.keras.backend.batch_dot(AI, DO)
+        DB = tf.reduce_sum(DO, axis=[0, 1])
+        
+        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        
+        return [(DF, self.filters), (DB, self.bias)]
 
     ###################################################################
 

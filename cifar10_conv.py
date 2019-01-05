@@ -7,15 +7,15 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=4)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--decay', type=float, default=0.99)
+parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--alg', type=str, default='bp')
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="gd")
+parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="cifar10_conv_weights")
 parser.add_argument('--load', type=str, default=None)
@@ -84,19 +84,29 @@ tf.reset_default_graph()
 batch_size = tf.placeholder(tf.int32, shape=())
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
-X = tf.placeholder(tf.float32, [4, 32, 32, 3])
+X = tf.placeholder(tf.float32, [None, 32, 32, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
-Y = tf.placeholder(tf.float32, [4, 10])
+Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = LocallyConnected(input_size=[batch_size, 32, 32, 3], filter_size=[3, 3, 3, 32], num_classes=10, init=args.init, strides=[1, 1], padding="valid", activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
+l0 = LocallyConnected(input_size=[batch_size, 32, 32, 3], filter_size=[3, 3, 3, 64], num_classes=10, init=args.init, strides=[1, 1], padding="valid", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
 
-l1 = ConvToFullyConnected(shape=[30, 30, 32])
+l1 = MaxPool(size=[batch_size, 30, 30, 64], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 
-l2 = FullyConnected(size=[30*30*32, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc1', load=weights_fc, train=train_fc)
+l2 = LocallyConnected(input_size=[batch_size, 15, 15, 32], filter_size=[3, 3, 64, 96], num_classes=10, init=args.init, strides=[1, 1], padding="valid", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+
+l3 = MaxPool(size=[batch_size, 13, 13, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+
+l4 = LocallyConnected(input_size=[batch_size, 7, 7, 96], filter_size=[3, 3, 96, 128], num_classes=10, init=args.init, strides=[1, 1], padding="valid", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv)
+
+l5 = ConvToFullyConnected(shape=[5, 5, 128])
+
+l6 = FullyConnected(size=[5*5*128, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
+l7 = FullyConnected(size=[1000,    1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
+l8 = FullyConnected(size=[1000,    10],   num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True,  name='fc3', load=weights_fc, train=train_fc)
 
 ##############################################
 
-model = Model(layers=[l0, l1, l2])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8])
 
 predict = model.predict(X=X)
 
@@ -105,7 +115,7 @@ weights = model.get_weights()
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
     if args.alg == 'dfa':
         grads_and_vars = model.dfa_gvs(X=X, Y=Y)
-    if args.alg == 'lel':
+    elif args.alg == 'lel':
         grads_and_vars = model.lel_gvs(X=X, Y=Y)
     elif args.alg == 'bp':
         grads_and_vars = model.gvs(X=X, Y=Y)
@@ -124,7 +134,7 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
 else:
     if args.alg == 'dfa':
         train = model.dfa(X=X, Y=Y)
-    if args.alg == 'lel':
+    elif args.alg == 'lel':
         train = model.lel(X=X, Y=Y)
     elif args.alg == 'bp':
         train = model.train(X=X, Y=Y)
@@ -187,7 +197,7 @@ for ii in range(EPOCHS):
     _total_top5 = 0
     
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
-        print (jj)
+        print (jj * BATCH_SIZE)
         
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
