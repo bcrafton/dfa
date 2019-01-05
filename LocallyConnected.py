@@ -49,6 +49,22 @@ def patches_to_image(patches, img_height, img_width):
     img = tf.reshape(img, [N, num_rows * patch_height, width, channels])
     
     return img
+    
+def get_pad(padding, filter_size):
+
+  if padding == 'same':
+      pad = filter_size // 2
+      
+  elif padding == 'valid':
+      pad = 0
+
+  elif padding == 'full':
+      pad = filter_size - 1
+      
+  else:
+      assert(False)
+
+  return pad
   
 class LocallyConnected(Layer):
 
@@ -118,21 +134,40 @@ class LocallyConnected(Layer):
         
     ###################################################################           
 
+    # This operation pads a tensor according to the paddings you specify. 
+    # paddings is an integer tensor with shape [n, 2], where n is the rank of tensor. 
+    # For each dimension D of input, paddings[D, 0] indicates how many values to add 
+      # before the contents of tensor in that dimension, and paddings[D, 1] indicates 
+      # how many values to add after the contents of tensor in that dimension.
+
     def backward(self, AI, AO, DO):
     
-        # x_aggregate (5625, 4, 27)
-        # output      (4, 75, 75, 32)
-        # filters     (5625, 27, 32)
-        
         N = tf.shape(AI)[0]
         
-        DO = tf.multiply(DO, self.activation.gradient(AO))
-        DO = tf.reshape(DO, (N, self.output_row * self.output_col, 1, 1, 1, self.fout))                                   # (N, 5625, 1, 1, 1, 32)
-        filters = tf.reshape(self.filters, (1, self.output_row * self.output_col, self.fh, self.fw, self.fin, self.fout)) # (1, 5625, 3, 3, 3, 32)
-        DI = tf.multiply(filters, DO)
-        DI = tf.reduce_sum(DI, axis=(2, 3, 5)) # (N, 5625, 3)
-        DI = tf.reshape(DI, (N, self.h, self.w, self.fin))
-
+        [pad_w, pad_h] = get_pad('full', np.array([self.fh, self.fw]))
+        DO = tf.pad(DO, [[0, 0], [pad_w, pad_w], [pad_h, pad_h], [0, 0]])
+        
+        es = []
+        for i in range(self.output_row):
+            for j in range(self.output_col):
+                slice_row = slice(i, i + self.fh)
+                slice_col = slice(j, j + self.fw)
+                es.append(tf.reshape(DO[:, slice_row, slice_col, :], (1, N, self.fh * self.fw * self.fout)))
+        
+        DI = tf.concat(es, axis=0)
+        
+        # DI =      [900, 4, 288]
+        # filters = [900, 27, 32]
+        # filters = [900, 288, 3]
+        # we change filters bc think batch_dot needs to be done (DI, F).
+        
+        filters = self.filters
+        filters = tf.reshape(filters, (self.output_row * self.output_col, self.fh * self.fw, self.fin, self.fout))
+        filters = tf.transpose(filters, (0, 1, 3, 2))
+        filters = tf.reshape(filters, (self.output_row * self.output_col, self.fh * self.fw * self.fout, self.fin))
+        
+        DI = tf.keras.backend.batch_dot(DI, filters)
+        
         return DI
 
     def gv(self, AI, AO, DO): 
