@@ -78,6 +78,7 @@ class LocallyConnected(Layer):
         self.strides = strides
         self.stride_row, self.stride_col = self.strides
         self.padding = padding
+        self.pad_h, self.pad_w = get_pad(padding, np.array([self.fh, self.fw]))
         self.activation = activation
         self.last_layer = last_layer
         self.name = name
@@ -114,9 +115,8 @@ class LocallyConnected(Layer):
         return filter_weights_size + bias_weights_size
                 
     def forward(self, X):
-        # return local_conv2d(X, self.filters, (self.fh, self.fw), self.strides, (self.output_row, self.output_col))
-        
         N = tf.shape(X)[0]
+        X = tf.pad(X, [[0, 0], [self.pad_h, self.pad_h], [self.pad_w, self.pad_w], [0, 0]])
     
         xs = []
         for i in range(self.output_row):
@@ -143,8 +143,11 @@ class LocallyConnected(Layer):
     
         N = tf.shape(AI)[0]
         
+        # do we just always use full padding here ?
+        # regardless of how we pad the input ? 
+        # have a feeling its working by coincidence.
         [pad_w, pad_h] = get_pad('full', np.array([self.fh, self.fw]))
-        DO = tf.pad(DO, [[0, 0], [pad_w, pad_w], [pad_h, pad_h], [0, 0]])
+        DO = tf.pad(DO, [[0, 0], [pad_h, pad_h], [pad_w, pad_w], [0, 0]])
         
         es = []
         for i in range(self.output_row):
@@ -174,7 +177,8 @@ class LocallyConnected(Layer):
 
     def gv(self, AI, AO, DO): 
         N = tf.shape(AI)[0]
-    
+        AI = tf.pad(AI, [[0, 0], [self.pad_h, self.pad_h], [self.pad_w, self.pad_w], [0, 0]])
+        
         xs = []
         for i in range(self.output_row):
             for j in range(self.output_col):
