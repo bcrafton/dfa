@@ -83,7 +83,8 @@ class FullyConnected(Layer):
         N = tf.cast(N, dtype=tf.float32)
         
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        # DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        DW = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
@@ -98,7 +99,8 @@ class FullyConnected(Layer):
         N = tf.cast(N, dtype=tf.float32)
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights # add weights bc want large neg weights to go to zero.
+        # DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights # add weights bc want large neg weights to go to zero.
+        DW = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
@@ -120,7 +122,8 @@ class FullyConnected(Layer):
         N = tf.cast(N, dtype=tf.float32)
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        # DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        DW = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
         DB = tf.reduce_sum(DO, axis=0)
         
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
@@ -135,7 +138,8 @@ class FullyConnected(Layer):
         N = tf.cast(N, dtype=tf.float32)
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        # DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        DW = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
@@ -157,7 +161,8 @@ class FullyConnected(Layer):
         N = tf.cast(N, dtype=tf.float32)
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        # DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        DW = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
         DB = tf.reduce_sum(DO, axis=0)
         
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
@@ -172,7 +177,8 @@ class FullyConnected(Layer):
         N = tf.cast(N, dtype=tf.float32)
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        # DW = tf.matmul(tf.transpose(AI), DO) + (self.l2 / N) * self.weights
+        DW = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
         DB = tf.reduce_sum(DO, axis=0)
 
         # DW = tf.Print(DW, [tf.reduce_mean(DW), tf.keras.backend.std(DW), tf.reduce_mean(self.weights), tf.keras.backend.std(self.weights)], message=self.name)
