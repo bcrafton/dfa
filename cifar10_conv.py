@@ -7,15 +7,15 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--decay', type=float, default=1.)
+parser.add_argument('--decay', type=float, default=0.99)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--alg', type=str, default='bp')
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="adam")
+parser.add_argument('--opt', type=str, default="gd")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="cifar10_conv_weights")
 parser.add_argument('--load', type=str, default=None)
@@ -40,11 +40,12 @@ from Layer import Layer
 from ConvToFullyConnected import ConvToFullyConnected
 from FullyConnected import FullyConnected
 from Convolution import Convolution
-from LocallyConnected import LocallyConnected
 from MaxPool import MaxPool
 from Dropout import Dropout
 from FeedbackFC import FeedbackFC
 from FeedbackConv import FeedbackConv
+from SparseFC import SparseFC
+from SparseConv import SparseConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -88,25 +89,33 @@ X = tf.placeholder(tf.float32, [None, 32, 32, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
 Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = LocallyConnected(input_size=[batch_size, 32, 32, 3], filter_size=[3, 3, 3, 64], num_classes=10, init=args.init, strides=[1, 1], padding="valid", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv)
+l0 = SparseConv(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv, rate=0.25, swap=0.3)
+l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l2 = FeedbackConv(size=[batch_size, 16, 16, 96], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv1_fb')
 
-l1 = MaxPool(size=[batch_size, 30, 30, 64], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l3 = SparseConv(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv, rate=0.25, swap=0.3)
+l4 = MaxPool(size=[batch_size, 16, 16, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l5 = FeedbackConv(size=[batch_size, 8, 8, 128], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv2_fb')
 
-l2 = LocallyConnected(input_size=[batch_size, 15, 15, 32], filter_size=[3, 3, 64, 96], num_classes=10, init=args.init, strides=[1, 1], padding="valid", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv)
+l6 = SparseConv(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv, rate=0.25, swap=0.3)
+l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l8 = FeedbackConv(size=[batch_size, 4, 4, 256], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv3_fb')
 
-l3 = MaxPool(size=[batch_size, 13, 13, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l9 = ConvToFullyConnected(shape=[4, 4, 256])
 
-l4 = LocallyConnected(input_size=[batch_size, 7, 7, 96], filter_size=[3, 3, 96, 128], num_classes=10, init=args.init, strides=[1, 1], padding="valid", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv)
+l10 = SparseFC(size=[4*4*256, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc, rate=0.25, swap=0.3)
+l11 = Dropout(rate=dropout_rate)
+l12 = FeedbackFC(size=[4*4*256, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
 
-l5 = ConvToFullyConnected(shape=[5, 5, 128])
+l13 = SparseFC(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc, rate=0.25, swap=0.3)
+l14 = Dropout(rate=dropout_rate)
+l15 = FeedbackFC(size=[2048, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc2_fb')
 
-l6 = FullyConnected(size=[5*5*128, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc)
-l7 = FullyConnected(size=[1000,    1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc)
-l8 = FullyConnected(size=[1000,    10],   num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True,  name='fc3', load=weights_fc, train=train_fc)
+l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc, rate=0.25, swap=0.3)
 
 ##############################################
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 
 predict = model.predict(X=X)
 
@@ -197,7 +206,7 @@ for ii in range(EPOCHS):
     _total_top5 = 0
     
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
-        print (jj * BATCH_SIZE)
+        print (jj)
         
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
@@ -252,4 +261,5 @@ if args.save:
     np.save(args.name, w)
     
 ##############################################
+
 
