@@ -51,11 +51,13 @@ class FullyConnected(Layer):
                 self.weights = tf.Variable(_weights, dtype=tf.float32)
             elif init_weights == "glorat_dfa":
                 var = 1. / self.input_size
-                _weights = np.random.normal(loc=0.0, scale=var, size=self.size)
+                std = np.sqrt(var)
+                _weights = np.random.normal(loc=0.0, scale=std, size=self.size)
                 self.weights = tf.Variable(_weights, dtype=tf.float32)
             elif init_weights == "glorat_bp":
-                var = 1. / ((1.0 * self.input_size + 1.0 * self.output_size) / 2.)
-                _weights = np.random.normal(loc=0.0, scale=var, size=self.size)
+                var = 2. / (self.input_size + self.output_size)
+                std = np.std(var)
+                _weights = np.random.normal(loc=0.0, scale=std, size=self.size)
                 self.weights = tf.Variable(_weights, dtype=tf.float32)
             else:
                 self.weights = tf.get_variable(name=self.name, shape=self.size)
