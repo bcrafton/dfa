@@ -39,8 +39,8 @@ def FeedbackMatrix(size : tuple, sparse : int, rank : int):
     else:
         sqrt_fan_out = np.sqrt(output_size)
 
-    high = 1.0 / sqrt_fan_out
-    low = -high
+    high = 1.0
+    low = -1.0
 
     fb = np.zeros(shape=size)
     fb = np.transpose(fb)
@@ -115,6 +115,8 @@ rank = 0
 sparse = 1
 
 B = np.absolute(FeedbackMatrix(size, sparse, rank)).T
+# if you want range 1 on color bar, need a value of 1.
+B = B / np.max(B)
 
 ####################################
 
@@ -136,12 +138,11 @@ else:
     ax.set_yticks([])
 
 
-cbar = f.colorbar(im, ax=ax)
-# ticklabs = cbar.ax.get_yticklabels()
-# cbar.ax.set_yticklabels(ticklabs, fontsize=10)
+cbar = f.colorbar(im, ax=ax, ticks=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+cbar.ax.set_yticklabels(['0.0', '0.2', '0.4', '0.6', '0.8', '1.0'])
 
-# plt.savefig('B.png', dpi=1000, bbox_inches='tight')
-plt.savefig('B.png', dpi=1000)
+plt.savefig('B.png', dpi=1000, bbox_inches='tight')
+# plt.savefig('B.png', dpi=1000)
 
 
 
