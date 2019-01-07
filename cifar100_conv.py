@@ -168,6 +168,8 @@ f.write(filename + "\n")
 f.write("total params: " + str(model.num_params()) + "\n")
 f.close()
 
+print (model.num_params())
+
 ##############################################
 
 train_accs = []
