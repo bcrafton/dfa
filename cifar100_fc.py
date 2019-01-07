@@ -9,15 +9,21 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--decay', type=float, default=0.99)
+parser.add_argument('--l2', type=float, default=0.)
+parser.add_argument('--decay', type=float, default=1.)
+parser.add_argument('--eps', type=float, default=1.)
+parser.add_argument('--dropout', type=float, default=0.5)
+parser.add_argument('--act', type=str, default='tanh')
+parser.add_argument('--bias', type=float, default=0.)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="gd")
+parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
-parser.add_argument('--name', type=str, default="cifar100_fc_weights")
+parser.add_argument('--name', type=str, default="cifar100_fc")
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -31,7 +37,6 @@ import tensorflow as tf
 import keras
 import math
 import numpy as np
-from tensorflow.examples.tutorials.mnist import input_data
 
 from Model import Model
 
@@ -63,10 +68,12 @@ TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 
-if args.dfa:
-    bias = 1.0
+if args.act == 'tanh':
+    act = Tanh()
+elif args.act == 'relu':
+    act = Relu()
 else:
-    bias = 0.0
+    assert(False)
 
 ##############################################
 
@@ -80,25 +87,28 @@ learning_rate = tf.placeholder(tf.float32, shape=())
 Y = tf.placeholder(tf.float32, [None, 100])
 X = tf.placeholder(tf.float32, [None, 3072])
 
-l0 = FullyConnected(size=[3072, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1")
+l0 = FullyConnected(size=[3072, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc1")
 l1 = Dropout(rate=dropout_rate/4.)
 l2 = FeedbackFC(size=[3072, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l3 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2")
+l3 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc2")
 l4 = Dropout(rate=dropout_rate/2.)
 l5 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l6 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3")
+l6 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc3")
 l7 = Dropout(rate=dropout_rate)
 l8 = FeedbackFC(size=[1000, 1000], num_classes=100, sparse=args.sparse, rank=args.rank, name="fc3_fb")
 
-l9 = FullyConnected(size=[1000, 100], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc4")
+l9 = FullyConnected(size=[1000, 100], num_classes=100, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, l2=args.l2, name="fc4")
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9])
 
 ##############################################
 
 predict = model.predict(X=X)
+A1 = model.up_to(X=X, N=0)
+A2 = model.up_to(X=X, N=3)
+A3 = model.up_to(X=X, N=6)
 
 weights = model.get_weights()
 
@@ -109,9 +119,9 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         grads_and_vars = model.gvs(X=X, Y=Y)
         
     if args.opt == "adam":
-        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "rms":
-        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "decay":
         train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
     else:
@@ -159,6 +169,21 @@ f.close()
 train_accs = []
 test_accs = []
 
+fc1 = []
+dfc1 = []
+dfc1_bias = []
+a1 = []
+
+fc2 = []
+dfc2 = []
+dfc2_bias = []
+a2 = []
+
+fc3 = []
+dfc3 = []
+dfc3_bias = []
+a3 = []
+
 for ii in range(EPOCHS):
     if args.opt == 'decay' or args.opt == 'gd':
         decay = np.power(args.decay, ii)
@@ -176,10 +201,22 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+        _correct, _gvs, _A1, _A2, _A3, _ = sess.run([total_correct, grads_and_vars, A1, A2, A3, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
         _count += BATCH_SIZE
+        
+        dfc3.append(      np.std(_gvs[0][0]) )
+        dfc3_bias.append( np.std(_gvs[1][0]) )
+        a3.append(        np.max(_A3)        )
+
+        dfc2.append(      np.std(_gvs[2][0]) )
+        dfc2_bias.append( np.std(_gvs[3][0]) )
+        a2.append(        np.max(_A2)        )
+
+        dfc1.append(      np.std(_gvs[4][0]) )
+        dfc1_bias.append( np.std(_gvs[5][0]) )
+        a1.append(        np.max(_A1)        )
 
     train_acc = 1.0 * _total_correct / _count
     train_accs.append(train_acc)
@@ -212,8 +249,29 @@ for ii in range(EPOCHS):
 
 if args.save:
     [w] = sess.run([weights], feed_dict={})
+    
+    fc1.append( np.std(w['fc1']) )
+    fc2.append( np.std(w['fc2']) )
+    fc3.append( np.std(w['fc3']) )
+    
     w['train_acc'] = train_accs
     w['test_acc'] = test_accs
+
+    w['fc1_std']   = fc1
+    w['dfc1']      = dfc1
+    w['dfc1_bias'] = dfc1_bias
+    w['A1']        = a1
+
+    w['fc2_std']   = fc2
+    w['dfc2']      = dfc2
+    w['dfc2_bias'] = dfc2_bias
+    w['A2']        = a2
+
+    w['fc3_std']   = fc3
+    w['dfc3']      = dfc3 
+    w['dfc3_bias'] = dfc3_bias
+    w['A3']        = a3
+    
     np.save(args.name, w)
     
 ##############################################
