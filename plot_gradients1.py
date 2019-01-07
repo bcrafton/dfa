@@ -37,7 +37,8 @@ axes[0][3].set_title('ratio1')
 axes[1][3].set_title('ratio2')
 axes[2][3].set_title('ratio3')
 
-axes[0][4].set_title('acc')
+axes[0][4].set_title('train_acc')
+axes[1][4].set_title('test_acc')
 
 num_runs = len(runs)
 for ii in range(num_runs):
@@ -74,11 +75,12 @@ for ii in range(num_runs):
         dfc3_bias = res['dfc3_bias']
         a3 = res['A3']
         
-        acc = res['test_acc']
+        train_acc = res['train_acc']
+        test_acc = res['test_acc']
 
         label = "%s %d %f" % (param['init'], param['dfa'], param['l2'])        
 
-        x = (-np.max(acc), [ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, acc, label])
+        x = (-np.max(test_acc), [ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, train_acc, test_acc, label])
         if param['dfa'] == 0:
             bp.append(x)
         elif param['dfa'] == 1 and param['sparse'] == 0:
@@ -95,7 +97,7 @@ heapq.heapify(sparse)
 
 for ii in range(min(len(bp), 2)):
     _bp = bp[ii]
-    ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, acc, label = _bp[1]
+    ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, train_acc, test_acc, label = _bp[1]
     color = None # 'black'
 
     axes[0][0].plot(fc1, label=label, color=color)
@@ -114,11 +116,12 @@ for ii in range(min(len(bp), 2)):
     # axes[1][3].plot(ratio2, label=label, color=color)
     # axes[2][3].plot(ratio3, label=label, color=color)
 
-    axes[0][4].plot(acc, label=label, color=color)
-    
+    axes[0][4].plot(train_acc, label=label, color=color)
+    axes[1][4].plot(test_acc, label=label, color=color)
+
 for ii in range(min(len(dfa), 2)):
     _dfa = dfa[ii]
-    ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, acc, label = _dfa[1]
+    ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, train_acc, test_acc, label = _dfa[1]
     color = None # 'red'
     
     axes[0][0].plot(fc1, label=label, color=color)
@@ -137,11 +140,12 @@ for ii in range(min(len(dfa), 2)):
     axes[1][3].plot(ratio2, label=label, color=color)
     axes[2][3].plot(ratio3, label=label, color=color)
 
-    axes[0][4].plot(acc, label=label, color=color)
+    axes[0][4].plot(train_acc, label=label, color=color)
+    axes[1][4].plot(test_acc, label=label, color=color)
 
 for ii in range(min(len(sparse), 2)):
     _sparse = sparse[ii]
-    ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, acc, label = _sparse[1]
+    ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, train_acc, test_acc, label = _sparse[1]
     color = None # 'blue'
 
     axes[0][0].plot(fc1, label=label, color=color)
@@ -160,7 +164,8 @@ for ii in range(min(len(sparse), 2)):
     axes[1][3].plot(ratio2, label=label, color=color)
     axes[2][3].plot(ratio3, label=label, color=color)
 
-    axes[0][4].plot(acc, label=label, color=color)
+    axes[0][4].plot(train_acc, label=label, color=color)
+    axes[1][4].plot(test_acc, label=label, color=color)
 
 axes[0][3].legend()
 axes[1][3].legend()
