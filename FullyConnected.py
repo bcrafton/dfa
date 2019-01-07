@@ -47,8 +47,15 @@ class FullyConnected(Layer):
                 sqrt_fan_in = math.sqrt(self.input_size)
                 self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
             elif init_weights == "alexnet":
-                # self.weights = tf.random_normal(shape=self.size, mean=0.0, stddev=0.01)
                 _weights = np.random.normal(loc=0.0, scale=0.01, size=self.size)
+                self.weights = tf.Variable(_weights, dtype=tf.float32)
+            elif init_weights == "glorat_dfa":
+                var = 1. / self.input_size
+                _weights = np.random.normal(loc=0.0, scale=var, size=self.size)
+                self.weights = tf.Variable(_weights, dtype=tf.float32)
+            elif init_weights == "glorat_bp":
+                var = 1. / ((1.0 * self.input_size + 1.0 * self.output_size) / 2.)
+                _weights = np.random.normal(loc=0.0, scale=var, size=self.size)
                 self.weights = tf.Variable(_weights, dtype=tf.float32)
             else:
                 self.weights = tf.get_variable(name=self.name, shape=self.size)
