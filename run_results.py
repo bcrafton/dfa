@@ -11,7 +11,7 @@ from results import get_runs
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--print', type=int, default=0)
-parser.add_argument('--num_gpus', type=int, default=1)
+parser.add_argument('--num_gpus', type=int, default=4)
 cmd_args = parser.parse_args()
 
 ##############################################

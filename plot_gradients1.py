@@ -68,8 +68,10 @@ for ii in range(num_runs):
         a3 = res['A3']
         
         acc = res['test_acc']
-        
-        x = (-np.max(acc), [fc1, dfc1, dfc1_bias, a1, fc2, dfc2, dfc2_bias, a2, fc3, dfc3, dfc3_bias, a3, acc])
+
+        label = "%d %f" % (param['dfa'], param['l2'])        
+
+        x = (-np.max(acc), [fc1, dfc1, dfc1_bias, a1, fc2, dfc2, dfc2_bias, a2, fc3, dfc3, dfc3_bias, a3, acc, label])
         if param['dfa'] == 0:
             bp.append(x)
         elif param['dfa'] == 1 and param['sparse'] == 0:
@@ -84,11 +86,10 @@ heapq.heapify(bp)
 heapq.heapify(dfa)
 heapq.heapify(sparse)
 
-for ii in range(min(len(bp), 3)):
+for ii in range(min(len(bp), 2)):
     _bp = bp[ii]
-    fc1, dfc1, dfc1_bias, a1, fc2, dfc2, dfc2_bias, a2, fc3, dfc3, dfc3_bias, a3, acc = _bp[1]
-    label = 'bp'
-    color = 'black'
+    fc1, dfc1, dfc1_bias, a1, fc2, dfc2, dfc2_bias, a2, fc3, dfc3, dfc3_bias, a3, acc, label = _bp[1]
+    color = None # 'black'
       
     axes[0][1].plot(dfc1, label=label, color=color)
     axes[1][1].plot(dfc2, label=label, color=color)
@@ -100,11 +101,10 @@ for ii in range(min(len(bp), 3)):
 
     axes[0][3].plot(acc, label=label, color=color)
     
-for ii in range(min(len(dfa), 3)):
+for ii in range(min(len(dfa), 2)):
     _dfa = dfa[ii]
-    fc1, dfc1, dfc1_bias, a1, fc2, dfc2, dfc2_bias, a2, fc3, dfc3, dfc3_bias, a3, acc = _dfa[1]
-    label = 'dfa'
-    color = 'red'
+    fc1, dfc1, dfc1_bias, a1, fc2, dfc2, dfc2_bias, a2, fc3, dfc3, dfc3_bias, a3, acc, label = _dfa[1]
+    color = None # 'red'
     
     axes[0][1].plot(dfc1, label=label, color=color)
     axes[1][1].plot(dfc2, label=label, color=color)
@@ -116,11 +116,10 @@ for ii in range(min(len(dfa), 3)):
 
     axes[0][3].plot(acc, label=label, color=color)
 
-for ii in range(min(len(sparse), 3)):
+for ii in range(min(len(sparse), 2)):
     _sparse = sparse[ii]
-    fc1, dfc1, dfc1_bias, a1, fc2, dfc2, dfc2_bias, a2, fc3, dfc3, dfc3_bias, a3, acc = _sparse[1]
-    label = 'sparse'
-    color = 'blue'
+    fc1, dfc1, dfc1_bias, a1, fc2, dfc2, dfc2_bias, a2, fc3, dfc3, dfc3_bias, a3, acc, label = _sparse[1]
+    color = None # 'blue'
     
     axes[0][1].plot(dfc1, label=label, color=color)
     axes[1][1].plot(dfc2, label=label, color=color)
