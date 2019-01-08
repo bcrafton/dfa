@@ -26,24 +26,13 @@ def get_perms(param):
 
 ################################################
 
-imagenet_alexnet_bp = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[1e-2, 1e-3], 'eps':[1.], 'dropout':[0.5], 'act':['relu'], 'bias':[1.], 'dfa':0, 'sparse':0, 'rank':0, 'init':['alexnet'], 'opt':['adam'], 'load':'./transfer/imagenet_weights.npy'}
-imagenet_alexnet_dfa = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[1e-3], 'l2':[0.5, 0.1, 0.01, 0.001], 'eps':[1.], 'dropout':[0.5], 'act':['relu'], 'bias':[1.], 'dfa':1, 'sparse':0, 'rank':0, 'init':['zero'], 'opt':['adam'], 'load':'./transfer/imagenet_weights.npy'}
+cifar10_conv_bp = {'benchmark':'cifar10_conv.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'l2':[0.], 'rate':[0.25, 0.5], 'swap':[0.25, 0.5], 'dropout':[0.5], 'act':['relu'], 'bias':[1.], 'dfa':0, 'sparse':0, 'rank':0, 'init':['sqrt_fan_in'], 'opt':['adam'], 'load':None}
 
-imagenet_alexnet_sparse = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[1e-3], 'eps':[1.], 'dropout':[0.5], 'act':['relu'], 'bias':[1e-1], 'dfa':1, 'sparse':1, 'rank':0, 'init':['zero'], 'opt':'adam', 'load':'./transfer/imagenet_weights.npy'}
-
-# imagenet_alexnet_dfa1 = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[1e-2], 'eps':[1.], 'dropout':[0.5], 'act':['relu'], 'bias':[0., 1.], 'dfa':1, 'sparse':0, 'rank':0, 'init':['alexnet'], 'opt':['adam'], 'load':'./transfer/imagenet_weights.npy'}
-
-# imagenet_vgg_dfa = {'benchmark':'imagenet_vgg.py', 'epochs':50, 'batch_size':32, 'alpha':[1e-3, 1e-4], 'eps':[1.], 'act':['relu'], 'bias':[1e-1, 1e-2], 'dropout':[0.5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':['zero'], 'opt':'adam', 'load':None}
-# imagenet_vgg_sparse = {'benchmark':'imagenet_vgg.py', 'epochs':50, 'batch_size':32, 'alpha':[1e-2], 'eps':[1.], 'act':['tanh'], 'bias':[0.], 'dropout':[0.5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':['zero'], 'opt':'adam', 'load':None}
+cifar10_conv_dfa = {'benchmark':'cifar10_conv.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4, 1e-5], 'eps':[1e-4, 1e-5, 1e-6], 'l2':[0.], 'rate':[0.25, 0.5], 'swap':[0.25, 0.5], 'dropout':[0.5], 'act':['relu'], 'bias':[1.], 'dfa':1, 'sparse':0, 'rank':0, 'init':['sqrt_fan_in'], 'opt':['adam'], 'load':None}
 
 ###############################################
 
-# params = [imagenet_alexnet_bp, imagenet_alexnet_dfa, imagenet_alexnet_sparse]
-# params = [imagenet_alexnet_dfa, imagenet_alexnet_sparse]
-# params = [imagenet_alexnet_bp, imagenet_alexnet_dfa]
-# params = [imagenet_alexnet_bp]
-# params = [imagenet_alexnet_dfa]
-params = [imagenet_alexnet_dfa]
+params = [cifar10_conv_bp, cifar10_conv_dfa]
 
 ################################################
 
