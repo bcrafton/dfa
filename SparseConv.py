@@ -109,7 +109,7 @@ class SparseConv(Layer):
         # DF = tf.Print(DF, [tf.reduce_mean(DF), tf.keras.backend.std(DF), tf.reduce_mean(self.filters), tf.keras.backend.std(self.filters)], message="Conv: ")
         # DF = tf.Print(DF, [tf.shape(DF), tf.shape(self.filters)], message="", summarize=25)
 
-        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
+        self.filters = self.filters.assign(tf.clip_by_value(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)), 1e-9, 1e6))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DF, self.filters), (DB, self.bias)]
         
@@ -141,7 +141,7 @@ class SparseConv(Layer):
         # DF = tf.Print(DF, [tf.reduce_mean(DF), tf.keras.backend.std(DF), tf.reduce_mean(self.filters), tf.keras.backend.std(self.filters)], message="Conv: ")
         # DF = tf.Print(DF, [tf.shape(DF), tf.shape(self.filters)], message="", summarize=25)
 
-        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
+        self.filters = self.filters.assign(tf.clip_by_value(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)), 1e-9, 1e6))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DF, self.filters), (DB, self.bias)]
         

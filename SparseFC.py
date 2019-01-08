@@ -102,7 +102,7 @@ class SparseFC(Layer):
         DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
 
-        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.weights = self.weights.assign(tf.clip_by_value(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)), 1e-9, 1e6))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DW, self.weights), (DB, self.bias)]
         
@@ -131,7 +131,7 @@ class SparseFC(Layer):
         DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
 
-        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.weights = self.weights.assign(tf.clip_by_value(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)), 1e-9, 1e6))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         return [(DW, self.weights), (DB, self.bias)]
         

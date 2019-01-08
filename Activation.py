@@ -101,7 +101,20 @@ class Linear(Activation):
     def gradient(self, x):
         return tf.ones(shape=tf.shape(x))
        
-        
+class SignedRelu(Activation):
+
+    def __init__(self, shape, rate):
+        assert(type(shape) == tuple)
+        self.shape = (1,) + shape
+        self.rate = rate
+        self.sign = np.random.choice([-1., 1.], size=self.shape, replace=True, p=[1.-self.rate, self.rate])
+
+    def forward(self, x):
+        return tf.nn.relu(x) * self.sign
+
+    def gradient(self, x):
+        # pretty sure this gradient works for A and Z
+        return tf.cast(x > 0.0, dtype=tf.float32) * self.sign
         
         
         
