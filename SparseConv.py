@@ -37,9 +37,9 @@ class SparseConv(Layer):
         
         mask = np.random.choice([0, 1], size=self.filter_sizes, replace=True, p=[1.-rate, rate])
         
-        # how do this for conv ? 
         # _total_connects = int(np.count_nonzero(mask))
-        # assert(_total_connects == int(self.rate * self.output_size) * self.input_size)
+        # print (_total_connects)
+        # assert(_total_connects == int(self.rate * np.prod(self.filter_sizes)))
         
         if load:
             assert(False)
@@ -173,52 +173,40 @@ class SparseConv(Layer):
         
     def SET(self):
         shape = tf.shape(self.filters)
-
         abs_w = tf.abs(self.filters)
-
         vld_i = tf.where(abs_w > 0)
         vld_w = tf.gather_nd(abs_w, vld_i)
-
         sorted_i = tf.contrib.framework.argsort(vld_w, axis=0)
-        small_i = tf.gather(vld_i, sorted_i, axis=0)
-        small_i = tf.cast(small_i, tf.int32)
-        small_i = tf.slice(small_i, [0, 0], [self.nswap, 2])
-        small_w = tf.zeros(shape=(self.nswap,))
         
-        # prove that this code only runs 3 times.
-        # because assertions fail when tensorflow builds the graph
-        # sorted_i = tf.Print(sorted_i, [sorted_i], message="")
-        
+        # new indices
         new_i = tf.where(abs_w <= 0)
         new_i = tf.random_shuffle(new_i)
         new_i = tf.slice(new_i, [0, 0], [self.nswap, 2])
         new_i = tf.cast(new_i, tf.int32)
-        sqrt_fan_in = np.sqrt(self.h*self.w*self.fin)
+        sqrt_fan_in = np.sqrt(self.h * self.w * self.fin)
         new_w = tf.random_uniform(minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in, shape=(self.nswap,))
         
-        # vld_i = tf.where(abs_w > 0)
-        # vld_w = tf.gather_nd(abs_w, vld_i)
-        # sorted_i = tf.contrib.framework.argsort(vld_w, axis=0)
+        # largest indices (rate - rate * nswap)
         large_i = tf.gather(vld_i, sorted_i, axis=0)
         large_i = tf.cast(large_i, tf.int32)
         large_i = tf.slice(large_i, [self.nswap, 0], [self.slice_size, 2])
-        large_w = tf.gather_nd(self.weights, large_i)
+        large_w = tf.gather_nd(self.filters, large_i)
+        large_w = tf.reshape(large_w, (-1,))
         
-        # dont need to assign the zeros here.
-        # indices = tf.concat((large_i, small_i, new_i), axis=1)
-        # updates = tf.concat((large_w, small_w, new_w), axis=0)
+        # update filters
         indices = tf.concat((large_i, new_i), axis=0)
         updates = tf.concat((large_w, new_w), axis=0)
-        weights = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
+        filters = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
         
+        # update mask
         large_w = tf.ones(shape=(self.slice_size,))
         new_w = tf.ones(shape=(self.nswap,))
         updates = tf.concat((large_w, new_w), axis=0)
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
 
-        return [(mask, weights)]
+        return [(mask, filters)]
         
     def NSET(self):    
-        return [(self.mask, self.weights)]
+        return [(self.mask, self.filters)]
         
         
