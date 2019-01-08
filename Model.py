@@ -334,9 +334,7 @@ class Model:
             l = self.layers[ii]
             next = l.SET()
             for (mask, weights) in next:
-                _mask = l.mask.assign(mask)
-                _weights = l.weights.assign(weights)
-                sets.append((_mask, _weights))
+                sets.append((mask, weights))
             
         return sets
         

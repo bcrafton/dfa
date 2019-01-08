@@ -203,7 +203,11 @@ class SparseConv(Layer):
         updates = tf.concat((large_w, new_w), axis=0)
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
 
-        return [(mask, filters)]
+        # assign 
+        self.filters = self.filters.assign(filters)
+        self.mask = self.mask.assign(mask)
+
+        return [(self.mask, self.filters)]
         
     def NSET(self):    
         return [(self.mask, self.filters)]

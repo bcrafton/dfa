@@ -169,21 +169,10 @@ class SparseFC(Layer):
     
     def SET(self):
         shape = tf.shape(self.weights)
-
         abs_w = tf.abs(self.weights)
-
         vld_i = tf.where(abs_w > 0)
         vld_w = tf.gather_nd(abs_w, vld_i)
-
         sorted_i = tf.contrib.framework.argsort(vld_w, axis=0)
-        small_i = tf.gather(vld_i, sorted_i, axis=0)
-        small_i = tf.cast(small_i, tf.int32)
-        small_i = tf.slice(small_i, [0, 0], [self.nswap, 2])
-        small_w = tf.zeros(shape=(self.nswap,))
-        
-        # prove that this code only runs 3 times.
-        # because assertions fail when tensorflow builds the graph
-        # sorted_i = tf.Print(sorted_i, [sorted_i], message="")
         
         new_i = tf.where(abs_w <= 0)
         new_i = tf.random_shuffle(new_i)
@@ -192,27 +181,27 @@ class SparseFC(Layer):
         sqrt_fan_in = math.sqrt(self.input_size)
         new_w = tf.random_uniform(minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in, shape=(self.nswap,))
         
-        # vld_i = tf.where(abs_w > 0)
-        # vld_w = tf.gather_nd(abs_w, vld_i)
-        # sorted_i = tf.contrib.framework.argsort(vld_w, axis=0)
         large_i = tf.gather(vld_i, sorted_i, axis=0)
         large_i = tf.cast(large_i, tf.int32)
         large_i = tf.slice(large_i, [self.nswap, 0], [self.slice_size, 2])
         large_w = tf.gather_nd(self.weights, large_i)
         
-        # dont need to assign the zeros here.
-        # indices = tf.concat((large_i, small_i, new_i), axis=1)
-        # updates = tf.concat((large_w, small_w, new_w), axis=0)
+        # update weights
         indices = tf.concat((large_i, new_i), axis=0)
         updates = tf.concat((large_w, new_w), axis=0)
         weights = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
         
+        # update mask
         large_w = tf.ones(shape=(self.slice_size,))
         new_w = tf.ones(shape=(self.nswap,))
         updates = tf.concat((large_w, new_w), axis=0)
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
 
-        return [(mask, weights)]
+        # assign 
+        self.weights = self.weights.assign(weights)
+        self.mask = self.mask.assign(mask)
+
+        return [(self.mask, self.weights)]
         
     def NSET(self):    
         return [(self.mask, self.weights)]
