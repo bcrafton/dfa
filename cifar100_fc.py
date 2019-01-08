@@ -261,7 +261,9 @@ for ii in range(EPOCHS):
     fc1.append( np.std(w['fc1']) )
     fc2.append( np.std(w['fc2']) )
     fc3.append( np.std(w['fc3']) )
-    
+
+    w = {}
+
     w['train_acc'] = train_accs
     w['test_acc'] = test_accs
 
