@@ -181,7 +181,7 @@ class SparseConv(Layer):
         # new indices
         new_i = tf.where(abs_w <= 0)
         new_i = tf.random_shuffle(new_i)
-        new_i = tf.slice(new_i, [0, 0], [self.nswap, 2])
+        new_i = tf.slice(new_i, [0, 0], [self.nswap, 4])
         new_i = tf.cast(new_i, tf.int32)
         sqrt_fan_in = np.sqrt(self.h * self.w * self.fin)
         new_w = tf.random_uniform(minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in, shape=(self.nswap,))
@@ -189,9 +189,8 @@ class SparseConv(Layer):
         # largest indices (rate - rate * nswap)
         large_i = tf.gather(vld_i, sorted_i, axis=0)
         large_i = tf.cast(large_i, tf.int32)
-        large_i = tf.slice(large_i, [self.nswap, 0], [self.slice_size, 2])
+        large_i = tf.slice(large_i, [self.nswap, 0], [self.slice_size, 4])
         large_w = tf.gather_nd(self.filters, large_i)
-        large_w = tf.reshape(large_w, (-1,))
         
         # update filters
         indices = tf.concat((large_i, new_i), axis=0)
