@@ -52,3 +52,11 @@ class Layer:
         assert(False)
         
     ###################################################################   
+    
+    def SET(self):
+        return []
+        
+    def NSET(self):
+        return []
+        
+        

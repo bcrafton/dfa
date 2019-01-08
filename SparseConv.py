@@ -94,6 +94,7 @@ class SparseConv(Layer):
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
         DF = tf.multiply(DF, self.mask)
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])
+        
         return [(DF, self.filters), (DB, self.bias)]
         
     def train(self, AI, AO, DO): 
@@ -125,6 +126,7 @@ class SparseConv(Layer):
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
         DF = tf.multiply(DF, self.mask)
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])
+        
         return [(DF, self.filters), (DB, self.bias)]
         
     def dfa(self, AI, AO, E, DO): 
@@ -204,10 +206,10 @@ class SparseConv(Layer):
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
 
         # assign 
-        self.filters = self.filters.assign(filters)
-        self.mask = self.mask.assign(mask)
+        filters = self.filters.assign(filters)
+        mask = self.mask.assign(mask)
 
-        return [(self.mask, self.filters)]
+        return [(mask, filters)]
         
     def NSET(self):    
         return [(self.mask, self.filters)]

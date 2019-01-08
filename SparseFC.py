@@ -88,20 +88,18 @@ class SparseFC(Layer):
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
+
         return [(DW, self.weights), (DB, self.bias)]
 
     def train(self, AI, AO, DO):
-        # assert(tf.count_nonzero(self.weights) == self.total_connects)
-        # _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
-        
-        # with tf.control_dependencies([_assert]):
         if not self._train:
             return []
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
-        
+        DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
 
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
@@ -119,25 +117,23 @@ class SparseFC(Layer):
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
+
         return [(DW, self.weights), (DB, self.bias)]
         
     def dfa(self, AI, AO, E, DO):
-        # assert(tf.count_nonzero(self.weights) == self.total_connects)
-        _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
-        
-        with tf.control_dependencies([_assert]):
-            if not self._train:
-                return []
+        if not self._train:
+            return []
 
-            DO = tf.multiply(DO, self.activation.gradient(AO))
-            DW = tf.matmul(tf.transpose(AI), DO)
-            DW = tf.multiply(DW, self.mask)
-            DB = tf.reduce_sum(DO, axis=0)
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.multiply(DW, self.mask)
+        DB = tf.reduce_sum(DO, axis=0)
 
-            self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
-            self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
-            return [(DW, self.weights), (DB, self.bias)]
+        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        return [(DW, self.weights), (DB, self.bias)]
         
     ###################################################################
         
@@ -198,10 +194,10 @@ class SparseFC(Layer):
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
 
         # assign 
-        self.weights = self.weights.assign(weights)
-        self.mask = self.mask.assign(mask)
+        weights = self.weights.assign(weights)
+        mask = self.mask.assign(mask)
 
-        return [(self.mask, self.weights)]
+        return [(mask, weights)]
         
     def NSET(self):    
         return [(self.mask, self.weights)]
