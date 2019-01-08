@@ -8,18 +8,25 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--eps', type=float, default=1.)
+parser.add_argument('--alpha', type=float, default=1e-4)
+parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
+parser.add_argument('--eps', type=float, default=1e-4)
+parser.add_argument('--rate', type=float, default=1.)
+parser.add_argument('--swap', type=float, default=0.)
+parser.add_argument('--dropout', type=float, default=0.5)
+parser.add_argument('--act', type=str, default='relu')
+parser.add_argument('--bias', type=float, default=0.1)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--alg', type=str, default='bp')
+parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
-parser.add_argument('--name', type=str, default="cifar10_conv_weights")
+parser.add_argument('--name', type=str, default="cifar10_conv")
 parser.add_argument('--load', type=str, default=None)
+
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -33,7 +40,6 @@ import tensorflow as tf
 import keras
 import math
 import numpy as np
-from tensorflow.examples.tutorials.mnist import input_data
 
 from Model import Model
 
@@ -76,7 +82,12 @@ else:
 weights_fc=None
 weights_conv=args.load
 
-bias = 0.0
+if args.act == 'tanh':
+    act = Tanh()
+elif args.act == 'relu':
+    act = Relu()
+else:
+    assert(False)
 
 ##############################################
 
@@ -92,29 +103,29 @@ X = tf.placeholder(tf.float32, [None, 32, 32, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
 Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = SparseConv(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv, rate=0.25, swap=0.2)
+l0 = SparseConv(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap)
 l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l2 = FeedbackConv(size=[batch_size, 16, 16, 96], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv1_fb')
 
-l3 = SparseConv(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv, rate=0.25, swap=0.2)
+l3 = SparseConv(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap)
 l4 = MaxPool(size=[batch_size, 16, 16, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l5 = FeedbackConv(size=[batch_size, 8, 8, 128], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv2_fb')
 
-l6 = SparseConv(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv, rate=0.25, swap=0.2)
+l6 = SparseConv(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap)
 l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l8 = FeedbackConv(size=[batch_size, 4, 4, 256], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv3_fb')
 
 l9 = ConvToFullyConnected(shape=[4, 4, 256])
 
-l10 = SparseFC(size=[4*4*256, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc, rate=0.25, swap=0.2)
+l10 = SparseFC(size=[4*4*256, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap)
 l11 = Dropout(rate=dropout_rate)
 l12 = FeedbackFC(size=[4*4*256, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
 
-l13 = SparseFC(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Tanh(), bias=bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc, rate=0.25, swap=0.2)
+l13 = SparseFC(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap)
 l14 = Dropout(rate=dropout_rate)
 l15 = FeedbackFC(size=[2048, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc2_fb')
 
-l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc, rate=0.25, swap=0.2)
+l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap)
 
 ##############################################
 
@@ -125,14 +136,10 @@ predict = model.predict(X=X)
 weights = model.get_weights()
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
-    if args.alg == 'dfa':
+    if args.dfa:
         grads_and_vars = model.dfa_gvs(X=X, Y=Y)
-    elif args.alg == 'lel':
-        grads_and_vars = model.lel_gvs(X=X, Y=Y)
-    elif args.alg == 'bp':
-        grads_and_vars = model.gvs(X=X, Y=Y)
     else:
-        assert(False)
+        grads_and_vars = model.gvs(X=X, Y=Y)
         
     if args.opt == "adam":
         train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
@@ -144,14 +151,10 @@ if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
         assert(False)
 
 else:
-    if args.alg == 'dfa':
+    if args.dfa:
         train = model.dfa(X=X, Y=Y)
-    elif args.alg == 'lel':
-        train = model.lel(X=X, Y=Y)
-    elif args.alg == 'bp':
-        train = model.train(X=X, Y=Y)
     else:
-        assert(False)
+        train = model.train(X=X, Y=Y)
 
 # argmax axis = 1, want to argmax along the index, not batch
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
@@ -217,7 +220,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+        _correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: args.dropout, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
         _total_top5 += _top5
