@@ -30,13 +30,8 @@ def get_perms(param):
 cifar100_fc_bp = {'benchmark':'cifar100_fc.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-3, 1e-4], 'eps':[1e-4, 1e-5], 'dropout':[0.5], 'act':['tanh', 'relu'], 'bias':[0.1, 1.0], 'dfa':[0], 'sparse':0, 'rank':0, 'init':['glorat_bp'], 'opt':['adam'], 'load':None}
 cifar100_fc_dfa = {'benchmark':'cifar100_fc.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-3, 5e-3, 1e-4], 'eps':[1e-4, 1e-5], 'dropout':[0.5], 'act':['tanh', 'relu'], 'bias':[0.1, 1.0], 'dfa':[1], 'sparse':0, 'rank':0, 'init':['glorat_dfa'], 'opt':['adam'], 'load':None}
 
-cifar100_fc = {'benchmark':'cifar100_fc.py', 'epochs':10, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'l2':[0.0, 0.01, 0.005, 0.001], 'eps':[1e-4, 1e-5, 1e-6], 'dropout':[0.5], 'act':['relu'], 'bias':[0.1], 'dfa':[1], 'sparse':0, 'rank':0, 'init':['zero'], 'opt':['adam'], 'load':None}
-
-'''
-cifar100_fc_bp = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'l2':[0.0], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'bias':[0.1], 'dropout':[0.25, 0.5], 'dfa':0, 'sparse':[0], 'rank':0, 'init':'sqrt_fan_in', 'opt':['adam'], 'load':None}
-cifar100_fc_dfa = {'benchmark':'cifar100_fc.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'l2':[0.0], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'bias':[0.1], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[0], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
-cifar100_fc_sparse = {'benchmark':'cifar100_fc.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 3e-5, 1e-5], 'l2':[0.0], 'eps':[1e-4, 1e-5, 1e-6], 'act':['tanh', 'relu'], 'bias':[0.1], 'dropout':[0.25, 0.5], 'dfa':1, 'sparse':[1], 'rank':0, 'init':'zero', 'opt':['adam'], 'load':None}
-'''
+cifar100_fc_bp = {'benchmark':'cifar100_fc_4096.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-3, 1e-4], 'eps':[1e-4, 1e-5], 'dropout':[0.5], 'act':['tanh', 'relu'], 'bias':[0.1, 1.0], 'dfa':[0], 'sparse':0, 'rank':0, 'init':['glorat_bp'], 'opt':['adam'], 'load':None}
+cifar100_fc_dfa = {'benchmark':'cifar100_fc_4096.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-3, 5e-3, 1e-4], 'eps':[1e-4, 1e-5], 'dropout':[0.5], 'act':['tanh', 'relu'], 'bias':[0.1, 1.0], 'dfa':[1], 'sparse':0, 'rank':0, 'init':['glorat_dfa'], 'opt':['adam'], 'load':None}
 
 ###############################################
 
