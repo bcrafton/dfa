@@ -266,22 +266,7 @@ ax2.set_xlabel(xlabel='Rank', fontsize=10)
 ax4.set_xlabel(xlabel='Rank', fontsize=10)
 
 ax1.set_ylabel(ylabel='Accuracy (%)', fontsize=10)
-# ax2.set_ylabel(ylabel='Angle (' + u'\N{DEGREE SIGN}' + ')', fontsize=10)
-ax2.set_ylabel(ylabel='Angle (Degrees)', fontsize=10)
-
-ax1.set_ylim(94.5, 98.)
-ax1.set_yticks([95., 95.5, 96., 96.5, 97., 97.5])
-
-ax2.set_ylim(40, 54)
-ax2.set_yticks([42, 44, 46, 48, 50, 52])
-
-ax3.set_ylim(25, 55)
-ax3.set_yticks([30, 35, 40, 45, 50])
-# ax3.set_yticks([30, 34, 38, 42, 46, 50])
-
-ax4.set_ylim(50, 90)
-ax4.set_yticks([55, 60, 65, 70, 75, 80, 85])
-
+ax2.set_ylabel(ylabel='Angle', fontsize=10)
 # ax3.set_ylabel(ylabel='Accuracy')
 # ax4.set_ylabel(ylabel='Angle')
 
@@ -296,7 +281,6 @@ f.set_size_inches(7., 5.)
 # lgd = ax4.legend(loc='upper left', bbox_to_anchor=(1.02, 1.5), fontsize=10)
 
 for ax in [ax1, ax2, ax3, ax4]:
-    ax.grid(alpha=0.9, linestyle='--', linewidth=0.35)
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(10) 
     for tick in ax.xaxis.get_major_ticks():
