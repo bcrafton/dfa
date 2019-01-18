@@ -180,7 +180,6 @@ class SparseFC(Layer):
     ###################################################################
     
     def SET(self):
-        assert(False)
         shape = tf.shape(self.weights)
         abs_w = tf.abs(self.weights)
         vld_i = tf.where(abs_w > 0)
@@ -205,9 +204,12 @@ class SparseFC(Layer):
         weights = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
         
         # update mask
-        large_w = tf.ones(shape=(self.slice_size,))
-        new_w = tf.ones(shape=(self.nswap,))
-        updates = tf.concat((large_w, new_w), axis=0)
+        large_w = tf.gather_nd(self.mask, large_i)
+        pos = tf.ones(shape=(self.nswap * self.sign, 1))
+        neg = tf.ones(shape=(self.nswap * (1. - self.sign), 1)) * -1.
+        new_w = tf.concat((pos, neg), axis=1)
+        new_w = tf.reshape(new_w, (-1,))
+        updates = tf.concat((large_w, new_w), axis=0) 
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
 
         # assign 

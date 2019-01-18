@@ -133,7 +133,7 @@ l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=le
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 
-# SET = model.SET(swap)
+SET = model.SET(swap)
 predict = model.predict(X=X)
 weights = model.get_weights()
 
@@ -256,7 +256,7 @@ for ii in range(EPOCHS):
 
     #############################
     
-    # _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
+    _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
 
     #############################
 
