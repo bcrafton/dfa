@@ -182,18 +182,18 @@ class SparseConv(Layer):
         
     def SET(self):
         shape = tf.shape(self.filters)
-        abs_w = tf.abs(self.filters)
-        vld_i = tf.where(abs_w > 0)
-        vld_w = tf.gather_nd(abs_w, vld_i)
+        abs_m = tf.abs(self.mask)
+        vld_i = tf.where(abs_m > 0)
+        vld_w = tf.gather_nd(self.filters, vld_i)
         sorted_i = tf.contrib.framework.argsort(vld_w, axis=0)
         
         # new indices
-        new_i = tf.where(abs_w <= 0)
+        new_i = tf.where(self.filters <= 0)
         new_i = tf.random_shuffle(new_i)
         new_i = tf.slice(new_i, [0, 0], [self.nswap, 4])
         new_i = tf.cast(new_i, tf.int32)
         sqrt_fan_in = np.sqrt(self.h * self.w * self.fin)
-        new_w = tf.random_uniform(minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in, shape=(self.nswap,))
+        new_w = tf.random_uniform(minval=1e-6, maxval=1.0/sqrt_fan_in, shape=(self.nswap,))
         
         # largest indices (rate - rate * nswap)
         large_i = tf.gather(vld_i, sorted_i, axis=0)
@@ -210,7 +210,7 @@ class SparseConv(Layer):
         large_w = tf.gather_nd(self.mask, large_i)
         pos = tf.ones(shape=(self.nswap * self.sign, 1))
         neg = tf.ones(shape=(self.nswap * (1. - self.sign), 1)) * -1.
-        new_w = tf.concat((pos, neg), axis=1)
+        new_w = tf.concat((pos, neg), axis=0)
         new_w = tf.reshape(new_w, (-1,))
         updates = tf.concat((large_w, new_w), axis=0) 
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)

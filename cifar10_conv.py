@@ -12,8 +12,8 @@ parser.add_argument('--alpha', type=float, default=1e-4)
 parser.add_argument('--eps', type=float, default=1e-5)
 parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
-parser.add_argument('--rate', type=float, default=1.)
-parser.add_argument('--swap', type=float, default=0.)
+parser.add_argument('--rate', type=float, default=0.25)
+parser.add_argument('--swap', type=float, default=0.0)
 parser.add_argument('--sign', type=float, default=0.6)
 parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--act', type=str, default='relu')
@@ -127,7 +127,7 @@ l13 = SparseFC(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=
 l14 = Dropout(rate=dropout_rate)
 l15 = FeedbackFC(size=[2048, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc2_fb')
 
-l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap, sign=1.)
+l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc, rate=1., swap=0., sign=1.)
 
 ##############################################
 
@@ -176,7 +176,7 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar10
 
-srv = False
+srv = True
 
 if not srv:
   x_train = np.transpose(x_train, (0, 2, 3, 1))
@@ -223,13 +223,20 @@ for ii in range(EPOCHS):
     
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: args.dropout, learning_rate: lr, X: xs, Y: ys})
+        _correct, _gvs, _ = sess.run([total_correct, grads_and_vars, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: args.dropout, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
         _count += BATCH_SIZE
 
     train_acc = 1.0 * _total_correct / _count
     train_accs.append(train_acc)
+
+    # print (np.shape(_gvs))
+    for _gv in _gvs:
+        tot = np.prod(np.shape(_gv[1]))
+        neg = np.count_nonzero(_gv[1] < 0.)
+        pos = np.count_nonzero(_gv[1] > 0.)
+        print (np.shape(_gv[1]), 1.0*neg/tot, 1.0*pos/tot)
 
     #############################
 

@@ -85,16 +85,16 @@ class SparseFC(Layer):
         return DI
         
     def gv(self, AI, AO, DO):
-        _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
-        with tf.control_dependencies([_assert]):
+        # _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
+        # with tf.control_dependencies([_assert]):
 
-            if not self._train:
+        if not self._train:
                 return []
 
-            DO = tf.multiply(DO, self.activation.gradient(AO))
-            DW = tf.matmul(tf.transpose(AI), DO)
-            DW = tf.multiply(DW, self.mask)
-            DB = tf.reduce_sum(DO, axis=0)
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.multiply(DW, self.mask)
+        DB = tf.reduce_sum(DO, axis=0)
 
         return [(DW, self.weights), (DB, self.bias)]
 
@@ -121,18 +121,18 @@ class SparseFC(Layer):
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
-        _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
-        with tf.control_dependencies([_assert]):
+        # _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
+        # with tf.control_dependencies([_assert]):
 
-            if not self._train:
-                return []
+        if not self._train:
+            return []
 
-            DO = tf.multiply(DO, self.activation.gradient(AO))
-            DW = tf.matmul(tf.transpose(AI), DO)
-            DW = tf.multiply(DW, self.mask)
-            DB = tf.reduce_sum(DO, axis=0)
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DW = tf.multiply(DW, self.mask)
+        DB = tf.reduce_sum(DO, axis=0)
 
-            return [(DW, self.weights), (DB, self.bias)]
+        return [(DW, self.weights), (DB, self.bias)]
         
     def dfa(self, AI, AO, E, DO):
         if not self._train:
@@ -181,17 +181,17 @@ class SparseFC(Layer):
     
     def SET(self):
         shape = tf.shape(self.weights)
-        abs_w = tf.abs(self.weights)
-        vld_i = tf.where(abs_w > 0)
-        vld_w = tf.gather_nd(abs_w, vld_i)
+        abs_m = tf.abs(self.mask)
+        vld_i = tf.where(abs_m > 0)
+        vld_w = tf.gather_nd(self.weights, vld_i)
         sorted_i = tf.contrib.framework.argsort(vld_w, axis=0)
         
-        new_i = tf.where(abs_w <= 0)
+        new_i = tf.where(self.weights <= 0)
         new_i = tf.random_shuffle(new_i)
         new_i = tf.slice(new_i, [0, 0], [self.nswap, 2])
         new_i = tf.cast(new_i, tf.int32)
         sqrt_fan_in = math.sqrt(self.input_size)
-        new_w = tf.random_uniform(minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in, shape=(self.nswap,))
+        new_w = tf.random_uniform(minval=1e-6, maxval=1.0/sqrt_fan_in, shape=(self.nswap,))
         
         large_i = tf.gather(vld_i, sorted_i, axis=0)
         large_i = tf.cast(large_i, tf.int32)
@@ -207,7 +207,7 @@ class SparseFC(Layer):
         large_w = tf.gather_nd(self.mask, large_i)
         pos = tf.ones(shape=(self.nswap * self.sign, 1))
         neg = tf.ones(shape=(self.nswap * (1. - self.sign), 1)) * -1.
-        new_w = tf.concat((pos, neg), axis=1)
+        new_w = tf.concat((pos, neg), axis=0)
         new_w = tf.reshape(new_w, (-1,))
         updates = tf.concat((large_w, new_w), axis=0) 
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
