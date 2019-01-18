@@ -9,35 +9,34 @@ from Activation import Sigmoid
 
 class SparseFC(Layer):
 
-    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, bias : float, last_layer : bool, name=None, load=None, train=True, rate=1., swap=0.):
+    def __init__(self, size, num_classes, init_weights, alpha, activation, bias, last_layer, name=None, load=None, train=True, rate=1., swap=0., sign=1.):
         self.size = size
         self.input_size, self.output_size = size
         self.num_classes = num_classes
-        
         self.last_layer = last_layer
-                
+        self.sign = sign
         self.rate = rate
         self.swap = swap
         self.nswap = int(self.rate * self.swap * self.input_size * self.output_size)
-
         self.bias = tf.Variable(tf.ones(shape=[self.output_size]) * bias)
-
         self.alpha = alpha
-
         self.activation = activation
-
         self.name = name
         self._train = train
         
         #########################################################
 
+        '''
         mask = np.zeros(self.size)
         for ii in range(self.input_size):
             idx = np.random.choice(range(self.output_size), size=int(self.rate * self.output_size), replace=False)
             mask[ii][idx] = 1.
-            
-        total_connects = int(np.count_nonzero(mask))
-        assert(total_connects == int(self.rate * self.output_size) * self.input_size)
+        '''
+
+        mask = np.random.choice([0., -1., 1.], size=self.size, replace=True, p=[1.-rate, rate*(1.-sign), rate*sign])
+
+        # total_connects = int(np.count_nonzero(mask))
+        # assert(total_connects == int(self.rate * self.output_size) * self.input_size)
         
         assert(not load)
         if init_weights == "zero":
@@ -56,7 +55,7 @@ class SparseFC(Layer):
             # Glorot
             assert(False)
 
-        weights = mask * weights
+        weights = np.absolute(mask) * weights
             
         self.weights = tf.Variable(weights, dtype=tf.float32)
         self.mask = tf.Variable(mask, dtype=tf.float32)
@@ -108,8 +107,7 @@ class SparseFC(Layer):
         DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
 
-        weights = tf.clip_by_value(self.weights - self.alpha * DW, 1e-6, 1e6) * self.mask
-        # weights = tf.clip_by_value(self.weights - self.alpha * DW, -1e6, 1e6) * self.mask
+        weights = tf.clip_by_value(self.weights - self.alpha * DW, 1e-6, 1e6) * tf.abs(self.mask)
         bias = self.bias - self.alpha * DB
 
         self.weights = self.weights.assign(weights)
@@ -145,8 +143,7 @@ class SparseFC(Layer):
         DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
 
-        weights = tf.clip_by_value(self.weights - self.alpha * DW, 1e-6, 1e6) * self.mask
-        # weights = tf.clip_by_value(self.weights - self.alpha * DW, -1e6, 1e6) * self.mask
+        weights = tf.clip_by_value(self.weights - self.alpha * DW, 1e-6, 1e6) * tf.abs(self.mask)
         bias = self.bias - self.alpha * DB
 
         self.weights = self.weights.assign(weights)
@@ -183,6 +180,7 @@ class SparseFC(Layer):
     ###################################################################
     
     def SET(self):
+        assert(False)
         shape = tf.shape(self.weights)
         abs_w = tf.abs(self.weights)
         vld_i = tf.where(abs_w > 0)

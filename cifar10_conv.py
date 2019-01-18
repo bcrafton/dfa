@@ -14,6 +14,7 @@ parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--rate', type=float, default=1.)
 parser.add_argument('--swap', type=float, default=0.)
+parser.add_argument('--sign', type=float, default=0.6)
 parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--act', type=str, default='relu')
 parser.add_argument('--bias', type=float, default=0.1)
@@ -22,7 +23,7 @@ parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="gd")
+parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="cifar10_conv")
 parser.add_argument('--load', type=str, default=None)
@@ -104,35 +105,35 @@ X = tf.placeholder(tf.float32, [None, 32, 32, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
 Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = SparseConv(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=SignedRelu(shape=(32, 32, 96), rate=0.75), bias=args.bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap)
+l0 = SparseConv(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
 l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l2 = FeedbackConv(size=[batch_size, 16, 16, 96], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv1_fb')
 
-l3 = SparseConv(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=SignedRelu(shape=(16, 16, 128), rate=0.75), bias=args.bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap)
+l3 = SparseConv(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
 l4 = MaxPool(size=[batch_size, 16, 16, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l5 = FeedbackConv(size=[batch_size, 8, 8, 128], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv2_fb')
 
-l6 = SparseConv(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=SignedRelu(shape=(8, 8, 256), rate=0.75), bias=args.bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap)
+l6 = SparseConv(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
 l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l8 = FeedbackConv(size=[batch_size, 4, 4, 256], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv3_fb')
 
 l9 = ConvToFullyConnected(shape=[4, 4, 256])
 
-l10 = SparseFC(size=[4*4*256, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=SignedRelu(shape=(2048,), rate=0.75), bias=args.bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap)
+l10 = SparseFC(size=[4*4*256, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='fc1', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap, sign=args.sign)
 l11 = Dropout(rate=dropout_rate)
 l12 = FeedbackFC(size=[4*4*256, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc1_fb')
 
-l13 = SparseFC(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=SignedRelu(shape=(2048,), rate=0.75), bias=args.bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap)
+l13 = SparseFC(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='fc2', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap, sign=args.sign)
 l14 = Dropout(rate=dropout_rate)
 l15 = FeedbackFC(size=[2048, 2048], num_classes=10, sparse=args.sparse, rank=args.rank, name='fc2_fb')
 
-l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap)
+l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name='fc3', load=weights_fc, train=train_fc, rate=args.rate, swap=args.swap, sign=1.)
 
 ##############################################
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 
-SET = model.SET(swap)
+# SET = model.SET(swap)
 predict = model.predict(X=X)
 weights = model.get_weights()
 
@@ -175,16 +176,20 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar10
 
+
+srv = False
+
+if not srv:
+  x_train = np.transpose(x_train, (0, 2, 3, 1))
+  x_test = np.transpose(x_test, (0, 2, 3, 1))
+
 assert(np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3))
 assert(np.shape(x_test) == (TEST_EXAMPLES, 32, 32, 3))
 
-# x_train = np.transpose(x_train, (0, 2, 3, 1))
-# x_test = np.transpose(x_test, (0, 2, 3, 1))
-
-x_train = x_train.reshape(TRAIN_EXAMPLES, 32, 32, 3)
+# x_train = x_train.reshape(TRAIN_EXAMPLES, 32, 32, 3)
 y_train = keras.utils.to_categorical(y_train, 10)
 
-x_test = x_test.reshape(TEST_EXAMPLES, 32, 32, 3)
+# x_test = x_test.reshape(TEST_EXAMPLES, 32, 32, 3)
 y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################
@@ -200,9 +205,6 @@ f.close()
 train_accs = []
 test_accs = []
 
-train_accs_top5 = []
-test_accs_top5 = []
-
 for ii in range(EPOCHS):
     if args.opt == 'decay' or args.opt == 'gd':
         decay = np.power(args.decay, ii)
@@ -216,57 +218,46 @@ for ii in range(EPOCHS):
     
     _count = 0
     _total_correct = 0
-    _total_top5 = 0
     
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
+        print (jj)
+    
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: args.dropout, learning_rate: lr, X: xs, Y: ys})
+        _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: args.dropout, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
-        _total_top5 += _top5
         _count += BATCH_SIZE
 
     train_acc = 1.0 * _total_correct / _count
     train_accs.append(train_acc)
 
-    train_acc_top5 = 1.0 * _total_top5 / _count
-    train_accs_top5.append(train_acc_top5)
-
     #############################
 
     _count = 0
     _total_correct = 0
-    _total_top5 = 0
     
     for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
         xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _top5 = sess.run([total_correct, total_top5], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
+        [_correct] = sess.run([total_correct], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys})
         
         _total_correct += _correct
-        _total_top5 += _top5
         _count += BATCH_SIZE
         
     test_acc = 1.0 * _total_correct / _count
     test_accs.append(test_acc)
 
-    test_acc_top5 = 1.0 * _total_top5 / _count
-    test_accs_top5.append(test_acc_top5)
-
     #############################
             
     print ("train acc: %f test acc: %f" % (train_acc, test_acc))
-    # there is no point in top 5 accuracy lol.
-    # print ("train acc top 5: %f test acc top 5: %f" % (train_acc_top5, test_acc_top5))
-    
     f = open(filename, "a")
     f.write(str(test_acc) + "\n")
     f.close()
 
     #############################
     
-    _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
+    # _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
 
     #############################
 

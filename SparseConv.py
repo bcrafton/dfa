@@ -9,33 +9,26 @@ from Activation import Sigmoid
 
 class SparseConv(Layer):
 
-    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation, bias, last_layer, name=None, load=None, train=True, rate=1., swap=0.):
+    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, strides, padding, alpha, activation, bias, last_layer, name=None, load=None, train=True, rate=1., swap=0., sign=1.):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
         self.num_classes = num_classes
-        
-        # self.h and self.w only equal this for input sizes when padding = "SAME"...
         self.batch_size, self.h, self.w, self.fin = self.input_sizes
         self.fh, self.fw, self.fin, self.fout = self.filter_sizes
-
         self.bias = tf.Variable(tf.ones(shape=self.fout) * bias)
-
         self.strides = strides
         self.padding = padding
-
         self.alpha = alpha
-
         self.activation = activation
         self.last_layer = last_layer
-
+        self.sign = sign
         self.name = name
         self._train = train
-        
         self.rate = rate
         self.swap = swap
         self.nswap = int(self.rate * self.swap * np.prod(self.filter_sizes))
         
-        mask = np.random.choice([0, 1], size=self.filter_sizes, replace=True, p=[1.-rate, rate])
+        mask = np.random.choice([0., -1., 1.], size=self.filter_sizes, replace=True, p=[1.-rate, rate*(1.-sign), rate*sign])
         
         # total_connects = int(np.count_nonzero(mask))
         # print (total_connects)
@@ -59,14 +52,12 @@ class SparseConv(Layer):
                 # Glorot
                 assert(False)
                 
-        filters = mask * filters
+        filters = np.absolute(mask) * filters
 
         self.filters = tf.Variable(filters, dtype=tf.float32)
         self.mask = tf.Variable(mask, dtype=tf.float32)
         self.total_connects = tf.Variable(tf.count_nonzero(self.mask))
-        
-        self._total_connects = np.count_nonzero(mask)
-        self.slice_size = self._total_connects - self.nswap
+        self.slice_size = np.count_nonzero(mask) - self.nswap
 
     ###################################################################
 
@@ -79,7 +70,7 @@ class SparseConv(Layer):
         return filter_weights_size + bias_weights_size
                 
     def forward(self, X):
-        Z = tf.add(tf.nn.conv2d(X, tf.clip_by_value(self.filters, 1e-6, 1e6) * self.mask, self.strides, self.padding), tf.reshape(self.bias, [1, 1, self.fout]))
+        Z = tf.nn.conv2d(X, tf.clip_by_value(self.filters, 1e-6, 1e6) * self.mask, self.strides, self.padding) + tf.reshape(self.bias, [1, 1, self.fout])
         A = self.activation.forward(Z)
         return A
         
@@ -87,7 +78,7 @@ class SparseConv(Layer):
         
     def backward(self, AI, AO, DO):    
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.filters, out_backprop=DO, strides=self.strides, padding=self.padding)
+        DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.filters * self.mask, out_backprop=DO, strides=self.strides, padding=self.padding)
         return DI
 
     def gv(self, AI, AO, DO):
@@ -115,8 +106,7 @@ class SparseConv(Layer):
         # DF = tf.Print(DF, [tf.reduce_mean(DF), tf.keras.backend.std(DF), tf.reduce_mean(self.filters), tf.keras.backend.std(self.filters)], message="Conv: ")
         # DF = tf.Print(DF, [tf.shape(DF), tf.shape(self.filters)], message="", summarize=25)
 
-        filters = tf.clip_by_value(self.filters - self.alpha * DF, 1e-6, 1e6) * self.mask
-        # filters = tf.clip_by_value(self.filters - self.alpha * DF, -1e6, 1e6) * self.mask
+        filters = tf.clip_by_value(self.filters - self.alpha * DF, 1e-6, 1e6) * tf.abs(self.mask)
         bias = self.bias - self.alpha * DB
 
         self.filters = self.filters.assign(filters)
@@ -154,8 +144,7 @@ class SparseConv(Layer):
         # DF = tf.Print(DF, [tf.reduce_mean(DF), tf.keras.backend.std(DF), tf.reduce_mean(self.filters), tf.keras.backend.std(self.filters)], message="Conv: ")
         # DF = tf.Print(DF, [tf.shape(DF), tf.shape(self.filters)], message="", summarize=25)
 
-        filters = tf.clip_by_value(self.filters - self.alpha * DF, 1e-6, 1e6) * self.mask
-        # filters = tf.clip_by_value(self.filters - self.alpha * DF, -1e6, 1e6) * self.mask
+        filters = tf.clip_by_value(self.filters - self.alpha * DF, 1e-6, 1e6) * tf.abs(self.mask)
         bias = self.bias - self.alpha * DB
 
         self.filters = self.filters.assign(filters)
@@ -192,6 +181,7 @@ class SparseConv(Layer):
     ################################################################### 
         
     def SET(self):
+        assert(False)
         shape = tf.shape(self.filters)
         abs_w = tf.abs(self.filters)
         vld_i = tf.where(abs_w > 0)
