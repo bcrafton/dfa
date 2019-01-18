@@ -8,16 +8,25 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--decay', type=float, default=0.99)
+parser.add_argument('--alpha', type=float, default=1e-4)
+parser.add_argument('--eps', type=float, default=1e-5)
+parser.add_argument('--l2', type=float, default=0.)
+parser.add_argument('--decay', type=float, default=1.)
+parser.add_argument('--rate', type=float, default=1.)
+parser.add_argument('--swap', type=float, default=0.)
+parser.add_argument('--sign', type=float, default=0.6)
+parser.add_argument('--dropout', type=float, default=0.5)
+parser.add_argument('--act', type=str, default='relu')
+parser.add_argument('--bias', type=float, default=0.1)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--alg', type=str, default='bp')
+parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="gd")
+parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
-parser.add_argument('--name', type=str, default="cifar10_fc_weights")
+parser.add_argument('--name', type=str, default="cifar10_conv")
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -81,56 +90,48 @@ X = tf.placeholder(tf.float32, [None, 3072])
 
 l0 = Dropout(rate=dropout_rate/5.)
 
-l1 = SparseFC(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1", rate=0.25, swap=0.1)
+l1 = SparseFC(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc1", rate=args.rate, swap=args.swap, sign=args.sign)
 l2 = Dropout(rate=dropout_rate)
 l3 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc1_fb")
 
-l4 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2", rate=0.25, swap=0.1)
+l4 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc2", rate=args.rate, swap=args.swap, sign=args.sign)
 l5 = Dropout(rate=dropout_rate)
 l6 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc2_fb")
 
-l7 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3", rate=0.25, swap=0.1)
+l7 = SparseFC(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="fc3", rate=args.rate, swap=args.swap, sign=args.sign)
 l8 = Dropout(rate=dropout_rate)
 l9 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=args.sparse, rank=args.rank, name="fc3_fb")
 
-l10 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=bias, last_layer=True, name="fc4")
+l10 = SparseFC(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=learning_rate, activation=Relu(), bias=bias, last_layer=True, name="fc3", rate=1., swap=0., sign=1.)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10])
 
 ##############################################
 
-SET = model.SET(swap)
+# SET = model.SET(swap)
 predict = model.predict(X=X)
 weights = model.get_weights()
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay":
-    if args.alg == 'dfa':
+    if args.dfa:
         grads_and_vars = model.dfa_gvs(X=X, Y=Y)
-    if args.alg == 'lel':
-        grads_and_vars = model.lel_gvs(X=X, Y=Y)
-    elif args.alg == 'bp':
-        grads_and_vars = model.gvs(X=X, Y=Y)
     else:
-        assert(False)
+        grads_and_vars = model.gvs(X=X, Y=Y)
         
     if args.opt == "adam":
-        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.AdamOptimizer(learning_rate=learning_rate, beta1=0.9, beta2=0.999, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "rms":
-        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+        train = tf.train.RMSPropOptimizer(learning_rate=learning_rate, decay=0.99, epsilon=args.eps).apply_gradients(grads_and_vars=grads_and_vars)
     elif args.opt == "decay":
         train = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).apply_gradients(grads_and_vars=grads_and_vars)
     else:
         assert(False)
 
 else:
-    if args.alg == 'dfa':
+    if args.dfa:
         train = model.dfa(X=X, Y=Y)
-    elif args.alg == 'lel':
-        train = model.lel(X=X, Y=Y)
-    elif args.alg == 'bp':
-        train = model.train(X=X, Y=Y)
     else:
-        assert(False)
+        train = model.train(X=X, Y=Y)
 
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
@@ -143,18 +144,28 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar10
 
+srv = False
+
+if not srv:
+  x_train = np.transpose(x_train, (0, 2, 3, 1))
+  x_test = np.transpose(x_test, (0, 2, 3, 1))
+
+assert(np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3))
+assert(np.shape(x_test) == (TEST_EXAMPLES, 32, 32, 3))
+
+y_train = keras.utils.to_categorical(y_train, 10)
+y_test = keras.utils.to_categorical(y_test, 10)
+
 mean = np.mean(x_train, axis=(0, 1, 2), keepdims=True)
 std = np.std(x_train, axis=(0, 1, 2), keepdims=True)
 
 # x_train = x_train / 255.
 x_train = (x_train - mean) / std
 x_train = x_train.reshape(TRAIN_EXAMPLES, 3072)
-y_train = keras.utils.to_categorical(y_train, 10)
 
 # x_test = x_test / 255.
 x_test = (x_test - mean) / std
 x_test = x_test.reshape(TEST_EXAMPLES, 3072)
-y_test = keras.utils.to_categorical(y_test, 10)
 ##############################################
 
 filename = args.name + '.results'
@@ -169,7 +180,6 @@ train_accs = []
 test_accs = []
 
 for ii in range(EPOCHS):
-    
 
     if args.opt == 'decay' or args.opt == 'gd':
         decay = np.power(args.decay, ii)
@@ -221,7 +231,7 @@ for ii in range(EPOCHS):
     
     #############################
     
-    _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
+    # _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
 
     #############################
 

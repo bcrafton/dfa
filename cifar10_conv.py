@@ -8,8 +8,8 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--alpha', type=float, default=1e-3)
-parser.add_argument('--eps', type=float, default=1e-4)
+parser.add_argument('--alpha', type=float, default=1e-4)
+parser.add_argument('--eps', type=float, default=1e-5)
 parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--rate', type=float, default=1.)
@@ -176,7 +176,6 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar10
 
-
 srv = False
 
 if not srv:
@@ -220,7 +219,7 @@ for ii in range(EPOCHS):
     _total_correct = 0
     
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
-        print (jj)
+        # print (jj)
     
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
