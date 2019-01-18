@@ -189,16 +189,25 @@ for ii in range(len(points)):
 
 #######################################
 
-# ax1.set_yticks(np.linspace(.8, .98, 7))
-# ax3.set_yticks([.45, .47, .49, .51])
-ax3.set_yticks([45., 47., 49., 51.])
+ax1.set_ylim(96.6, 98.)
+ax1.set_yticks([96.8, 97.0, 97.2, 97.4, 97.6, 97.8])
+
+ax2.set_ylim(40, 54)
+ax2.set_yticks([42, 44, 46, 48, 50, 52])
+
+ax3.set_ylim(40, 54)
+ax3.set_yticks([42, 44, 46, 48, 50, 52])
+
+ax4.set_ylim(45, 85)
+ax4.set_yticks([50, 55, 60, 65, 70, 75, 80])
+
+#######################################
 
 ax2.set_xticks(range(0, 100, 10))
 ax4.set_xticks(range(0, 100, 10))
 
 ax1.set_xlim(95, -5)
 ax1.invert_xaxis()
-
 ax2.invert_xaxis()
 ax3.invert_xaxis()
 ax4.invert_xaxis()
@@ -207,13 +216,14 @@ ax2.set_xlabel(xlabel='Sparsity (%)', fontsize=10.)
 ax4.set_xlabel(xlabel='Sparsity (%)', fontsize=10.)
 
 ax1.set_ylabel(ylabel='Accuracy (%)', fontsize=10.)
-ax2.set_ylabel(ylabel='Angle', fontsize=10.)
+ax2.set_ylabel(ylabel='Angle (Degrees)', fontsize=10.)
 # ax3.set_ylabel(ylabel='Accuracy')
 # ax4.set_ylabel(ylabel='Angle')
 
 f.set_size_inches(7., 5.)
 
 for ax in [ax1, ax2, ax3, ax4]:
+    ax.grid(alpha=0.9, linestyle='--', linewidth=0.35)
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(10.) 
     for tick in ax.xaxis.get_major_ticks():
