@@ -31,34 +31,37 @@ class SparseFC(Layer):
         
         #########################################################
 
-        _mask = np.zeros(self.size)
+        mask = np.zeros(self.size)
         for ii in range(self.input_size):
             idx = np.random.choice(range(self.output_size), size=int(self.rate * self.output_size), replace=False)
-            _mask[ii][idx] = 1.
+            mask[ii][idx] = 1.
             
-        _total_connects = int(np.count_nonzero(_mask))
-        assert(_total_connects == int(self.rate * self.output_size) * self.input_size)
+        total_connects = int(np.count_nonzero(mask))
+        assert(total_connects == int(self.rate * self.output_size) * self.input_size)
         
         assert(not load)
         if init_weights == "zero":
-            _weights = np.zeros(shape=self.size)
+            # weights = np.zeros(shape=self.size)
+            weights = np.ones(shape=self.size) * 1e-6
+
         elif init_weights == "sqrt_fan_in":
             sqrt_fan_in = math.sqrt(self.input_size)
-            _weights = np.random.uniform(low=-1.0/sqrt_fan_in, high=1.0/sqrt_fan_in, size=self.size)
+            weights = np.random.uniform(low=1e-6, high=1.0/sqrt_fan_in, size=self.size)
+
         elif init_weights == "alexnet":
-            _weights = np.random.normal(loc=0.0, scale=0.01, size=self.size)
+            assert(False)
+            # weights = np.random.normal(loc=0.0, scale=0.01, size=self.size)
+
         else:
             # Glorot
             assert(False)
 
-        _weights = _mask * _weights
+        weights = mask * weights
             
-        self.weights = tf.Variable(_weights, dtype=tf.float32)
-        self.mask = tf.Variable(_mask, dtype=tf.float32)
+        self.weights = tf.Variable(weights, dtype=tf.float32)
+        self.mask = tf.Variable(mask, dtype=tf.float32)
         self.total_connects = tf.Variable(tf.count_nonzero(self.mask))
-        
-        self._total_connects = np.count_nonzero(_mask)
-        self.slice_size = self._total_connects - self.nswap
+        self.slice_size = np.count_nonzero(mask) - self.nswap
         
     ###################################################################
         
@@ -71,7 +74,7 @@ class SparseFC(Layer):
         return weights_size + bias_size
 
     def forward(self, X):
-        Z = tf.matmul(X, self.weights) + self.bias
+        Z = tf.matmul(X, tf.clip_by_value(self.weights, 1e-6, 1e6) * self.mask) + self.bias
         A = self.activation.forward(Z)
         return A
 
@@ -79,17 +82,20 @@ class SparseFC(Layer):
             
     def backward(self, AI, AO, DO):
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DI = tf.matmul(DO, tf.transpose(self.weights))
+        DI = tf.matmul(DO, tf.transpose(self.weights * self.mask))
         return DI
         
     def gv(self, AI, AO, DO):
-        if not self._train:
-            return []
+        _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
+        with tf.control_dependencies([_assert]):
 
-        DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
-        DW = tf.multiply(DW, self.mask)
-        DB = tf.reduce_sum(DO, axis=0)
+            if not self._train:
+                return []
+
+            DO = tf.multiply(DO, self.activation.gradient(AO))
+            DW = tf.matmul(tf.transpose(AI), DO)
+            DW = tf.multiply(DW, self.mask)
+            DB = tf.reduce_sum(DO, axis=0)
 
         return [(DW, self.weights), (DB, self.bias)]
 
@@ -102,8 +108,13 @@ class SparseFC(Layer):
         DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
 
-        self.weights = self.weights.assign(tf.clip_by_value(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)), 1e-9, 1e6))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        weights = tf.clip_by_value(self.weights - self.alpha * DW, 1e-6, 1e6) * self.mask
+        # weights = tf.clip_by_value(self.weights - self.alpha * DW, -1e6, 1e6) * self.mask
+        bias = self.bias - self.alpha * DB
+
+        self.weights = self.weights.assign(weights)
+        self.bias = self.bias.assign(bias)
+
         return [(DW, self.weights), (DB, self.bias)]
         
     ###################################################################
@@ -112,15 +123,18 @@ class SparseFC(Layer):
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
-        if not self._train:
-            return []
+        _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
+        with tf.control_dependencies([_assert]):
 
-        DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
-        DW = tf.multiply(DW, self.mask)
-        DB = tf.reduce_sum(DO, axis=0)
+            if not self._train:
+                return []
 
-        return [(DW, self.weights), (DB, self.bias)]
+            DO = tf.multiply(DO, self.activation.gradient(AO))
+            DW = tf.matmul(tf.transpose(AI), DO)
+            DW = tf.multiply(DW, self.mask)
+            DB = tf.reduce_sum(DO, axis=0)
+
+            return [(DW, self.weights), (DB, self.bias)]
         
     def dfa(self, AI, AO, E, DO):
         if not self._train:
@@ -131,8 +145,13 @@ class SparseFC(Layer):
         DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
 
-        self.weights = self.weights.assign(tf.clip_by_value(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)), 1e-9, 1e6))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        weights = tf.clip_by_value(self.weights - self.alpha * DW, 1e-6, 1e6) * self.mask
+        # weights = tf.clip_by_value(self.weights - self.alpha * DW, -1e6, 1e6) * self.mask
+        bias = self.bias - self.alpha * DB
+
+        self.weights = self.weights.assign(weights)
+        self.bias = self.bias.assign(bias)
+
         return [(DW, self.weights), (DB, self.bias)]
         
     ###################################################################

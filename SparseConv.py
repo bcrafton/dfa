@@ -37,20 +37,24 @@ class SparseConv(Layer):
         
         mask = np.random.choice([0, 1], size=self.filter_sizes, replace=True, p=[1.-rate, rate])
         
-        # _total_connects = int(np.count_nonzero(mask))
-        # print (_total_connects)
-        # assert(_total_connects == int(self.rate * np.prod(self.filter_sizes)))
+        # total_connects = int(np.count_nonzero(mask))
+        # print (total_connects)
+        # assert(total_connects == int(self.rate * np.prod(self.filter_sizes)))
         
         if load:
             assert(False)
         else:
             if init_filters == "zero":
-                filters = np.zeros(shape=self.filter_sizes)
+                filters = np.ones(shape=self.filter_sizes) * 1e-6
+
             elif init_filters == "sqrt_fan_in":
                 sqrt_fan_in = np.sqrt(self.h * self.w * self.fin)
-                filters = np.random.uniform(low=-1.0/sqrt_fan_in, high=1.0/sqrt_fan_in, size=self.filter_sizes)
+                filters = np.random.uniform(low=1e-6, high=1.0/sqrt_fan_in, size=self.filter_sizes)
+
             elif init_filters == "alexnet":
-                filters = np.random.normal(loc=0.0, scale=0.01, size=self.filter_sizes)
+                assert(False)
+                # filters = np.random.normal(loc=0.0, scale=0.01, size=self.filter_sizes)
+
             else:
                 # Glorot
                 assert(False)
@@ -75,7 +79,7 @@ class SparseConv(Layer):
         return filter_weights_size + bias_weights_size
                 
     def forward(self, X):
-        Z = tf.add(tf.nn.conv2d(X, self.filters, self.strides, self.padding), tf.reshape(self.bias, [1, 1, self.fout]))
+        Z = tf.add(tf.nn.conv2d(X, tf.clip_by_value(self.filters, 1e-6, 1e6) * self.mask, self.strides, self.padding), tf.reshape(self.bias, [1, 1, self.fout]))
         A = self.activation.forward(Z)
         return A
         
@@ -86,7 +90,9 @@ class SparseConv(Layer):
         DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.filters, out_backprop=DO, strides=self.strides, padding=self.padding)
         return DI
 
-    def gv(self, AI, AO, DO):    
+    def gv(self, AI, AO, DO):
+        # cant do assertion here bc conv not exact with np.random.choice
+
         if not self._train:
             return []
     
@@ -109,16 +115,23 @@ class SparseConv(Layer):
         # DF = tf.Print(DF, [tf.reduce_mean(DF), tf.keras.backend.std(DF), tf.reduce_mean(self.filters), tf.keras.backend.std(self.filters)], message="Conv: ")
         # DF = tf.Print(DF, [tf.shape(DF), tf.shape(self.filters)], message="", summarize=25)
 
-        self.filters = self.filters.assign(tf.clip_by_value(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)), 1e-9, 1e6))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        filters = tf.clip_by_value(self.filters - self.alpha * DF, 1e-6, 1e6) * self.mask
+        # filters = tf.clip_by_value(self.filters - self.alpha * DF, -1e6, 1e6) * self.mask
+        bias = self.bias - self.alpha * DB
+
+        self.filters = self.filters.assign(filters)
+        self.bias = self.bias.assign(bias)
+
         return [(DF, self.filters), (DB, self.bias)]
-        
+
     ###################################################################
 
     def dfa_backward(self, AI, AO, E, DO):
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
+        # cant do assertion here bc conv not exact with np.random.choice
+
         if not self._train:
             return []
     
@@ -141,8 +154,13 @@ class SparseConv(Layer):
         # DF = tf.Print(DF, [tf.reduce_mean(DF), tf.keras.backend.std(DF), tf.reduce_mean(self.filters), tf.keras.backend.std(self.filters)], message="Conv: ")
         # DF = tf.Print(DF, [tf.shape(DF), tf.shape(self.filters)], message="", summarize=25)
 
-        self.filters = self.filters.assign(tf.clip_by_value(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)), 1e-9, 1e6))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        filters = tf.clip_by_value(self.filters - self.alpha * DF, 1e-6, 1e6) * self.mask
+        # filters = tf.clip_by_value(self.filters - self.alpha * DF, -1e6, 1e6) * self.mask
+        bias = self.bias - self.alpha * DB
+
+        self.filters = self.filters.assign(filters)
+        self.bias = self.bias.assign(bias)
+
         return [(DF, self.filters), (DB, self.bias)]
         
     ###################################################################    
