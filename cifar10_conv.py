@@ -105,16 +105,16 @@ X = tf.placeholder(tf.float32, [None, 32, 32, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
 Y = tf.placeholder(tf.float32, [None, 10])
 
-l0 = SparseConv(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
-l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l0 = SparseConv(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, strides=[1, 2, 2, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv1', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
+# l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l2 = FeedbackConv(size=[batch_size, 16, 16, 96], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv1_fb')
 
-l3 = SparseConv(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
-l4 = MaxPool(size=[batch_size, 16, 16, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l3 = SparseConv(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, strides=[1, 2, 2, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv2', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
+# l4 = MaxPool(size=[batch_size, 16, 16, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l5 = FeedbackConv(size=[batch_size, 8, 8, 128], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv2_fb')
 
-l6 = SparseConv(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
-l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l6 = SparseConv(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, strides=[1, 2, 2, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=args.bias, last_layer=False, name='conv3', load=weights_conv, train=train_conv, rate=args.rate, swap=args.swap, sign=args.sign)
+# l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
 l8 = FeedbackConv(size=[batch_size, 4, 4, 256], num_classes=10, sparse=args.sparse, rank=args.rank, name='conv3_fb')
 
 l9 = ConvToFullyConnected(shape=[4, 4, 256])
@@ -131,10 +131,11 @@ l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=le
 
 ##############################################
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
+# model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
+model = Model(layers=[l0, l2, l3, l5, l6, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 
-SET = model.SET(swap)
-FBS = model.set_fb()
+# SET = model.SET(swap)
+# FBS = model.set_fb()
 predict = model.predict(X=X)
 weights = model.get_weights()
 
@@ -179,7 +180,7 @@ tf.local_variables_initializer().run()
 
 if not (np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3)):
   x_train = np.transpose(x_train, (0, 2, 3, 1))
-if not np.shape(x_test) == (TEST_EXAMPLES, 32, 32, 3)):
+if not (np.shape(x_test) == (TEST_EXAMPLES, 32, 32, 3)):
   x_test = np.transpose(x_test, (0, 2, 3, 1))
 
 assert(np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3))
@@ -263,8 +264,8 @@ for ii in range(EPOCHS):
 
     #############################
     
-    _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
-    _FBS = sess.run(FBS, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: False})
+    # _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
+    # _FBS = sess.run(FBS, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: False})
 
     #############################
 

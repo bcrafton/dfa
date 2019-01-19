@@ -182,11 +182,11 @@ class SparseConv(Layer):
         
     def SET(self):
         shape = tf.shape(self.filters)
-        abs_m = tf.abs(self.mask)
+        abs_m = tf.abs(tf.identity(self.mask))
         vld_i = tf.where(abs_m > 0)
         vld_w = tf.gather_nd(self.filters, vld_i)
-        sorted_i = tf.contrib.framework.argsort(vld_w, axis=0)
-        
+        sorted_i = tf.contrib.framework.argsort(vld_w, axis=0, direction="DESCENDING")
+
         # new indices
         new_i = tf.where(self.filters <= 0)
         new_i = tf.random_shuffle(new_i)
@@ -194,25 +194,27 @@ class SparseConv(Layer):
         new_i = tf.cast(new_i, tf.int32)
         sqrt_fan_in = np.sqrt(self.h * self.w * self.fin)
         new_w = tf.random_uniform(minval=1e-6, maxval=1.0/sqrt_fan_in, shape=(self.nswap,))
-        
+
         # largest indices (rate - rate * nswap)
         large_i = tf.gather(vld_i, sorted_i, axis=0)
         large_i = tf.cast(large_i, tf.int32)
-        large_i = tf.slice(large_i, [self.nswap, 0], [self.slice_size, 4])
+        large_i = tf.slice(large_i, [0, 0], [self.slice_size, 4])
         large_w = tf.gather_nd(self.filters, large_i)
-        
+
         # update filters
         indices = tf.concat((large_i, new_i), axis=0)
         updates = tf.concat((large_w, new_w), axis=0)
         filters = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
-        
+
         # update mask
+        num_pos = np.ceil(self.nswap * self.sign)
+        num_neg = np.floor(self.nswap * (1 - self.sign))
         large_w = tf.gather_nd(self.mask, large_i)
-        pos = tf.ones(shape=(self.nswap * self.sign, 1))
-        neg = tf.ones(shape=(self.nswap * (1. - self.sign), 1)) * -1.
+        pos = tf.ones(shape=(num_pos, 1))
+        neg = tf.ones(shape=(num_neg, 1)) * -1.
         new_w = tf.concat((pos, neg), axis=0)
         new_w = tf.reshape(new_w, (-1,))
-        updates = tf.concat((large_w, new_w), axis=0) 
+        updates = tf.concat((large_w, new_w), axis=0)
         mask = tf.scatter_nd(indices=indices, updates=updates, shape=shape)
 
         # assign 
