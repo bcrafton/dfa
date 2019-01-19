@@ -9,6 +9,8 @@ class ConvToFullyConnected(Layer):
 
     def __init__(self, shape):
         self.shape = shape
+        self.rshape = np.copy(shape).tolist()
+        self.rshape.reverse()
         
     ###################################################################
 
@@ -53,3 +55,13 @@ class ConvToFullyConnected(Layer):
         
     def lel(self, AI, AO, E, DO, Y): 
         return []
+        
+    ###################################################################
+        
+    def set_fb(self, fb):
+        fb = tf.reshape(fb, self.shape + [tf.shape(fb)[1]])
+        fb = tf.transpose(fb, (3, 0, 1, 2))
+        return (fb, [])
+
+    ###################################################################
+        

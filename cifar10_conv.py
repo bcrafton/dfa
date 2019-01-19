@@ -134,6 +134,7 @@ l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=le
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 
 SET = model.SET(swap)
+FBS = model.set_fb()
 predict = model.predict(X=X)
 weights = model.get_weights()
 
@@ -176,10 +177,9 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar10
 
-srv = True
-
-if not srv:
+if not (np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3)):
   x_train = np.transpose(x_train, (0, 2, 3, 1))
+if not np.shape(x_test) == (TEST_EXAMPLES, 32, 32, 3)):
   x_test = np.transpose(x_test, (0, 2, 3, 1))
 
 assert(np.shape(x_train) == (TRAIN_EXAMPLES, 32, 32, 3))
@@ -264,6 +264,7 @@ for ii in range(EPOCHS):
     #############################
     
     _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
+    _FBS = sess.run(FBS, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: False})
 
     #############################
 

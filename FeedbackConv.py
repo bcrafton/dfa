@@ -22,10 +22,11 @@ class FeedbackConv(Layer):
 
         if load:
             weight_dict = np.load(load).item()
-            self.B = tf.cast(tf.Variable(weight_dict[self.name]), tf.float32)
+            b = weight_dict[self.name]
+            self.B = tf.Variable(b, tf.float32)
         else:
             b = FeedbackMatrix(size=(self.num_classes, self.num_output), sparse=self.sparse, rank=self.rank)
-            self.B = tf.cast(tf.Variable(b), tf.float32) 
+            self.B = tf.Variable(b, dtype=tf.float32)
 
     ###################################################################
     
@@ -93,6 +94,12 @@ class FeedbackConv(Layer):
         
     ###################################################################
         
-        
+    def set_fb(self, fb):
+        B = tf.reshape(fb, [tf.shape(fb)[0], -1])
+        self.B = self.B.assign(B)
+        return (fb, [self.B])
+
+    ###################################################################
+
 
 

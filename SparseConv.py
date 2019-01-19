@@ -224,4 +224,15 @@ class SparseConv(Layer):
     def NSET(self):    
         return [(self.mask, self.filters)]
         
+    ###################################################################
+
+    def set_fb(self, fb):
+        assert(not self.last_layer)
+        masked = tf.multiply(self.filters, self.mask)
+        shape = (self.num_classes, self.h, self.w, self.fin)
+        fb = tf.nn.conv2d_backprop_input(input_sizes=shape, filter=masked, out_backprop=fb, strides=self.strides, padding=self.padding)
+        return (fb, [])
         
+    ###################################################################
+
+

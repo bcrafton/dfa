@@ -221,5 +221,19 @@ class SparseFC(Layer):
     def NSET(self):    
         return [(self.mask, self.weights)]
         
+    ###################################################################
         
-        
+    def set_fb(self, fb):
+        masked = tf.multiply(self.weights, self.mask)
+        if self.last_layer:
+            fb = masked
+        else:
+            fb = tf.matmul(masked, fb)
+            
+        return (fb, [])
+
+    ###################################################################
+    
+    
+    
+    

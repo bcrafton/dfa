@@ -347,8 +347,30 @@ class Model:
             
         return sets
         
+    ####################################################################
+
+    def set_fb(self):
+        fb = None
+        Bs = []
+        for ii in range(self.num_layers-1, -1, -1):
+            l = self.layers[ii]
+            (fb, B) = l.set_fb(fb)
+            Bs.extend(B)
+            
+        return Bs
         
+    ####################################################################
         
+    
+    
+    
+    
+    
+    
+    
+    
+    
+ 
         
         
         

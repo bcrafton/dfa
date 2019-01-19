@@ -59,4 +59,10 @@ class Layer:
     def NSET(self):
         return []
         
-        
+    ###################################################################
+    
+    def set_fb(self, fb):
+        return (fb, [])
+    
+    
+    
