@@ -41,9 +41,7 @@ cifar100_fc_dfa = {'benchmark':'cifar100_fc_4096.py', 'epochs':100, 'batch_size'
 # params = [imagenet_alexnet_bp]
 # params = [imagenet_alexnet_dfa]
 
-params = [cifar100_fc]
 params = [cifar100_fc_bp, cifar100_fc_dfa]
-# params = [cifar100_fc_dfa]
 
 ################################################
 
