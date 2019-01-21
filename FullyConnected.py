@@ -9,7 +9,7 @@ from Activation import Sigmoid
 
 class FullyConnected(Layer):
 
-    def __init__(self, size, num_classes, init_weights, alpha, activation, bias, last_layer, l2=0., name=None, load=None, train=True):
+    def __init__(self, size, num_classes, init_weights, alpha, activation, bias, last_layer, l2=0., name=None, load=None, train=True, weights=None):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -40,6 +40,8 @@ class FullyConnected(Layer):
             weight_dict = np.load(load).item()
             self.weights = tf.Variable(weight_dict[self.name])
             self.bias = tf.Variable(weight_dict[self.name + '_bias'])
+        elif weights is not None:
+            self.weights = tf.Variable(weights, dtype=tf.float32)
         else:
             if init_weights == "zero":
                 self.weights = tf.Variable(tf.zeros(shape=self.size))
