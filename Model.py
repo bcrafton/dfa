@@ -324,7 +324,9 @@ class Model:
                 A[ii] = l.forward(A[ii-1])
                 
         return A[N]
-        
+
+    ####################################################################
+
     def SET(self, swap):
         return tf.cond(swap, lambda: self._SET(), lambda: self._NSET())
         
@@ -349,14 +351,25 @@ class Model:
         
     ####################################################################
 
-    def set_fb(self):
+    def set_fb(self, swap):
+        return tf.cond(swap, lambda: self._set_fb(), lambda: self._nset_fb())
+
+    def _set_fb(self):
         fb = None
         Bs = []
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
             (fb, B) = l.set_fb(fb)
             Bs.extend(B)
-            
+        return Bs
+
+    def _nset_fb(self):
+        fb = None
+        Bs = []
+        for ii in range(self.num_layers-1, -1, -1):
+            l = self.layers[ii]
+            (fb, B) = l.nset_fb(fb)
+            Bs.extend(B)
         return Bs
         
     ####################################################################

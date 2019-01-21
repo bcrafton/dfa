@@ -63,6 +63,10 @@ class Layer:
     
     def set_fb(self, fb):
         return (fb, [])
+
+    def nset_fb(self, fb):
+        return (fb, [])
+
     
     
     

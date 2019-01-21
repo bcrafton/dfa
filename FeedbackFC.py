@@ -100,6 +100,9 @@ class FeedbackFC(Layer):
         self.B = self.B.assign(tf.transpose(fb))
         return (fb, [self.B])
 
+    def nset_fb(self, fb):
+        return (fb, [self.B])
+
     ###################################################################
 
 

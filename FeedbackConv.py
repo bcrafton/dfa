@@ -99,6 +99,9 @@ class FeedbackConv(Layer):
         self.B = self.B.assign(B)
         return (fb, [self.B])
 
+    def nset_fb(self, fb):
+        return (fb, [self.B])
+
     ###################################################################
 
 
