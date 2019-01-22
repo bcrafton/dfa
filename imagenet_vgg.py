@@ -9,11 +9,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--eps', type=float, default=1.)
+parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--act', type=str, default='tanh')
 parser.add_argument('--bias', type=float, default=0.)
-parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -22,6 +23,7 @@ parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="gd")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="imagenet_vgg")
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -453,14 +455,14 @@ for ii in range(0, epochs):
         print ('phase 1')
     elif phase == 1:
         dacc = train_accs[-1] - train_accs[-2]
-        if dacc <= 0.001:
-            alpha = 0.001
+        if dacc <= 0.01:
+            alpha = 0.1 * args.alpha
             phase = 2
             print ('phase 2')
     elif phase == 2:
         dacc = train_accs[-1] - train_accs[-2]
-        if dacc <= 0.0001:
-            alpha = 0.0005
+        if dacc <= 0.005:
+            alpha = 0.05 * args.alpha
             phase = 3
             print ('phase 3')
 
