@@ -78,7 +78,7 @@ for ii in range(num_runs):
         train_acc = res['train_acc']
         test_acc = res['test_acc']
 
-        label = "%s %d %f" % (param['init'], param['dfa'], param['l2'])        
+        label = "%s %d %d %f" % (param['init'], param['dfa'], param['sparse'], param['alpha'])        
 
         x = (-np.max(test_acc), [ratio1, fc1, dfc1, dfc1_bias, a1, ratio2, fc2, dfc2, dfc2_bias, a2, ratio3, fc3, dfc3, dfc3_bias, a3, train_acc, test_acc, label])
         if param['dfa'] == 0:

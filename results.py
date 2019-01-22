@@ -30,18 +30,20 @@ def get_perms(param):
 cifar100_fc_bp = {'benchmark':'cifar100_fc.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-3, 1e-4], 'eps':[1e-4, 1e-5], 'dropout':[0.5], 'act':['tanh', 'relu'], 'bias':[0.1, 1.0], 'dfa':[0], 'sparse':0, 'rank':0, 'init':['glorat_bp'], 'opt':['adam'], 'load':None}
 cifar100_fc_dfa = {'benchmark':'cifar100_fc.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-3, 5e-3, 1e-4], 'eps':[1e-4, 1e-5], 'dropout':[0.5], 'act':['tanh', 'relu'], 'bias':[0.1, 1.0], 'dfa':[1], 'sparse':0, 'rank':0, 'init':['glorat_dfa'], 'opt':['adam'], 'load':None}
 
-cifar100_fc_bp = {'benchmark':'cifar100_fc_4096.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-3, 1e-4], 'eps':[1e-4, 1e-5], 'dropout':[0.5], 'act':['tanh', 'relu'], 'bias':[0.1, 1.0], 'dfa':[0], 'sparse':0, 'rank':0, 'init':['glorat_bp'], 'opt':['adam'], 'load':None}
-cifar100_fc_dfa = {'benchmark':'cifar100_fc_4096.py', 'epochs':100, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-3, 5e-3, 1e-4], 'eps':[1e-4, 1e-5], 'dropout':[0.5], 'act':['tanh', 'relu'], 'bias':[0.1, 1.0], 'dfa':[1], 'sparse':0, 'rank':0, 'init':['glorat_dfa'], 'opt':['adam'], 'load':None}
+cifar100_fc_bp = {'benchmark':'cifar100_fc_4096.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-4], 'eps':[1e-4], 'dropout':[0.5], 'act':['relu'], 'bias':[0.1], 'dfa':[0], 'sparse':0, 'rank':0, 'init':['glorat_bp', 'glorat_dfa'], 'opt':['adam'], 'load':None}
+cifar100_fc_dfa = {'benchmark':'cifar100_fc_4096.py', 'epochs':300, 'batch_size':64, 'alpha':[1e-4], 'l2':[1e-4], 'eps':[1e-4], 'dropout':[0.5], 'act':['relu'], 'bias':[0.1], 'dfa':[1], 'sparse':0, 'rank':0, 'init':['glorat_dfa'], 'opt':['adam'], 'load':None}
+# cifar100_fc_sparse1 = {'benchmark':'cifar100_fc_4096.py', 'epochs':500, 'batch_size':64, 'alpha':[5e-5, 7e-5], 'l2':[1e-4], 'eps':[1e-4], 'dropout':[0.5], 'act':['relu'], 'bias':[0.1], 'dfa':[1], 'sparse':1, 'rank':0, 'init':['glorat_dfa'], 'opt':['adam'], 'load':None}
+cifar100_fc_sparse1 = {'benchmark':'cifar100_fc_4096.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4], 'l2':[0.], 'eps':[1e-4], 'dropout':[0.5], 'act':['relu'], 'bias':[1.0], 'dfa':[1], 'sparse':1, 'rank':0, 'init':['zero'], 'opt':['adam'], 'load':None}
+cifar100_fc_sparse2 = {'benchmark':'cifar100_fc_4096.py', 'epochs':500, 'batch_size':64, 'alpha':[1e-4, 2e-4], 'l2':[1e-4], 'eps':[1e-4], 'dropout':[0.5], 'act':['relu'], 'bias':[0.1], 'dfa':[1], 'sparse':1, 'rank':0, 'init':['glorat_dfa'], 'opt':['adam'], 'load':None}
+
 
 ###############################################
 
-# params = [imagenet_alexnet_bp, imagenet_alexnet_dfa, imagenet_alexnet_sparse]
-# params = [imagenet_alexnet_dfa, imagenet_alexnet_sparse]
-# params = [imagenet_alexnet_bp, imagenet_alexnet_dfa]
-# params = [imagenet_alexnet_bp]
-# params = [imagenet_alexnet_dfa]
-
-params = [cifar100_fc_bp, cifar100_fc_dfa]
+# params = [cifar100_fc_bp]
+# params = [cifar100_fc_dfa]
+params = [cifar100_fc_sparse1]
+# params = [cifar100_fc_sparse2]
+# params = [cifar100_fc_bp, cifar100_fc_dfa, cifar100_fc_sparse1, cifar100_fc_sparse2]
 
 ################################################
 

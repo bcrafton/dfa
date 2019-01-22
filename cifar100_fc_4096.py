@@ -203,28 +203,32 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        _correct, _gvs, _bp_gvs, _dfa_gvs, _A1, _A2, _A3, _ = sess.run([total_correct, grads_and_vars, bp_gvs, dfa_gvs, A1, A2, A3, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+        if (jj % (BATCH_SIZE * 50) == 0):
+            _correct, _gvs, _bp_gvs, _dfa_gvs, _A1, _A2, _A3, _ = sess.run([total_correct, grads_and_vars, bp_gvs, dfa_gvs, A1, A2, A3, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
+
+            ratio3.append(    np.sum(np.absolute(_dfa_gvs[0][0])) / np.sum(np.absolute(_bp_gvs[0][0])) )
+            dfc3.append(      np.std(_gvs[0][0]) )
+            dfc3_bias.append( np.std(_gvs[1][0]) )
+            a3.append(        np.max(_A3)        )
+
+            ratio2.append(    np.sum(np.absolute(_dfa_gvs[2][0])) / np.sum(np.absolute(_bp_gvs[2][0])) )
+            dfc2.append(      np.std(_gvs[2][0]) )
+            dfc2_bias.append( np.std(_gvs[3][0]) )
+            a2.append(        np.max(_A2)        )
+
+            ratio1.append(    np.sum(np.absolute(_dfa_gvs[4][0])) / np.sum(np.absolute(_bp_gvs[4][0])) )
+            dfc1.append(      np.std(_gvs[4][0]) )
+            dfc1_bias.append( np.std(_gvs[5][0]) )
+            a1.append(        np.max(_A1)        )
+
+        else:
+            _correct, _ = sess.run([total_correct, train], feed_dict={batch_size: BATCH_SIZE, dropout_rate: 0.5, learning_rate: lr, X: xs, Y: ys})
         
         _total_correct += _correct
         _count += BATCH_SIZE
-        
-        ratio3.append(    np.sum(np.absolute(_dfa_gvs[0][0])) / np.sum(np.absolute(_bp_gvs[0][0])) )
-        dfc3.append(      np.std(_gvs[0][0]) )
-        dfc3_bias.append( np.std(_gvs[1][0]) )
-        a3.append(        np.max(_A3)        )
-
-        ratio2.append(    np.sum(np.absolute(_dfa_gvs[2][0])) / np.sum(np.absolute(_bp_gvs[2][0])) )
-        dfc2.append(      np.std(_gvs[2][0]) )
-        dfc2_bias.append( np.std(_gvs[3][0]) )
-        a2.append(        np.max(_A2)        )
-
-        ratio1.append(    np.sum(np.absolute(_dfa_gvs[4][0])) / np.sum(np.absolute(_bp_gvs[4][0])) )
-        dfc1.append(      np.std(_gvs[4][0]) )
-        dfc1_bias.append( np.std(_gvs[5][0]) )
-        a1.append(        np.max(_A1)        )
-
-    train_acc = 1.0 * _total_correct / _count
-    train_accs.append(train_acc)
+    
+        train_acc = 1.0 * _total_correct / _count
+        train_accs.append(train_acc)
 
     #############################
 
