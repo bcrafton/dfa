@@ -211,7 +211,7 @@ label = tf.placeholder(tf.int64, shape=[None])
 val_imgs, val_labs = get_validation_dataset()
 
 val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
-val_dataset = val_dataset.shuffle(len(val_imgs))
+# val_dataset = val_dataset.shuffle(len(val_imgs))
 val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
 val_dataset = val_dataset.map(val_preprocess, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
@@ -223,7 +223,7 @@ val_dataset = val_dataset.prefetch(8)
 train_imgs, train_labs = get_train_dataset()
 
 train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
-train_dataset = train_dataset.shuffle(len(train_imgs))
+# train_dataset = train_dataset.shuffle(len(train_imgs))
 train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
 train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
 train_dataset = train_dataset.batch(batch_size)
@@ -276,7 +276,7 @@ l17 = MaxPool(size=[batch_size, 14, 14, 512], ksize=[1, 2, 2, 1], strides=[1, 2,
 
 ###############################################################
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23, l24, l25])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17])
 predict = model.predict(X=features)
 
 ###############################################################
@@ -293,16 +293,23 @@ val_handle = sess.run(val_iterator.string_handle())
 
 sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
 
-for j in range(0, len(train_imgs), batch_size):
-    _predict = sess.run(predict, feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: 0.0})
+for i in range(0, len(train_imgs), batch_size):
+    _predict, _filename, _label = sess.run([predict, filename, label], feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: 0.0})
+    _predict = np.reshape(_predict, (batch_size, 14 * 14 * 512))
+    for j in range(batch_size):
+        np.save(_filename[j], _predict[j])
 
 ##################################################################
 
 sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
 
-for j in range(0, len(val_imgs), batch_size):
+for i in range(0, len(val_imgs), batch_size):
     _predict = sess.run(predict, feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
-    
+    _predict = np.reshape(_predict, (batch_size, 14 * 14 * 512))
+    for j in range(batch_size):
+        np.save(_filename[j], _predict[j])
+
+
 ##################################################################
 
 
