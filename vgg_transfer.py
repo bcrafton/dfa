@@ -294,21 +294,24 @@ val_handle = sess.run(val_iterator.string_handle())
 sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
 
 for i in range(0, len(train_imgs), batch_size):
-    _predict, _filename, _label = sess.run([predict, filename, label], feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: 0.0})
-    _predict = np.reshape(_predict, (batch_size, 14 * 14 * 512))
+    print (i)
+    _predict = sess.run(predict, feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: 0.0})
+    _predict = np.reshape(_predict, (batch_size, 7 * 7 * 512))
     for j in range(batch_size):
-        np.save(_filename[j], _predict[j])
+        name = './train/%d' % (int(i + j))
+        np.save(name, _predict[j])
 
 ##################################################################
 
 sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
 
 for i in range(0, len(val_imgs), batch_size):
+    print (i)
     _predict = sess.run(predict, feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
-    _predict = np.reshape(_predict, (batch_size, 14 * 14 * 512))
+    _predict = np.reshape(_predict, (batch_size, 7 * 7 * 512))
     for j in range(batch_size):
-        np.save(_filename[j], _predict[j])
-
+        name = './test/%d' % (int(i + j))
+        np.save(name, _predict[j])
 
 ##################################################################
 
