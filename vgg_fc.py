@@ -440,6 +440,18 @@ for ii in range(0, epochs):
             alpha = 0.01 * args.alpha
             phase = 3
             print ('phase 3')
+    elif phase == 3:
+        dacc = train_accs[-1] - train_accs[-2]
+        if dacc <= 0.0001:
+            alpha = 0.001 * args.alpha
+            phase = 4
+            print ('phase 4')
+    elif phase == 4:
+        dacc = train_accs[-1] - train_accs[-2]
+        if dacc <= 0.00001:
+            alpha = 0.0001 * args.alpha
+            phase = 5
+            print ('phase 5')
 
     if args.save:
         [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
