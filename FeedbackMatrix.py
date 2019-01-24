@@ -23,7 +23,9 @@ def FeedbackMatrix(size : tuple, sparse : int, rank : int):
     input_size, output_size = size
 
     if sparse:
-        sqrt_fan_out = np.sqrt(1.0 * output_size / input_size * sparse)
+        sqrt_fan_out = np.sqrt(1.0 * output_size / np.sqrt(input_size * sparse))
+        # sqrt_fan_out = np.sqrt(1.0 * output_size / input_size * sparse)
+        # sqrt_fan_out = np.sqrt(output_size)
     else:
         sqrt_fan_out = np.sqrt(output_size)
 
@@ -80,10 +82,21 @@ def FeedbackMatrix(size : tuple, sparse : int, rank : int):
             idx = np.random.choice(choices, size=sparse, replace=False)
             mask[ii][idx] = 1.0
         
+
         mask = mask.T
         fb = np.random.uniform(low, high, size=(input_size, output_size))
         fb = fb * mask
-        
+
+        '''
+        mask = mask.T
+        fb = np.random.uniform(0.5 / sqrt_fan_out, 2. / sqrt_fan_out, size=(input_size, output_size))
+        fb = fb * mask
+
+        sign = np.random.choice([-1., 1.], size=np.prod(np.shape(fb)), replace=True)
+        sign = np.reshape(sign, newshape=np.shape(fb))
+        fb = fb * sign
+        '''
+
     elif rank:
         fb = np.zeros(shape=(input_size, output_size))
         for ii in range(rank):

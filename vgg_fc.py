@@ -7,7 +7,7 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
@@ -19,8 +19,8 @@ parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
-parser.add_argument('--init', type=str, default="sqrt_fan_in")
-parser.add_argument('--opt', type=str, default="gd")
+parser.add_argument('--init', type=str, default="alexnet")
+parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="imagenet_vgg")
 parser.add_argument('--load', type=str, default=None)
@@ -48,6 +48,7 @@ import numpy
 import numpy as np
 np.set_printoptions(threshold=1000)
 import time
+import re
 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -112,8 +113,11 @@ def parse_function(filename, label):
 ##############################################
 
 def pre(fn):
-    return int(fn.strip('.npy'))
+    [fn] = re.findall('\d+.tfrecord', fn)
+    [fn] = re.findall('\d+', fn)
+    return int(fn)
 
+'''
 def get_val_dataset():
     val_images = []
     val_labels = []
@@ -148,7 +152,7 @@ def get_train_dataset():
             train_images.append(os.path.join('/home/bcrafton3/dfa/train/', file))
     
     train_images = sorted(train_images, key=pre)
-    train_labels = np.load('/home/bcrafton3/dfa/val_labels.npy')
+    train_labels = np.load('/home/bcrafton3/dfa/train_labels.npy')
 
     print (len(train_images), len(train_labels))
     remainder = len(train_labels) % batch_size
@@ -158,32 +162,79 @@ def get_train_dataset():
     print("train data is ready...")
 
     return train_images, train_labels
+'''
+
+def get_val_filenames():
+    val_filenames = []
+
+    print ("building validation dataset")
+
+    for subdir, dirs, files in os.walk('/home/bcrafton3/dfa/tfrecord/test/'):
+        for file in files:
+            val_filenames.append(os.path.join('/home/bcrafton3/dfa/tfrecord/test/', file))
+
+    np.random.shuffle(val_filenames)    
+
+    return val_filenames
+    
+def get_train_filenames():
+    train_filenames = []
+
+    print ("building training dataset")
+
+    for subdir, dirs, files in os.walk('/home/bcrafton3/dfa/tfrecord/train/'):
+        for file in files:
+            train_filenames.append(os.path.join('/home/bcrafton3/dfa/tfrecord/train/', file))
+    
+    np.random.shuffle(train_filenames)
+
+    return train_filenames
+
+def extract_fn(record):
+    _feature={
+        'label': tf.FixedLenFeature([], tf.int64),
+        'image_raw': tf.FixedLenFeature([], tf.string)
+    }
+    sample = tf.parse_single_example(record, _feature)
+    image = tf.decode_raw(sample['image_raw'], tf.float32)
+    image = tf.reshape(image, (1, -1))
+    label = sample['label']
+    return [image, label]
 
 ###############################################################
+
+train_filenames = get_train_filenames()
+val_filenames = get_val_filenames()
 
 filename = tf.placeholder(tf.string, shape=[None])
-label = tf.placeholder(tf.int64, shape=[None])
 
 ###############################################################
 
-val_imgs, val_labs = get_val_dataset()
+# val_imgs, val_labs = get_val_dataset()
 
-val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
-# val_dataset = val_dataset.shuffle(len(val_imgs))
-val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
+val_dataset = tf.data.TFRecordDataset(filename)
+# val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
+# val_dataset = val_dataset.shuffle(len(val_filenames))
+# val_dataset.list_files(shuffle=True)
+# val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
 # val_dataset = val_dataset.map(val_preprocess, num_parallel_calls=4)
+val_dataset = val_dataset.map(extract_fn, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
 val_dataset = val_dataset.repeat()
 val_dataset = val_dataset.prefetch(8)
 
 ###############################################################
 
-train_imgs, train_labs = get_train_dataset()
+# train_imgs, train_labs = get_train_dataset()
 
-train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
-# train_dataset = train_dataset.shuffle(len(train_imgs))
-train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
+train_dataset = tf.data.TFRecordDataset(filename)
+# train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
+# train_dataset = train_dataset.shuffle(len(train_filenames))
+# train_dataset = train_dataset.shuffle(50000)
+# train_dataset.list_files(shuffle=True)
+# train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
 # train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
+train_dataset = train_dataset.map(extract_fn, num_parallel_calls=4)
 train_dataset = train_dataset.batch(batch_size)
 train_dataset = train_dataset.repeat()
 train_dataset = train_dataset.prefetch(8)
@@ -195,6 +246,9 @@ iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_type
 features, labels = iterator.get_next()
 features = tf.reshape(features, (-1, 7 * 7 * 512))
 labels = tf.one_hot(labels, depth=num_classes)
+
+# features = tf.Print(features, [tf.shape(features)], message='', summarize=1000)
+# labels = tf.Print(labels, [tf.shape(labels)], message='', summarize=1000)
 
 train_iterator = train_dataset.make_initializable_iterator()
 val_iterator = val_dataset.make_initializable_iterator()
@@ -296,24 +350,25 @@ phase = 0
 
 for ii in range(0, epochs):
 
-    print (ii)
+    print('epoch {}/{}'.format(ii, epochs))
     
     ##################################################################
 
-    sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
+    sess.run(train_iterator.initializer, feed_dict={filename: train_filenames})
 
     train_total = 0.0
     train_correct = 0.0
     train_top5 = 0.0
     
-    for j in range(0, len(train_imgs), batch_size):
+    # for j in range(0, batch_size * 10, batch_size):
+    for j in range(0, len(train_filenames), batch_size):
         print (j)
         
-        _total_correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: alpha})
+        [_total_correct, _total_top5, _] = sess.run([total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: alpha})
         
         train_total += batch_size
         train_correct += _total_correct
-        train_top5 += _top5
+        train_top5 += _total_top5
         
         train_acc = train_correct / train_total
         train_acc_top5 = train_top5 / train_total
@@ -335,14 +390,14 @@ for ii in range(0, epochs):
     train_accs_top5.append(train_acc_top5)
     
     ##################################################################
-    
-    sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
+
+    sess.run(val_iterator.initializer, feed_dict={filename: val_filenames})
     
     val_total = 0.0
     val_correct = 0.0
     val_top5 = 0.0
     
-    for j in range(0, len(val_imgs), batch_size):
+    for j in range(0, len(val_filenames), batch_size):
         print (j)
 
         [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
@@ -381,8 +436,8 @@ for ii in range(0, epochs):
             print ('phase 2')
     elif phase == 2:
         dacc = train_accs[-1] - train_accs[-2]
-        if dacc <= 0.005:
-            alpha = 0.05 * args.alpha
+        if dacc <= 0.001:
+            alpha = 0.01 * args.alpha
             phase = 3
             print ('phase 3')
 
@@ -393,7 +448,4 @@ for ii in range(0, epochs):
         w['val_acc'] = val_accs
         w['val_acc_top5'] = val_accs_top5
         np.save(args.name, w)
-
-    print('epoch {}/{}'.format(ii, epochs))
-    
 

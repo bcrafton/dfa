@@ -74,6 +74,7 @@ from Activation import Linear
 
 ##############################################
 
+batch_size = 32
 
 def get_validation_dataset():
     label_counter = 0
@@ -141,6 +142,9 @@ def get_train_dataset():
 
 val_imgs, val_labs = get_validation_dataset()
 train_imgs, train_labs = get_train_dataset()
+
+# val_labs = np.argmax(val_labs, axis=1)
+# train_labs = np.argmax(train_labs, axis=1)
 
 ############################################################################################################
 

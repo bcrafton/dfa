@@ -86,6 +86,12 @@ IMAGENET_MEAN = [123.68, 116.78, 103.94]
 
 ##############################################
 
+def _int64_feature(value):
+  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+
+def _bytes_feature(value):
+  return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
 # https://gist.githubusercontent.com/omoindrot/dedc857cdc0e680dfb1be99762990c9c/raw/e560edd240f8b97e1f0483843dc4d64729ce025c/tensorflow_finetune.py
 
 # Preprocessing (for both training and validation):
@@ -236,7 +242,7 @@ handle = tf.placeholder(tf.string, shape=[])
 iterator = tf.data.Iterator.from_string_handle(handle, train_dataset.output_types, train_dataset.output_shapes)
 features, labels = iterator.get_next()
 features = tf.reshape(features, (-1, 224, 224, 3))
-labels = tf.one_hot(labels, depth=num_classes)
+# labels = tf.one_hot(labels, depth=num_classes)
 
 train_iterator = train_dataset.make_initializable_iterator()
 val_iterator = val_dataset.make_initializable_iterator()
@@ -290,32 +296,44 @@ train_handle = sess.run(train_iterator.string_handle())
 val_handle = sess.run(val_iterator.string_handle())
 
 ###############################################################
-
+'''
 sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
 
 for i in range(0, len(train_imgs), batch_size):
     print (i)
-    _predict = sess.run(predict, feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: 0.0})
+    [_predict, _labels] = sess.run([predict, labels], feed_dict={handle: train_handle, dropout_rate: 0.0, learning_rate: 0.0})
     _predict = np.reshape(_predict, (batch_size, 7 * 7 * 512))
     for j in range(batch_size):
-        name = './train/%d' % (int(i + j))
-        np.save(name, _predict[j])
-
+        name = './tfrecord/train/%d.tfrecord' % (int(i + j))
+        with tf.python_io.TFRecordWriter(name) as writer:
+            image_raw = _predict[j].tostring()
+            _feature={
+                    'label': _int64_feature(int(_labels[j])),
+                    'image_raw': _bytes_feature(image_raw)
+                    }
+            _features=tf.train.Features(feature=_feature)
+            example = tf.train.Example(features=_features)
+            writer.write(example.SerializeToString())
+'''
 ##################################################################
 
 sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
 
 for i in range(0, len(val_imgs), batch_size):
     print (i)
-    _predict = sess.run(predict, feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+    [_predict, _labels] = sess.run([predict, labels], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
     _predict = np.reshape(_predict, (batch_size, 7 * 7 * 512))
     for j in range(batch_size):
-        name = './test/%d' % (int(i + j))
-        np.save(name, _predict[j])
-
-##################################################################
-
-
+        name = './tfrecord/test/%d.tfrecord' % (int(i + j))
+        with tf.python_io.TFRecordWriter(name) as writer:
+            image_raw = _predict[j].tostring()
+            _feature={
+                    'label': _int64_feature(int(_labels[j])),
+                    'image_raw': _bytes_feature(image_raw)
+                    }
+            _features=tf.train.Features(feature=_feature)
+            example = tf.train.Example(features=_features)
+            writer.write(example.SerializeToString())
 
 
 

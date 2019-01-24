@@ -245,10 +245,16 @@ val_iterator = val_dataset.make_initializable_iterator()
 
 ###############################################################
 
-train_conv=False
-train_fc=True
-weights_conv='../vgg_weights/vgg_weights.npy'
-weights_fc=None # '../vgg_weights/vgg_weights.npy'
+if args.load:
+    train_conv=False
+    train_fc=True
+    weights_conv = args.load
+    weights_fc = args.load
+else:
+    train_conv=False
+    train_fc=True
+    weights_conv='../vgg_weights/vgg_weights.npy'
+    weights_fc=None
 
 if args.act == 'tanh':
     act = Tanh()
@@ -288,11 +294,11 @@ l17 = MaxPool(size=[batch_size, 14, 14, 512], ksize=[1, 2, 2, 1], strides=[1, 2,
 l18 = ConvToFullyConnected(shape=[7, 7, 512])
 l19 = FullyConnected(size=[7*7*512, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc1", load=weights_fc, train=train_fc)
 l20 = Dropout(rate=dropout_rate)
-l21 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc1_fb")
+l21 = FeedbackFC(size=[7*7*512, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc1_fb", load=weights_fc)
 
 l22 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, name="fc2", load=weights_fc, train=train_fc)
 l23 = Dropout(rate=dropout_rate)
-l24 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc2_fb")
+l24 = FeedbackFC(size=[4096, 4096], num_classes=num_classes, sparse=args.sparse, rank=args.rank, name="fc2_fb", load=weights_fc)
 
 l25 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, name="fc3", load=weights_fc, train=train_fc)
 
