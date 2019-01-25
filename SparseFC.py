@@ -118,7 +118,7 @@ class SparseFC(Layer):
     ###################################################################
     
     def dfa_backward(self, AI, AO, E, DO):
-        return self.activation.gradient(AO)
+        return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
         # _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))
