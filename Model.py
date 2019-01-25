@@ -351,8 +351,9 @@ class Model:
         
     ####################################################################
 
-    def set_fb(self, swap):
-        return tf.cond(swap, lambda: self._set_fb(), lambda: self._nset_fb())
+    def set_fb(self, flag):
+        # flag = tf.Print(flag, [flag], message='')
+        return tf.cond(flag, lambda: self._set_fb(), lambda: self._nset_fb())
 
     def _set_fb(self):
         fb = None

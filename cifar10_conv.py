@@ -27,7 +27,6 @@ parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--name', type=str, default="cifar10_conv")
 parser.add_argument('--load', type=str, default=None)
-
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -99,7 +98,8 @@ tf.reset_default_graph()
 batch_size = tf.placeholder(tf.int32, shape=())
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
-swap = tf.placeholder(tf.bool, shape=())
+set_flag = tf.placeholder(tf.bool, shape=())
+fb_flag = tf.placeholder(tf.bool, shape=())
 
 X = tf.placeholder(tf.float32, [None, 32, 32, 3])
 X = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), X)
@@ -134,8 +134,8 @@ l16 = SparseFC(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=le
 # model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 model = Model(layers=[l0, l2, l3, l5, l6, l8, l9, l10, l11, l12, l13, l14, l15, l16])
 
-# SET = model.SET(swap)
-# FBS = model.set_fb()
+SET = model.SET(set_flag)
+FB = model.set_fb(fb_flag)
 predict = model.predict(X=X)
 weights = model.get_weights()
 
@@ -205,6 +205,8 @@ f.close()
 train_accs = []
 test_accs = []
 
+_ = sess.run(FB, feed_dict={fb_flag: True})
+
 for ii in range(EPOCHS):
     if args.opt == 'decay' or args.opt == 'gd':
         decay = np.power(args.decay, ii)
@@ -261,11 +263,6 @@ for ii in range(EPOCHS):
     f = open(filename, "a")
     f.write(str(test_acc) + "\n")
     f.close()
-
-    #############################
-    
-    # _SET = sess.run(SET, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: True})
-    # _FBS = sess.run(FBS, feed_dict={batch_size: 0, dropout_rate: 0.0, learning_rate: 0.0, X: xs, Y: ys, swap: False})
 
     #############################
 

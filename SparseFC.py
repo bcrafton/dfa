@@ -65,7 +65,7 @@ class SparseFC(Layer):
     ###################################################################
         
     def get_weights(self):
-        return [(self.name, self.weights), (self.name + "_bias", self.bias)]
+        return [(self.name, self.weights * self.mask), (self.name + "_bias", self.bias)]
 
     def num_params(self):
         weights_size = self.input_size * self.output_size
@@ -118,7 +118,7 @@ class SparseFC(Layer):
     ###################################################################
     
     def dfa_backward(self, AI, AO, E, DO):
-        return tf.ones(shape=(tf.shape(AI)))
+        return self.activation.gradient(AO)
         
     def dfa_gv(self, AI, AO, E, DO):
         # _assert = tf.assert_greater_equal(self.total_connects, tf.count_nonzero(self.weights))

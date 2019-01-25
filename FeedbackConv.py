@@ -96,8 +96,8 @@ class FeedbackConv(Layer):
         
     def set_fb(self, fb):
         B = tf.reshape(fb, [tf.shape(fb)[0], -1])
-        self.B = self.B.assign(B)
-        return (fb, [self.B])
+        B = self.B.assign(B)
+        return (fb, [B])
 
     def nset_fb(self, fb):
         return (fb, [self.B])

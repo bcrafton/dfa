@@ -59,8 +59,8 @@ class FeedbackFC(Layer):
     ###################################################################
 
     def dfa_backward(self, AI, AO, E, DO):
-        E = tf.matmul(E, self.B)
-        E = tf.multiply(E, DO)
+        E = tf.matmul(E * DO, self.B)
+        # E = tf.multiply(E, DO)
 
         # mean, var = tf.nn.moments(E, axes=[0, 1])
         # E = tf.Print(E, [var], message="std: ")
@@ -97,8 +97,8 @@ class FeedbackFC(Layer):
     ###################################################################  
 
     def set_fb(self, fb):
-        self.B = self.B.assign(tf.transpose(fb))
-        return (fb, [self.B])
+        B = self.B.assign(tf.transpose(fb))
+        return (fb, [B])
 
     def nset_fb(self, fb):
         return (fb, [self.B])
