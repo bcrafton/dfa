@@ -169,9 +169,9 @@ def get_val_filenames():
 
     print ("building validation dataset")
 
-    for subdir, dirs, files in os.walk('/home/bcrafton3/dfa/tfrecord/test/'):
+    for subdir, dirs, files in os.walk('/home/bcrafton3/tfrecord/test/'):
         for file in files:
-            val_filenames.append(os.path.join('/home/bcrafton3/dfa/tfrecord/test/', file))
+            val_filenames.append(os.path.join('/home/bcrafton3/tfrecord/test/', file))
 
     np.random.shuffle(val_filenames)    
 
@@ -182,9 +182,9 @@ def get_train_filenames():
 
     print ("building training dataset")
 
-    for subdir, dirs, files in os.walk('/home/bcrafton3/dfa/tfrecord/train/'):
+    for subdir, dirs, files in os.walk('/home/bcrafton3/tfrecord/train/'):
         for file in files:
-            train_filenames.append(os.path.join('/home/bcrafton3/dfa/tfrecord/train/', file))
+            train_filenames.append(os.path.join('/home/bcrafton3/tfrecord/train/', file))
     
     np.random.shuffle(train_filenames)
 
@@ -427,31 +427,32 @@ for ii in range(0, epochs):
 
     if phase == 0:
         phase = 1
-        print ('phase 1')
     elif phase == 1:
         dacc = train_accs[-1] - train_accs[-2]
         if dacc <= 0.01:
             alpha = 0.1 * args.alpha
             phase = 2
-            print ('phase 2')
     elif phase == 2:
         dacc = train_accs[-1] - train_accs[-2]
         if dacc <= 0.001:
             alpha = 0.01 * args.alpha
             phase = 3
-            print ('phase 3')
     elif phase == 3:
         dacc = train_accs[-1] - train_accs[-2]
         if dacc <= 0.0001:
             alpha = 0.001 * args.alpha
             phase = 4
-            print ('phase 4')
     elif phase == 4:
         dacc = train_accs[-1] - train_accs[-2]
         if dacc <= 0.00001:
             alpha = 0.0001 * args.alpha
             phase = 5
-            print ('phase 5')
+
+    p = "Phase: %d" % (phase)
+    print (p)
+    f = open(results_filename, "a")
+    f.write(p + "\n")
+    f.close()
 
     if args.save:
         [w] = sess.run([weights], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})

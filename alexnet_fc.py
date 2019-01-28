@@ -13,8 +13,8 @@ parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--eps', type=float, default=1.)
 parser.add_argument('--dropout', type=float, default=0.5)
-parser.add_argument('--act', type=str, default='tanh')
-parser.add_argument('--bias', type=float, default=0.)
+parser.add_argument('--act', type=str, default='relu')
+parser.add_argument('--bias', type=float, default=1.)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -204,7 +204,7 @@ val_iterator = val_dataset.make_initializable_iterator()
 ###############################################################
 
 train_fc=True
-weights_fc=None # '../vgg_weights/vgg_weights.npy'
+weights_fc=args.load
 
 if args.act == 'tanh':
     act = Tanh()
