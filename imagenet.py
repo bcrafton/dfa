@@ -15,8 +15,9 @@ parser.add_argument('--eps', type=float, default=1.)
 parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--act', type=str, default='tanh')
 parser.add_argument('--bias', type=float, default=0.)
-parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--gpu', type=int, default=2)
 parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--fa', type=int, default=1)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="alexnet")
@@ -269,28 +270,28 @@ else:
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
 
-l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv1", load=weights_conv, train=train_conv)
+l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv1", load=weights_conv, train=train_conv, fa=args.fa)
 l1 = MaxPool(size=[batch_size, 55, 55, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l2 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv2", load=weights_conv, train=train_conv)
+l2 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv2", load=weights_conv, train=train_conv, fa=args.fa)
 l3 = MaxPool(size=[batch_size, 27, 27, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l4 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv3", load=weights_conv, train=train_conv)
+l4 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv3", load=weights_conv, train=train_conv, fa=args.fa)
 
-l5 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv)
+l5 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv, fa=args.fa)
 
 l6 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv5", load=weights_conv, train=train_conv)
 l7 = MaxPool(size=[batch_size, 13, 13, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
 l8 = ConvToFullyConnected(shape=[6, 6, 256])
 
-l9 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc)
+l9 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc, fa=args.fa)
 l10 = Dropout(rate=dropout_rate)
 
-l11 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc)
+l11 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=args.bias, last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc, fa=args.fa)
 l12 = Dropout(rate=dropout_rate)
 
-l13 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc)
+l13 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=args.bias, last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc, fa=args.fa)
 
 ###############################################################
 
@@ -298,7 +299,7 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13
 weights = model.get_weights()
 
 predict = tf.nn.softmax(model.predict(X=features))
-backward = model.backwards(X=X, Y=Y)
+backward = model.backwards(X=features, Y=labels)
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt == "momentum":
     if args.dfa:
@@ -364,7 +365,7 @@ for ii in range(0, epochs):
     print (ii)
 
     ##################################################################
-
+    
     sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
 
     train_total = 0.0
@@ -426,25 +427,24 @@ for ii in range(0, epochs):
             f.write(p + "\n")
             f.close()
             
-        if (jj == 0):
+        if (j == 0):
             # not confident these will be the same image ...
             # wont make for a good gif.
             [(_forward, _backward)] = sess.run([backward], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
             
-            
             img = _forward[0][0, :, :, 0]
-            plt.imsave('forward_0_%d.png' % (ii), img, cmap="gray")
+            plt.imsave('forward_%d_0_%d.png' % (args.fa, ii), img, cmap="gray")
             img = _forward[2][0, :, :, 0]
-            plt.imsave('forward_1_%d.png' % (ii), img, cmap="gray")
+            plt.imsave('forward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
             img = _forward[4][0, :, :, 0]
-            plt.imsave('forward_2_%d.png' % (ii), img, cmap="gray")
+            plt.imsave('forward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
             
             img = _forward[1][0, :, :, 0]
-            plt.imsave('backward_0_%d.png' % (ii), img, cmap="gray")
+            plt.imsave('backward_%d_0_%d.png' % (args.fa, ii), img, cmap="gray")
             img = _forward[3][0, :, :, 0]
-            plt.imsave('backward_1_%d.png' % (ii), img, cmap="gray")
+            plt.imsave('backward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
             img = _forward[5][0, :, :, 0]
-            plt.imsave('backward_2_%d.png' % (ii), img, cmap="gray")
+            plt.imsave('backward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
             
             '''
             for x in _forward:
