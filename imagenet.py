@@ -214,7 +214,7 @@ label = tf.placeholder(tf.int64, shape=[None])
 val_imgs, val_labs = get_validation_dataset()
 
 val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
-val_dataset = val_dataset.shuffle(len(val_imgs))
+# val_dataset = val_dataset.shuffle(len(val_imgs))
 val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
 val_dataset = val_dataset.map(val_preprocess, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
@@ -226,7 +226,7 @@ val_dataset = val_dataset.prefetch(8)
 train_imgs, train_labs = get_train_dataset()
 
 train_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
-train_dataset = train_dataset.shuffle(len(train_imgs))
+# train_dataset = train_dataset.shuffle(len(train_imgs))
 train_dataset = train_dataset.map(parse_function, num_parallel_calls=4)
 train_dataset = train_dataset.map(train_preprocess, num_parallel_calls=4)
 train_dataset = train_dataset.batch(batch_size)
@@ -270,13 +270,13 @@ else:
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
 
-l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv1", load=weights_conv, train=train_conv, fa=args.fa)
+l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv1", load=weights_conv, train=train_conv, fa=args.fa)
 l1 = MaxPool(size=[batch_size, 55, 55, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
 l2 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv2", load=weights_conv, train=train_conv, fa=args.fa)
 l3 = MaxPool(size=[batch_size, 27, 27, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l4 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=bias, last_layer=False, name="conv3", load=weights_conv, train=train_conv, fa=args.fa)
+l4 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv3", load=weights_conv, train=train_conv, fa=args.fa)
 
 l5 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv, fa=args.fa)
 
@@ -430,7 +430,7 @@ for ii in range(0, epochs):
         if (j == 0):
             # not confident these will be the same image ...
             # wont make for a good gif.
-            [(_forward, _backward)] = sess.run([backward], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+            [(_forward, _backward), _gvs] = sess.run([backward, grads_and_vars], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
             
             img = _forward[0][0, :, :, 0]
             plt.imsave('forward_%d_0_%d.png' % (args.fa, ii), img, cmap="gray")
@@ -445,15 +445,8 @@ for ii in range(0, epochs):
             plt.imsave('backward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
             img = _forward[5][0, :, :, 0]
             plt.imsave('backward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
-            
-            '''
-            for x in _forward:
-                print (np.shape(x))
-            '''
-            '''
-            for x in _backward:
-                print (np.shape(x))
-            '''
+
+
 
     p = "val accuracy: %f %f" % (val_acc, val_acc_top5)
     print (p)
