@@ -206,6 +206,31 @@ def get_train_dataset():
 
 ###############################################################
 
+def viz(name, filters):
+    fh, fw, fin, fout = np.shape(filters)
+    filters = filters.T
+    assert(np.shape(filters) == (fout, fin, fw, fh))
+    # nrows = np.ceil(np.sqrt(fin * fout))
+    ncols = 16
+    nrows = fout * fin / nrows
+    filters = np.reshape(filters, (nrows, ncols, fw, fh))
+
+    for ii in range(nrows):
+        for jj in range(ncols):
+            if jj == 0:
+                row = filters[ii][jj]
+            else:
+                row = np.concatenate((row, filters[ii][jj]), axis=1)
+                
+        if ii == 0:
+            img = row
+        else:
+            img = np.concatenate((img, row), axis=0)
+            
+    plt.imsave(name, img, cmap="gray")
+
+###############################################################
+
 filename = tf.placeholder(tf.string, shape=[None])
 label = tf.placeholder(tf.int64, shape=[None])
 
@@ -428,8 +453,6 @@ for ii in range(0, epochs):
             f.close()
             
         if (j == 0):
-            # not confident these will be the same image ...
-            # wont make for a good gif.
             [(_forward, _backward), _gvs] = sess.run([backward, grads_and_vars], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
             
             img = _forward[0][0, :, :, 0]
@@ -439,14 +462,20 @@ for ii in range(0, epochs):
             img = _forward[4][0, :, :, 0]
             plt.imsave('forward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
             
-            img = _forward[1][0, :, :, 0]
+            img = _backward[1][0, :, :, 0]
             plt.imsave('backward_%d_0_%d.png' % (args.fa, ii), img, cmap="gray")
-            img = _forward[3][0, :, :, 0]
+            img = _backward[3][0, :, :, 0]
             plt.imsave('backward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
-            img = _forward[5][0, :, :, 0]
+            img = _backward[5][0, :, :, 0]
             plt.imsave('backward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
 
-
+            f1 = _gvs[0][0]
+            viz('gv_%d_0_%d.png', f1)
+            f2 = _gvs[2][0]
+            viz('gv_%d_1_%d.png', f2)
+            f3 = _gvs[4][0]
+            viz('gv_%d_2_%d.png', f3)
+            
 
     p = "val accuracy: %f %f" % (val_acc, val_acc_top5)
     print (p)
