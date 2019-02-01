@@ -8,12 +8,12 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
-parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--alpha', type=float, default=1e-3)
 parser.add_argument('--l2', type=float, default=0.)
 parser.add_argument('--decay', type=float, default=1.)
 parser.add_argument('--eps', type=float, default=1.)
 parser.add_argument('--dropout', type=float, default=0.5)
-parser.add_argument('--act', type=str, default='tanh')
+parser.add_argument('--act', type=str, default='relu')
 parser.add_argument('--bias', type=float, default=0.)
 parser.add_argument('--gpu', type=int, default=2)
 parser.add_argument('--dfa', type=int, default=0)
@@ -206,13 +206,25 @@ def get_train_dataset():
 
 ###############################################################
 
+def factors(x):
+    l = [] 
+    for i in range(1, x + 1):
+        if x % i == 0:
+            l.append(i)
+    
+    mid = int(len(l) / 2)
+
+    # print (l)
+    # print (len(l))
+    # print (mid-1, mid+1)
+
+    return l[mid-1:mid+1]
+
 def viz(name, filters):
     fh, fw, fin, fout = np.shape(filters)
     filters = filters.T
     assert(np.shape(filters) == (fout, fin, fw, fh))
-    # nrows = np.ceil(np.sqrt(fin * fout))
-    ncols = 16
-    nrows = fout * fin / nrows
+    [nrows, ncols] = factors(fin * fout)
     filters = np.reshape(filters, (nrows, ncols, fw, fh))
 
     for ii in range(nrows):
@@ -272,21 +284,15 @@ val_iterator = val_dataset.make_initializable_iterator()
 ###############################################################
 
 train_fc=True
-if args.load:
-    train_conv=False
-else:
-    train_conv=True
+train_conv=True
 
 weights_fc=None
-weights_conv=args.load
+weights_conv=None
 
-bias = 0.0
 if args.act == 'tanh':
     act = Tanh()
 elif args.act == 'relu':
     act = Relu()
-    if args.dfa:
-        bias = 0.1
 else:
     assert(False)
 
@@ -392,7 +398,7 @@ for ii in range(0, epochs):
     ##################################################################
     
     sess.run(train_iterator.initializer, feed_dict={filename: train_imgs, label: train_labs})
-
+    
     train_total = 0.0
     train_correct = 0.0
     train_top5 = 0.0
@@ -461,21 +467,28 @@ for ii in range(0, epochs):
             plt.imsave('forward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
             img = _forward[4][0, :, :, 0]
             plt.imsave('forward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
-            
+            '''
+            for k in range(len(_backward)):
+                 print (np.shape(_backward[k]))
+            '''
+            # backwards is in the right order actually because we do backward loop in Model.
             img = _backward[1][0, :, :, 0]
             plt.imsave('backward_%d_0_%d.png' % (args.fa, ii), img, cmap="gray")
             img = _backward[3][0, :, :, 0]
             plt.imsave('backward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
             img = _backward[5][0, :, :, 0]
             plt.imsave('backward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
-
-            f1 = _gvs[0][0]
-            viz('gv_%d_0_%d.png', f1)
-            f2 = _gvs[2][0]
-            viz('gv_%d_1_%d.png', f2)
-            f3 = _gvs[4][0]
-            viz('gv_%d_2_%d.png', f3)
-            
+            '''
+            for l in range(len(_gvs)):
+                 print (np.shape(_gvs[l]))
+            '''
+            # same is not true for gvs
+            f1 = _gvs[10][0]
+            viz('gv_%d_0_%d.png' % (args.fa, ii), f1)
+            f2 = _gvs[12][0]
+            viz('gv_%d_1_%d.png' % (args.fa, ii), f2)
+            f3 = _gvs[14][0]
+            viz('gv_%d_2_%d.png' % (args.fa, ii), f3)
 
     p = "val accuracy: %f %f" % (val_acc, val_acc_top5)
     print (p)
