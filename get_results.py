@@ -1,4 +1,5 @@
 
+
 import numpy as np
 import os
 import copy
@@ -19,7 +20,7 @@ for ii in range(num_runs):
     param = runs[ii]
 
     # figure out the name of the param
-    name = '%s_%f_%f_%f_%s_%f_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['l2'], param['eps'], param['act'], param['bias'], param['dropout'], param['dfa'], param['sparse'], param['init'], param['opt'])
+    name = '%s_%f_%f_%f_%s_%f_%f_%d_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['l2'], param['eps'], param['act'], param['bias'], param['dropout'], param['dfa'], param['fa'], param['sparse'], param['init'], param['opt'])
     if param['load']:
         name += '_transfer'
     name = name + '.npy'

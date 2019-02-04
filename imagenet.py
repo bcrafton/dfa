@@ -17,6 +17,7 @@ parser.add_argument('--act', type=str, default='relu')
 parser.add_argument('--bias', type=float, default=0.)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--fa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="alexnet")
@@ -85,6 +86,41 @@ EPOCHS = args.epochs
 BATCH_SIZE = args.batch_size
 
 IMAGENET_MEAN = [123.68, 116.78, 103.94]
+
+def factors(x):
+    l = [] 
+    for i in range(1, x + 1):
+        if x % i == 0:
+            l.append(i)
+    
+    mid = int(len(l) / 2)
+
+    # print (l)
+    # print (len(l))
+    # print (mid-1, mid+1)
+
+    return l[mid-1:mid+1]
+
+def viz(name, filters):
+    fh, fw, fin, fout = np.shape(filters)
+    filters = filters.T
+    assert(np.shape(filters) == (fout, fin, fw, fh))
+    [nrows, ncols] = factors(fin * fout)
+    filters = np.reshape(filters, (nrows, ncols, fw, fh))
+
+    for ii in range(nrows):
+        for jj in range(ncols):
+            if jj == 0:
+                row = filters[ii][jj]
+            else:
+                row = np.concatenate((row, filters[ii][jj]), axis=1)
+                
+        if ii == 0:
+            img = row
+        else:
+            img = np.concatenate((img, row), axis=0)
+            
+    plt.imsave(name, img, cmap="gray")
 
 ##############################################
 
@@ -213,7 +249,7 @@ label = tf.placeholder(tf.int64, shape=[None])
 val_imgs, val_labs = get_validation_dataset()
 
 val_dataset = tf.data.Dataset.from_tensor_slices((filename, label))
-val_dataset = val_dataset.shuffle(len(val_imgs))
+# val_dataset = val_dataset.shuffle(len(val_imgs))
 val_dataset = val_dataset.map(parse_function, num_parallel_calls=4)
 val_dataset = val_dataset.map(val_preprocess, num_parallel_calls=4)
 val_dataset = val_dataset.batch(batch_size)
@@ -266,36 +302,36 @@ else:
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
 
-l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=0, last_layer=False, name="conv1", load=weights_conv, train=train_conv)
+l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=0, last_layer=False, name="conv1", load=weights_conv, train=train_conv, fa=args.fa)
 l1 = MaxPool(size=[batch_size, 55, 55, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l2 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv2", load=weights_conv, train=train_conv)
+l2 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv2", load=weights_conv, train=train_conv, fa=args.fa)
 l3 = MaxPool(size=[batch_size, 27, 27, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l4 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv3", load=weights_conv, train=train_conv)
+l4 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv3", load=weights_conv, train=train_conv, fa=args.fa)
 
-l5 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv)
+l5 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv, fa=args.fa)
 
-l6 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv5", load=weights_conv, train=train_conv)
+l6 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv5", load=weights_conv, train=train_conv, fa=args.fa)
 l7 = MaxPool(size=[batch_size, 13, 13, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
 l8 = ConvToFullyConnected(shape=[6, 6, 256])
 
-l9 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc)
+l9 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc, fa=args.fa)
 l10 = Dropout(rate=dropout_rate)
 
-l11 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc)
+l11 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc, fa=args.fa)
 l12 = Dropout(rate=dropout_rate)
 
-l13 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc)
+l13 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc, fa=args.fa)
 
 ###############################################################
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13])
-# model = Model(layers=[l0, l1, l3, l4, l6, l8, l10, l11, l13, l14, l15, l17, l18, l20])
-# model = Model(layers=[l0, l1, l3, l4, l6, l8, l10, l11, l13, l14, l15, l16, l17, l18, l19, l20])
+weights = model.get_weights()
 
 predict = tf.nn.softmax(model.predict(X=features))
+backward = model.backwards(X=features, Y=labels)
 
 if args.opt == "adam" or args.opt == "rms" or args.opt == "decay" or args.opt == "momentum":
     if args.dfa:
@@ -325,8 +361,6 @@ total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
 top5 = tf.nn.in_top_k(predictions=predict, targets=tf.argmax(labels,1), k=5)
 total_top5 = tf.reduce_sum(tf.cast(top5, tf.float32))
-
-weights = model.get_weights()
 
 print (model.num_params())
 
@@ -371,7 +405,7 @@ for ii in range(0, epochs):
     train_total = 0.0
     train_correct = 0.0
     train_top5 = 0.0
-    
+
     for j in range(0, len(train_imgs), batch_size):
         print (j)
         
@@ -399,7 +433,7 @@ for ii in range(0, epochs):
 
     train_accs.append(train_acc)
     train_accs_top5.append(train_acc_top5)
-    
+
     ##################################################################
     
     sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
@@ -410,8 +444,41 @@ for ii in range(0, epochs):
     
     for j in range(0, len(val_imgs), batch_size):
         print (j)
+            
+        if (j == 0):
+            [(_forward, _backward), _gvs, _total_correct, _top5] = sess.run([backward, grads_and_vars, total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+            
+            img = _forward[0][0, :, :, 0]
+            plt.imsave('forward_%d_0_%d.png' % (args.fa, ii), img, cmap="gray")
+            img = _forward[2][0, :, :, 0]
+            plt.imsave('forward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
+            img = _forward[4][0, :, :, 0]
+            plt.imsave('forward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
+            '''
+            for k in range(len(_backward)):
+                 print (np.shape(_backward[k]))
+            '''
+            # backwards is in the right order actually because we do backward loop in Model.
+            img = _backward[1][0, :, :, 0]
+            plt.imsave('backward_%d_0_%d.png' % (args.fa, ii), img, cmap="gray")
+            img = _backward[3][0, :, :, 0]
+            plt.imsave('backward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
+            img = _backward[5][0, :, :, 0]
+            plt.imsave('backward_%d_2_%d.png' % (args.fa, ii), img, cmap="gray")
+            '''
+            for l in range(len(_gvs)):
+                 print (np.shape(_gvs[l]))
+            '''
+            # same is not true for gvs
+            f1 = _gvs[10][0]
+            viz('gv_%d_0_%d.png' % (args.fa, ii), f1)
+            f2 = _gvs[12][0]
+            viz('gv_%d_1_%d.png' % (args.fa, ii), f2)
+            f3 = _gvs[14][0]
+            viz('gv_%d_2_%d.png' % (args.fa, ii), f3)
 
-        [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+        else:
+            [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
         
         val_total += batch_size
         val_correct += _total_correct
