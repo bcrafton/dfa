@@ -27,6 +27,9 @@ class FeedbackConv(Layer):
             b = FeedbackMatrix(size=(self.num_classes, self.num_output), sparse=self.sparse, rank=self.rank)
             self.B = tf.cast(tf.Variable(b), tf.float32) 
 
+        filters = np.random.normal(loc=0., scale=0.01, size=(self.h, self.w, self.f, self.f))
+        self.filters = tf.cast(tf.Variable(filters), tf.float32)
+        
     ###################################################################
     
     def get_weights(self):
@@ -58,10 +61,15 @@ class FeedbackConv(Layer):
         E = tf.matmul(E, self.B)
         E = tf.reshape(E, self.size)
         E = tf.multiply(E, DO)
+        DI = tf.nn.conv2d_backprop_input(input_sizes=self.size, filter=self.filters, out_backprop=E, strides=[1, 1, 1, 1], padding='SAME')
         return E
         
     def dfa_gv(self, AI, AO, E, DO):
-        return []
+        E = tf.matmul(E, self.B)
+        E = tf.reshape(E, self.size)
+        E = tf.multiply(E, DO)
+        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=(self.h, self.w, self.f, self.f), out_backprop=E, strides=[1, 1, 1, 1], padding='SAME')
+        return [(DF, self.filters)]
         
     def dfa(self, AI, AO, E, DO): 
         return []
