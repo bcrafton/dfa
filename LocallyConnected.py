@@ -143,6 +143,9 @@ class LocallyConnected(Layer):
     
         N = tf.shape(AI)[0]
         
+        # are there no strides here ???
+        # i would think that in backward there must be a stride.
+        
         # do we just always use full padding here ?
         # regardless of how we pad the input ? 
         # have a feeling its working by coincidence.
