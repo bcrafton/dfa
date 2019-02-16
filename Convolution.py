@@ -31,7 +31,7 @@ class Convolution(Layer):
         self.name = name
         self._train = train
         
-        mask = np.random.choice([-1., 1.], size=self.filter_sizes, replace=True, p=[0.25, 0.75])
+        mask = np.random.choice([-1., 1.], size=self.filter_sizes, replace=True, p=[0.5, 0.5])
         # mask = np.random.choice([-1., 1.], size=(1, self.h, self.w, self.fin), replace=True, p=[0.25, 0.75])
         
         if load:

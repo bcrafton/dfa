@@ -75,7 +75,7 @@ class FullyConnected(Layer):
             
     def backward(self, AI, AO, DO):
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DI = tf.matmul(DO, tf.transpose(self.weights * self.mask))
+        DI = tf.matmul(DO, tf.transpose(tf.clip_by_value(self.weights, 1e-6, 1e6) * self.mask))
         return DI
         
     def gv(self, AI, AO, DO):
