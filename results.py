@@ -28,6 +28,7 @@ def get_perms(param):
 # use act=tanh, bias=0
 # use act=relu, bias=1
 
+# imagenet = {'benchmark':'imagenet1.py', 'epochs':100, 'batch_size':128, 'alpha':[1e-2], 'l2':[0.0], 'eps':[1.], 'dropout':[0.5], 'act':['relu'], 'bias':[1.], 'dfa':0, 'fa':[0, 1], 'sparse':0, 'rank':0, 'init':['alexnet'], 'opt':['adam'], 'load':None}
 imagenet = {'benchmark':'imagenet.py', 'epochs':100, 'batch_size':128, 'alpha':[1e-2], 'l2':[0.0], 'eps':[1.], 'dropout':[0.5], 'act':['relu'], 'bias':[1.], 'dfa':0, 'fa':[0, 1], 'sparse':0, 'rank':0, 'init':['alexnet'], 'opt':['adam'], 'load':None}
 
 ################################################

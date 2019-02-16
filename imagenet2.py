@@ -15,7 +15,7 @@ parser.add_argument('--eps', type=float, default=1.)
 parser.add_argument('--dropout', type=float, default=0.5)
 parser.add_argument('--act', type=str, default='relu')
 parser.add_argument('--bias', type=float, default=0.)
-parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--gpu', type=int, default=3)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--fa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -319,28 +319,28 @@ else:
 dropout_rate = tf.placeholder(tf.float32, shape=())
 learning_rate = tf.placeholder(tf.float32, shape=())
 
-l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=0, last_layer=False, name="conv1", load=weights_conv, train=train_conv, fa=args.fa)
+l0 = Convolution(input_sizes=[batch_size, 227, 227, 3], filter_sizes=[11, 11, 3, 96], num_classes=num_classes, init_filters=args.init, strides=[1, 4, 4, 1], padding="VALID", alpha=learning_rate, activation=Relu(), bias=0, last_layer=False, name="conv1", load=weights_conv, train=train_conv, fa=0)
 l1 = MaxPool(size=[batch_size, 55, 55, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l2 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv2", load=weights_conv, train=train_conv, fa=args.fa)
+l2 = Convolution(input_sizes=[batch_size, 27, 27, 96], filter_sizes=[5, 5, 96, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv2", load=weights_conv, train=train_conv, fa=0)
 l3 = MaxPool(size=[batch_size, 27, 27, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
-l4 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv3", load=weights_conv, train=train_conv, fa=args.fa)
+l4 = Convolution(input_sizes=[batch_size, 13, 13, 256], filter_sizes=[3, 3, 256, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=0., last_layer=False, name="conv3", load=weights_conv, train=train_conv, fa=1)
 
-l5 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv, fa=args.fa)
+l5 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 384], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv4", load=weights_conv, train=train_conv, fa=1)
 
-l6 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv5", load=weights_conv, train=train_conv, fa=args.fa)
+l6 = Convolution(input_sizes=[batch_size, 13, 13, 384], filter_sizes=[3, 3, 384, 256], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=learning_rate, activation=Relu(), bias=1., last_layer=False, name="conv5", load=weights_conv, train=train_conv, fa=1)
 l7 = MaxPool(size=[batch_size, 13, 13, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="VALID")
 
 l8 = ConvToFullyConnected(shape=[6, 6, 256])
 
-l9 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc, fa=args.fa)
+l9 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc, fa=1)
 l10 = Dropout(rate=dropout_rate)
 
-l11 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc, fa=args.fa)
+l11 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc, fa=1)
 l12 = Dropout(rate=dropout_rate)
 
-l13 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc, fa=args.fa)
+l13 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc, fa=1)
 
 ###############################################################
 
@@ -464,7 +464,7 @@ for ii in range(0, epochs):
             
         if (j == 0):
             [(_forward, _backward), _gvs, _total_correct, _top5] = sess.run([backward, grads_and_vars, total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
-
+            '''
             img = _forward[0][0, :, :, 0]
             plt.imsave('forward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
 
@@ -496,8 +496,6 @@ for ii in range(0, epochs):
             img = _backward[7][0, :, :, 0]
             plt.imsave('backward_%d_5_%d.png' % (args.fa, ii), img, cmap="gray")
 
-            # this aint working no more bc we return a gradient for fb.
-            '''
             # same is not true for gvs
             f5 = _gvs[6][0]
             viz('gv_%d_5_%d.png' % (args.fa, ii), f5)

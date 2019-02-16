@@ -334,13 +334,13 @@ l7 = MaxPool(size=[batch_size, 13, 13, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 
 
 l8 = ConvToFullyConnected(shape=[6, 6, 256])
 
-l9 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc, fa=args.fa)
+l9 = FullyConnected(size=[6*6*256, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc1", load=weights_fc, train=train_fc, fa=1 ^ args.fa)
 l10 = Dropout(rate=dropout_rate)
 
-l11 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc, fa=args.fa)
+l11 = FullyConnected(size=[4096, 4096], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=act, bias=1., last_layer=False, l2=args.l2, name="fc2", load=weights_fc, train=train_fc, fa=1 ^ args.fa)
 l12 = Dropout(rate=dropout_rate)
 
-l13 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc, fa=args.fa)
+l13 = FullyConnected(size=[4096, num_classes], num_classes=num_classes, init_weights=args.init, alpha=learning_rate, activation=Linear(), bias=1., last_layer=True, l2=args.l2, name="fc3", load=weights_fc, train=train_fc, fa=1 ^ args.fa)
 
 ###############################################################
 
@@ -464,7 +464,7 @@ for ii in range(0, epochs):
             
         if (j == 0):
             [(_forward, _backward), _gvs, _total_correct, _top5] = sess.run([backward, grads_and_vars, total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
-
+            
             img = _forward[0][0, :, :, 0]
             plt.imsave('forward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
 
@@ -479,6 +479,11 @@ for ii in range(0, epochs):
 
             img = _forward[6][0, :, :, 0]
             plt.imsave('forward_%d_5_%d.png' % (args.fa, ii), img, cmap="gray")
+
+            '''
+            for k in range(len(_backward)):
+                 print (np.shape(_backward[k]))
+            '''
 
             # backwards is in the right order actually because we do backward loop in Model.
             img = _backward[1][0, :, :, 0]
@@ -496,8 +501,11 @@ for ii in range(0, epochs):
             img = _backward[7][0, :, :, 0]
             plt.imsave('backward_%d_5_%d.png' % (args.fa, ii), img, cmap="gray")
 
-            # this aint working no more bc we return a gradient for fb.
             '''
+            for l in range(len(_gvs)):
+                 print (np.shape(_gvs[l]))
+            '''
+
             # same is not true for gvs
             f5 = _gvs[6][0]
             viz('gv_%d_5_%d.png' % (args.fa, ii), f5)
@@ -513,7 +521,6 @@ for ii in range(0, epochs):
 
             f1 = _gvs[14][0]
             viz('gv_%d_1_%d.png' % (args.fa, ii), f1)
-            '''
 
         else:
             [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
