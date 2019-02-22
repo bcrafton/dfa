@@ -31,8 +31,8 @@ class Convolution(Layer):
         self.name = name
         self._train = train
         
-        mask = np.random.choice([-1., 1.], size=self.filter_sizes, replace=True, p=[0.5, 0.5])
-        # mask = np.random.choice([-1., 1.], size=(1, self.h, self.w, self.fin), replace=True, p=[0.25, 0.75])
+        # mask = np.random.choice([-1., 1.], size=self.filter_sizes, replace=True, p=[0.5, 0.5])
+        mask = np.random.choice([-1., 1.], size=(1, self.h, self.w, self.fin), replace=True, p=[0.5, 0.5])
         
         if load:
             assert(False)
@@ -61,7 +61,7 @@ class Convolution(Layer):
         return filter_weights_size + bias_weights_size
                 
     def forward(self, X):
-        Z = tf.nn.conv2d(X, tf.clip_by_value(self.filters, 1e-6, 1e6) * self.mask, self.strides, self.padding) + tf.reshape(self.bias, [1, 1, self.fout])
+        Z = tf.nn.conv2d(X * self.mask, tf.clip_by_value(self.filters, 1e-6, 1e6), self.strides, self.padding) + tf.reshape(self.bias, [1, 1, self.fout])
         A = self.activation.forward(Z)
         return A
         
@@ -69,7 +69,7 @@ class Convolution(Layer):
         
     def backward(self, AI, AO, DO):    
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=tf.clip_by_value(self.filters, 1e-6, 1e6) * self.mask, out_backprop=DO, strides=self.strides, padding=self.padding)
+        DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=tf.clip_by_value(self.filters, 1e-6, 1e6), out_backprop=DO, strides=self.strides, padding=self.padding) * self.mask
         return DI
 
     def gv(self, AI, AO, DO):
@@ -77,8 +77,8 @@ class Convolution(Layer):
             return []
     
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
-        DF = tf.multiply(DF, self.mask)
+        DF = tf.nn.conv2d_backprop_filter(input=AI * self.mask, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
+        # DF = tf.multiply(DF, self.mask)
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])
         
         return [(DF, self.filters), (DB, self.bias)]

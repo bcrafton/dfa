@@ -35,8 +35,8 @@ class FullyConnected(Layer):
         self.name = name
         self._train = train
         
-        mask = np.random.choice([-1., 1.], size=self.size, replace=True, p=[0.25, 0.75])
-        # mask = np.random.choice([-1., 1.], size=(1, self.input_size), replace=True, p=[0.25, 0.75])
+        # mask = np.random.choice([-1., 1.], size=self.size, replace=True, p=[0.25, 0.75])
+        mask = np.random.choice([-1., 1.], size=(1, self.input_size), replace=True, p=[0.25, 0.75])
         # mask = np.repeat(mask, self.size[1], axis=1)
         # print (mask)
         
@@ -67,7 +67,7 @@ class FullyConnected(Layer):
         return weights_size + bias_size
 
     def forward(self, X):
-        Z = tf.matmul(X, tf.clip_by_value(self.weights, 1e-6, 1e6) * self.mask) + self.bias
+        Z = tf.matmul(X * self.mask, tf.clip_by_value(self.weights, 1e-6, 1e6)) + self.bias
         A = self.activation.forward(Z)
         return A
 
@@ -75,7 +75,7 @@ class FullyConnected(Layer):
             
     def backward(self, AI, AO, DO):
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DI = tf.matmul(DO, tf.transpose(tf.clip_by_value(self.weights, 1e-6, 1e6) * self.mask))
+        DI = tf.matmul(DO, tf.transpose(tf.clip_by_value(self.weights, 1e-6, 1e6))) * self.mask
         return DI
         
     def gv(self, AI, AO, DO):
@@ -83,8 +83,8 @@ class FullyConnected(Layer):
                 return []
 
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        DW = tf.matmul(tf.transpose(AI), DO)
-        DW = tf.multiply(DW, self.mask)
+        DW = tf.matmul(tf.transpose(AI * self.mask), DO)
+        # DW = tf.multiply(DW, self.mask)
         DB = tf.reduce_sum(DO, axis=0)
 
         return [(DW, self.weights), (DB, self.bias)]
