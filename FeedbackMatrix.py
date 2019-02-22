@@ -23,26 +23,9 @@ def FeedbackMatrix(size : tuple, sparse : int, rank : int):
     input_size, output_size = size
 
     if sparse:
-        # wayyy too small
+        sqrt_fan_out = np.sqrt(1.0 * output_size / np.sqrt(input_size * sparse))
+        # sqrt_fan_out = np.sqrt(1.0 * output_size / input_size * sparse)
         # sqrt_fan_out = np.sqrt(output_size)
-
-        # wayyy too large
-        sqrt_fan_out = np.sqrt(1.0 * output_size / input_size * sparse)
-
-        # lol this was retarded.
-        # sqrt_fan_out = np.power(1.0 * output_size / input_size * sparse, 0.3)
-
-        # even more retarded bc sparse = 1
-        # sqrt_fan_out = np.sqrt(1.0 * output_size / input_size * np.sqrt(sparse))
-
-        # too small
-        # sqrt_fan_out = np.sqrt(1.0 * output_size / np.sqrt(input_size * sparse))
-
-        # on the smaller side ...
-        # sqrt_fan_out = np.sqrt(1.0 * output_size / np.power(input_size * sparse, 0.75))
-
-        _max = np.sqrt(1.0 * output_size / input_size * sparse)
-        _min = np.sqrt(1.0 * output_size / np.sqrt(input_size * sparse))
     else:
         sqrt_fan_out = np.sqrt(output_size)
 
@@ -99,13 +82,20 @@ def FeedbackMatrix(size : tuple, sparse : int, rank : int):
             idx = np.random.choice(choices, size=sparse, replace=False)
             mask[ii][idx] = 1.0
         
+
         mask = mask.T
-        # fb = np.random.normal(loc=0., scale=high, size=(input_size, output_size))
-        fb = np.random.uniform(_min, _max, size=(input_size, output_size))
+        fb = np.random.uniform(low, high, size=(input_size, output_size))
         fb = fb * mask
+
+        '''
+        mask = mask.T
+        fb = np.random.uniform(0.5 / sqrt_fan_out, 2. / sqrt_fan_out, size=(input_size, output_size))
+        fb = fb * mask
+
         sign = np.random.choice([-1., 1.], size=np.prod(np.shape(fb)), replace=True)
-        sign = np.reshape(sign, (np.shape(fb))) 
-        fb = fb * sign      
+        sign = np.reshape(sign, newshape=np.shape(fb))
+        fb = fb * sign
+        '''
 
     elif rank:
         fb = np.zeros(shape=(input_size, output_size))

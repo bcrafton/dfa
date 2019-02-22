@@ -11,13 +11,13 @@ from results import get_runs
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--print', type=int, default=0)
-parser.add_argument('--num_gpus', type=int, default=4)
+parser.add_argument('--num_gpus', type=int, default=1)
 cmd_args = parser.parse_args()
 
 ##############################################
 
 num_gpus = cmd_args.num_gpus
-counter = 0
+counter = 1
 
 def run_command(param):
     global num_gpus, counter
@@ -27,6 +27,8 @@ def run_command(param):
     else:
         gpu = counter % num_gpus
         counter = counter + 1
+
+    gpu = 2
     
     name = '%s_%f_%f_%f_%s_%f_%f_%d_%d_%s_%s' % (param['benchmark'], param['alpha'], param['l2'], param['eps'], param['act'], param['bias'], param['dropout'], param['dfa'], param['sparse'], param['init'], param['opt'])
     if param['load']:
