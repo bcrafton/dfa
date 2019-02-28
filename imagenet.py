@@ -201,9 +201,9 @@ def get_validation_dataset():
 
     print ("building validation dataset")
 
-    for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/val/'):
+    for subdir, dirs, files in os.walk('/home/bcrafton3/Data/ILSVRC2012/val/'):
         for file in files:
-            validation_images.append(os.path.join('/home/bcrafton3/ILSVRC2012/val/', file))
+            validation_images.append(os.path.join('/home/bcrafton3/Data/ILSVRC2012/val/', file))
     validation_images = sorted(validation_images)
 
     validation_labels_file = open('/home/bcrafton3/dfa/imagenet_labels/validation_labels.txt')
@@ -241,7 +241,7 @@ def get_train_dataset():
 
     print ("building dataset")
 
-    for subdir, dirs, files in os.walk('/home/bcrafton3/ILSVRC2012/train/'):
+    for subdir, dirs, files in os.walk('/home/bcrafton3/Data/ILSVRC2012/train/'):
         for folder in dirs:
             for folder_subdir, folder_dirs, folder_files in os.walk(os.path.join(subdir, folder)):
                 for file in folder_files:
