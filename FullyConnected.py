@@ -92,9 +92,10 @@ class FullyConnected(Layer):
         DW = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
         DB = tf.reduce_sum(DO, axis=0)
 
-        DFB = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
+        # DFB = tf.matmul(tf.transpose(AI), DO) + self.l2 * self.weights
 
-        return [(DW, self.weights), (DFB, self.fb), (DB, self.bias)]
+        # return [(DW, self.weights), (DFB, self.fb), (DB, self.bias)]
+        return [(DW, self.weights), (DB, self.bias)]
 
     def train(self, AI, AO, DO):
         if not self._train:

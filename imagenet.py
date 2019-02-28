@@ -497,7 +497,6 @@ for ii in range(0, epochs):
             plt.imsave('backward_%d_5_%d.png' % (args.fa, ii), img, cmap="gray")
 
             # this aint working no more bc we return a gradient for fb.
-            '''
             # same is not true for gvs
             f5 = _gvs[6][0]
             viz('gv_%d_5_%d.png' % (args.fa, ii), f5)
@@ -513,7 +512,6 @@ for ii in range(0, epochs):
 
             f1 = _gvs[14][0]
             viz('gv_%d_1_%d.png' % (args.fa, ii), f1)
-            '''
 
         else:
             [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
