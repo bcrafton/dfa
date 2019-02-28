@@ -425,45 +425,10 @@ for ii in range(0, epochs):
 
     for j in range(0, len(train_imgs), batch_size):
         print (j)
-        
-        _total_correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
-        
-        train_total += batch_size
-        train_correct += _total_correct
-        train_top5 += _top5
-        
-        train_acc = train_correct / train_total
-        train_acc_top5 = train_top5 / train_total
-        
-        if (j % (100 * batch_size) == 0):
-            p = "train accuracy: %f %f" % (train_acc, train_acc_top5)
-            print (p)
-            f = open(results_filename, "a")
-            f.write(p + "\n")
-            f.close()
 
-    p = "train accuracy: %f %f" % (train_acc, train_acc_top5)
-    print (p)
-    f = open(results_filename, "a")
-    f.write(p + "\n")
-    f.close()
-
-    train_accs.append(train_acc)
-    train_accs_top5.append(train_acc_top5)
-
-    ##################################################################
-    
-    sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
-    
-    val_total = 0.0
-    val_correct = 0.0
-    val_top5 = 0.0
-    
-    for j in range(0, len(val_imgs), batch_size):
-        print (j)
-            
-        if (j == 0):
-            [(_forward, _backward), _gvs, _total_correct, _top5] = sess.run([backward, grads_and_vars, total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+        if (j % (batch_size * 100) == 0):
+            # [(_forward, _backward), _gvs, _total_correct, _top5] = sess.run([backward, grads_and_vars, total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+            [(_forward, _backward), _gvs, _total_correct, _top5, _] = sess.run([backward, grads_and_vars, total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
 
             img = _forward[0][0, :, :, 0]
             plt.imsave('forward_%d_1_%d.png' % (args.fa, ii), img, cmap="gray")
@@ -514,7 +479,41 @@ for ii in range(0, epochs):
             viz('gv_%d_1_%d.png' % (args.fa, ii), f1)
 
         else:
-            [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
+            _total_correct, _top5, _ = sess.run([total_correct, total_top5, train], feed_dict={handle: train_handle, dropout_rate: args.dropout, learning_rate: lr})
+        
+        train_total += batch_size
+        train_correct += _total_correct
+        train_top5 += _top5
+        
+        train_acc = train_correct / train_total
+        train_acc_top5 = train_top5 / train_total
+        
+        if (j % (100 * batch_size) == 0):
+            p = "train accuracy: %f %f" % (train_acc, train_acc_top5)
+            print (p)
+            f = open(results_filename, "a")
+            f.write(p + "\n")
+            f.close()
+
+    p = "train accuracy: %f %f" % (train_acc, train_acc_top5)
+    print (p)
+    f = open(results_filename, "a")
+    f.write(p + "\n")
+    f.close()
+
+    train_accs.append(train_acc)
+    train_accs_top5.append(train_acc_top5)
+
+    ##################################################################
+    
+    sess.run(val_iterator.initializer, feed_dict={filename: val_imgs, label: val_labs})
+    
+    val_total = 0.0
+    val_correct = 0.0
+    val_top5 = 0.0
+    
+    for j in range(0, len(val_imgs), batch_size):
+        [_total_correct, _top5] = sess.run([total_correct, total_top5], feed_dict={handle: val_handle, dropout_rate: 0.0, learning_rate: 0.0})
         
         val_total += batch_size
         val_correct += _total_correct
