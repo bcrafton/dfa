@@ -24,26 +24,32 @@ for ii in range(num_runs):
         name += '_transfer'
     name = name + '.npy'
 
-    # load the results
-    res = np.load(name).item()
-    
-    if param['load']:
-        transfer = 1
-    else:
-        transfer = 0
-    
-    key = (param['benchmark'], param['dfa'], param['sparse'], transfer)
-    val = max(res['val_acc'])
+    print (name)
 
-    print (name, val)
+    try:
+        # load the results
+        res = np.load(name).item()
     
-    if key in results.keys():
-        # use an if instead of max because we gonna want to save the winner run information
-        if results[key][0] < val:
+        if param['load']:
+            transfer = 1
+        else:
+            transfer = 0
+    
+        key = (param['benchmark'], param['dfa'], param['sparse'], transfer)
+        val = (max(res['val_acc']), max(res['val_acc_top5']))
+
+        print (name, val)
+    
+        if key in results.keys():
+            # use an if instead of max because we gonna want to save the winner run information
+            if results[key][0][0] < val[0]:
+                results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
+        else:
             results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
-    else:
-        results[key] = (val, param['benchmark'], param['alpha'], param['dfa'], param['sparse'], param['init'], param['opt'], name)
-            
+
+    except:
+        pass            
+
 for key in sorted(results.keys()):   
     print (key, results[key])
 

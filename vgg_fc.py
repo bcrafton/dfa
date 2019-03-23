@@ -87,6 +87,19 @@ BATCH_SIZE = args.batch_size
 
 ##############################################
 
+def in_top_k(x, y, k):
+    x = tf.cast(x, dtype=tf.float32)
+    y = tf.cast(y, dtype=tf.int32)
+
+    _, topk = tf.nn.top_k(input=x, k=k)
+    topk = tf.transpose(topk)
+    correct = tf.equal(y, topk)
+    correct = tf.cast(correct, dtype=tf.int32)
+    correct = tf.reduce_sum(correct, axis=0)
+    return correct
+
+##############################################
+
 def parse_function(filename, label):
     '''
     image_string = tf.read_file(filename)
@@ -169,9 +182,9 @@ def get_val_filenames():
 
     print ("building validation dataset")
 
-    for subdir, dirs, files in os.walk('/home/bcrafton3/tfrecord/test/'):
+    for subdir, dirs, files in os.walk('/home/bcrafton3/Data/tfrecord/vgg/test/'):
         for file in files:
-            val_filenames.append(os.path.join('/home/bcrafton3/tfrecord/test/', file))
+            val_filenames.append(os.path.join('/home/bcrafton3/Data/tfrecord/vgg/test/', file))
 
     np.random.shuffle(val_filenames)    
 
@@ -182,9 +195,9 @@ def get_train_filenames():
 
     print ("building training dataset")
 
-    for subdir, dirs, files in os.walk('/home/bcrafton3/tfrecord/train/'):
+    for subdir, dirs, files in os.walk('/home/bcrafton3/Data/tfrecord/vgg/train/'):
         for file in files:
-            train_filenames.append(os.path.join('/home/bcrafton3/tfrecord/train/', file))
+            train_filenames.append(os.path.join('/home/bcrafton3/Data/tfrecord/vgg/train/', file))
     
     np.random.shuffle(train_filenames)
 
@@ -312,7 +325,8 @@ else:
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
-top5 = tf.nn.in_top_k(predictions=predict, targets=tf.argmax(labels,1), k=5)
+# top5 = tf.nn.in_top_k(predictions=predict, targets=tf.argmax(labels,1), k=5)
+top5 = in_top_k(predict, tf.argmax(labels,1), k=5)
 total_top5 = tf.reduce_sum(tf.cast(top5, tf.float32))
 
 weights = model.get_weights()
