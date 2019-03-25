@@ -50,8 +50,8 @@ np.set_printoptions(threshold=1000)
 import time
 import re
 
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+# import matplotlib.pyplot as plt
+# import matplotlib.image as mpimg
 import numpy as np
 from PIL import Image
 import scipy.misc
@@ -182,9 +182,9 @@ def get_val_filenames():
 
     print ("building validation dataset")
 
-    for subdir, dirs, files in os.walk('/home/bcrafton3/Data/tfrecord/vgg/test/'):
+    for subdir, dirs, files in os.walk('/home/bcrafton3/Data_SSD/tfrecord/vgg/test/'):
         for file in files:
-            val_filenames.append(os.path.join('/home/bcrafton3/Data/tfrecord/vgg/test/', file))
+            val_filenames.append(os.path.join('/home/bcrafton3/Data_SSD/tfrecord/vgg/test/', file))
 
     np.random.shuffle(val_filenames)    
 
@@ -195,9 +195,9 @@ def get_train_filenames():
 
     print ("building training dataset")
 
-    for subdir, dirs, files in os.walk('/home/bcrafton3/Data/tfrecord/vgg/train/'):
+    for subdir, dirs, files in os.walk('/home/bcrafton3/Data_SSD/tfrecord/vgg/train/'):
         for file in files:
-            train_filenames.append(os.path.join('/home/bcrafton3/Data/tfrecord/vgg/train/', file))
+            train_filenames.append(os.path.join('/home/bcrafton3/Data_SSD/tfrecord/vgg/train/', file))
     
     np.random.shuffle(train_filenames)
 
@@ -335,10 +335,14 @@ print (model.num_params())
 
 ###############################################################
 
-config = tf.ConfigProto()
+# config = tf.ConfigProto()
+config = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
 config.gpu_options.allow_growth=True
-sess = tf.InteractiveSession(config=config)
-tf.global_variables_initializer().run()
+
+# sess = tf.InteractiveSession(config=config)
+# tf.global_variables_initializer().run()
+sess = tf.Session(config=config)
+sess.run(tf.global_variables_initializer())
 
 train_handle = sess.run(train_iterator.string_handle())
 val_handle = sess.run(val_iterator.string_handle())
