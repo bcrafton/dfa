@@ -214,7 +214,7 @@ plt.rcParams['font.sans-serif'] = "Arial"
 plt.rcParams['font.family'] = "sans-serif"
 plt.rcParams['font.size'] = 10
 
-f, [ax1, ax3] = plt.subplots(1, 2)
+f, ax1 = plt.subplots(1, 1)
 
 for ii in range(len(points1)):
     p = points1[ii]
@@ -226,7 +226,7 @@ for ii in range(len(points2)):
 
 for ii in range(len(points3)):
     p = points3[ii]
-    ax3.scatter(labels3[ii][0], p, s=sizes[labels1[ii][1]], color=colors[labels3[ii][1]], marker=markers[labels1[ii][1]])
+    # ax3.scatter(labels3[ii][0], p, s=sizes[labels1[ii][1]], color=colors[labels3[ii][1]], marker=markers[labels1[ii][1]])
 
 for ii in range(len(points4)):
     p = points4[ii]
@@ -258,13 +258,14 @@ ax3.tick_params(
     top=False,         # ticks along the top edge are off
     labelbottom=False) # labels along the bottom edge are off
 '''
-
-ax1.set_xticks(range(1, 10+1, 1))
-ax3.set_xticks(range(1, 10+1, 1))
 '''
+ax2.set_xticks(range(1, 10+1, 1))
+ax4.set_xticks(range(1, 10+1, 1))
+
 ax2.set_xlabel(xlabel='Rank', fontsize=10)
 ax4.set_xlabel(xlabel='Rank', fontsize=10)
 '''
+ax1.set_xticks(range(1, 10+1, 1))
 ax1.set_ylabel(ylabel='Accuracy (%)', fontsize=10)
 # ax2.set_ylabel(ylabel='Angle (' + u'\N{DEGREE SIGN}' + ')', fontsize=10)
 # ax2.set_ylabel(ylabel='Angle (Degrees)', fontsize=10)
@@ -275,9 +276,11 @@ ax1.set_yticks([95., 95.5, 96., 96.5, 97., 97.5])
 ax2.set_ylim(40, 54)
 ax2.set_yticks([42, 44, 46, 48, 50, 52])
 '''
+'''
 ax3.set_ylim(25, 55)
 ax3.set_yticks([30, 35, 40, 45, 50])
 # ax3.set_yticks([30, 34, 38, 42, 46, 50])
+'''
 '''
 ax4.set_ylim(50, 90)
 ax4.set_yticks([55, 60, 65, 70, 75, 80, 85])
@@ -291,11 +294,11 @@ ax4.set_yticks([55, 60, 65, 70, 75, 80, 85])
 # otherwise no space
 f.subplots_adjust(hspace=0.0)
 
-f.set_size_inches(7., 3.)
+f.set_size_inches(3.5, 3.)
 
 # lgd = ax4.legend(loc='upper left', bbox_to_anchor=(1.02, 1.5), fontsize=10)
 
-for ax in [ax1, ax3]:
+for ax in [ax1]:
     ax.grid(alpha=0.9, linestyle='--', linewidth=0.35)
     for tick in ax.yaxis.get_major_ticks():
         tick.label.set_fontsize(10) 
@@ -303,7 +306,7 @@ for ax in [ax1, ax3]:
         tick.label.set_fontsize(10) 
 
 # f.savefig('plot1-' + str(args.markers) + '.png', bbox_inches='tight', dpi=300)
-f.savefig('plot1.png', bbox_inches='tight', dpi=300)
+f.savefig('plot1a.png', bbox_inches='tight', dpi=300)
 
 
 

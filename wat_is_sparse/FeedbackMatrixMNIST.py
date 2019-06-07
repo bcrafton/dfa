@@ -112,15 +112,17 @@ def FeedbackMatrix(size : tuple, sparse : int, rank : int):
 
     return fb
 
-N = 1000
-E = 500
+N = 25
+E = 10
 size = (E, N)
 rank = 0
 sparse = args.sparse
 
 B = np.absolute(FeedbackMatrix(size, sparse, rank)).T
 # if you want range 1 on color bar, need a value of 1.
+B = B - np.min(B)
 B = B / np.max(B)
+
 
 ####################################
 
